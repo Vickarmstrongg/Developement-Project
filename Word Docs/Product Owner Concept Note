@@ -1,0 +1,53 @@
+Concept Note 
+
+ 
+
+Product Name 
+
+ 
+
+BoschBite Insight – an analytics tool that provides demand, promotion and loyalty information for Stellenbosch's student-focused eateries and takeout establishments using anonymized BoschCard delivery data. 
+
+Product Concept 
+
+BoschBite Insights is designed for restaurants and takeaway outlets that provide food delivery services to students in Stellenbosch. As student buying habits might vary depending on the time of day, week, academic schedule and social events, this niche has highly variable demand. For example, demand may increase late at night, during weekends or around periods such as exams and assignment deadlines. These fluctuations can make it difficult for businesses to plan staffing, kitchen capacity and delivery hours. Student-focused food delivery businesses also need to understand how their promotions perform under different demand conditions. Relying solely on total sales numbers can make this difficult when demand changes throughout the day, week and academic calendar. 
+
+While generic sales analytics might reveal what was purchased and when, they might not provide insights into these student-specific trends. To close this gap, BoschBite Insights is a premium service that uses anonymised BoschCard transaction data to provide businesses with insights into student demand patterns, promotion performance, late-night ordering and repeat purchasing. The service is specifically designed around the types of information needed by student-focused food delivery businesses to understand their market and analyse changes in demand over time. 
+
+Value Proposition 
+
+BoschBite Insights provides value to student-focused food delivery businesses by reducing the uncertainty involved in understanding and responding to student demand. Rather than relying mainly on assumptions or total sales figures, businesses can use their own BoschCard transaction data to gain a clearer understanding of their student market and identify patterns that may not be obvious from basic sales information. 
+
+The service can help businesses evaluate their existing operations and promotions, identify recurring periods of low or high demand and make more informed decisions about staffing, capacity, delivery hours and promotional activities. It can also save businesses time and effort of analysing transaction data themselves by presenting the information in a practical and accessible way. By turning existing transaction data into student-specific insights, BoschBite Insights can support better planning, help businesses use their resources more effectively and provide a stronger basis for decisions made about their food delivery services. 
+
+Principle Features  
+
+Promotional effectiveness/Promotion analysis :  
+This function tracks student discounts across a 24-hour timeline and shows spikes in sales that align with a promotional event. For example, spikes at lunch time for a 2 for one deals.  
+
+Anonymised peer benchmarking (never named competitors) : 
+The peer benchmarking displays market averages for example the average lunch or dinner costs across multiple merchants. The prevents sensitive figures such as specific names competitors from being mentioned.  
+
+Business dashboard :  
+The business dashboard takes important KPIs such as specific mealtime or daily revenue and average order value that are obtained from the transaction logs of BoshCard’s loyalty program.  
+
+Academic and social calendar planning : 
+This function provides important dates and times for high or low activity of students on campus. The academic calendar provides information about the recess periods (lower volume of students) and exam periods (increased delivery volumes at night). The social calendar provides information regarding events, concerts and any social activities.  
+
+Demand analysis and forecasting : 
+The demand analysis and forecasting function takes the history tracks detailed hour to hour BoschCard transactions to project future hourly demand across 24 hours.    
+
+Capacity / Staffing planner : 
+The capacity and staffing planner compares the forecasted hourly order rate and surges using the demand forecasting function to the current available staff and the status of meal preparation.  
+
+Privacy, Fairness and Safeguards 
+
+Student privacy is built into the product from the beginning. Food services will never see individual student information. Instead, all information is combined into groups before it appears on the dashboard. To prevent someone from identifying a student from a small group, we will only show data when there are at least 10 students or orders. If there are fewer than 10, the information will either be hidden or combined with another period or area. 
+
+Delivery locations will also not show exact addresses. They will be grouped into larger zones or areas so that a food establishment cannot identify a specific household. The same approach is used to protect businesses. Food services can compare their performance with similar restaurants, such as their delivery times or average order value. However, comparisons will only be shown when there are at least 4 other businesses in the  comparison group. Individual competitors' data will never be shown or identifiable. The product will also make sure that restaurants do not assume that one thing caused another, to avoid business owners from mistaking correlation for causation. Other factors, such as exams, weather, weekdays, or the academic calendar, could have affected demand. Where possible, comparisons will be structured against a baseline period with similar calendar characteristics to reduce the risk of misleading conclusions. 
+
+Together, these mechanisms ensure the product delivers commercially useful insight to participating businesses without compromising the trust and legal obligations BoschCard holds toward its student members and competing businesses. 
+
+Synthetic Data Approach 
+
+Since there is no actual BoschCard data we will simulate and generate delivery transactions to create a synthetic dataset. This includes order times, values, promotion discounts, delivery locations and student IDs. To ensure that there is sufficient data for the we will generate data for several months across a few different businesses. No actual individuals or companies will be involved everything is created from the ground up. 

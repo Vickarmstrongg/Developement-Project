@@ -1,0 +1,181 @@
+Date: 17 Sep 
+
+Meeting: Online Call 8pm 
+
+In attendance: All 
+
+Agenda – Phase 1 
+
+Possible Layout 
+
+Product name +  pitch (2–3 lines) 
+Give it a name — it makes the whole thing feel like a product rather than an assignment.  Then one sentence: what it is, who it's for. Name: BoschBite Insights 
+
+Niche & context (~150 words) 
+Your approved niche, plus why this niche has a distinct problem. Key point to land: delivery outlets serving students face demand that swings violently with the academic calendar and the clock, and they can't tell whether a promotion worked or whether it was just a Friday before a deadline. Generic analytics doesn't answer that. 
+
+Value proposition (~150 words) 
+What decisions the service improves: opening/closing hours, staffing and kitchen capacity, which promotions to repeat, which delivery windows are hurting repeat orders. Frame as "a restaurant manager logs in on Monday morning and knows X, Y, Z." 
+
+Principal features (the biggest section, ~400–500 words, use a numbered list) Roughly 5–7 features, each with a name, one line on what it does and one line on the decision it supports. Suggested set:  
+
+  Demand forecasting dashboard (by hour, day, academic-calendar phase)  
+
+  Promotion effectiveness evaluation (with explicit causal caveats built in)  
+
+  Late-night service lens — demand vs. capacity vs. repeat-order behaviour after late deliveries  
+
+  Anonymised peer benchmarking (never named competitors)  
+
+  Capacity/staffing planner — projected order volume against stated kitchen throughput  
+
+  Alerts / weekly digest — plain-language recommendations, not just charts 
+
+Business dashboard 
+
+Demand analysis and forecasting 
+
+Promotion analysis 
+
+Late-night demand and loyalty insights 
+
+Privacy and responsible analytics 
+
+Academic and social calendar 
+
+Privacy, fairness & causal safeguards (~200 words) 
+The brief explicitly calls these first-class requirements, so give them their own headed section even at concept stage. Concrete mechanisms, not intentions: k-anonymity thresholds (suppress any cell with fewer than n students/orders), zone-level rather than address-level aggregation, no individual student IDs exposed ever, peer benchmarks only shown when m or more businesses are in the comparison pool, and a mandatory caveat/confounder panel attached to every promotion-effect view. 
+
+Synthetic data approach (~100 words) 
+One short paragraph: what your generator will produce (orders, timestamps, delivery zones, promo codes, promised vs actual delivery time, academic-calendar flags) and that it will be internally consistent and rich enough to demo every feature above. 
+
+Feasibility statement (~80 words) 
+This is your PM's section, and markers will look for it. State the stack in one line and why a group of four can build it in the time available. 
+
+Work delegation 
+
+Nicole – Niche & Context, Value Proposition 
+
+Matthew – Principal features 
+
+David – Privacy, fairness & causal safeguards, Feasibility statement 
+
+Victoria – Product name and pitch, Synthetic data approach  
+
+Due date: Friday 18 September 2026 23:59 
+
+Group deadline: Friday 18 September 2026 2p.m. 
+
+Possible second meeting tomorrow: 2 pm 
+
+Things to be decided tonight: 
+
+Product Name – BoschBite Insights 
+
+Who is the customer - Students 
+
+Feature List 
+
+Values for n,m,k in the privacy threshold 
+
+Tech stack we will use  
+
+Is it just going to be late night service – no, 24 hrs 
+
+What is out of scope 
+
+Out of Scope 
+
+The proposed service will focus on analysing anonymised BoschCard transaction data and providing decision-support information to participating student-focused food delivery businesses. The following are outside the scope of the system: 
+
+Processing or managing student food orders. 
+
+Payment processing or financial transactions. 
+
+Delivery-driver dispatch, GPS tracking or route management. 
+
+Managing restaurant menus, recipes or inventory. 
+
+Creating or distributing promotional campaigns. 
+
+Automatically changing prices, operating hours, staffing or delivery capacity. 
+
+Providing businesses with identifiable individual student profiles or transaction histories. 
+
+Providing detailed transaction or performance information about identifiable competitor businesses. 
+
+Making predictions about individual student behaviour. 
+
+Presenting correlations as evidence of causal relationships. 
+
+Providing analytics services for business niches outside the selected student-focused food delivery niche. 
+
+Integrating with external food-delivery platforms unless specifically required for a defined project feature. 
+
+ 
+
+Anything else 
+
+ 
+
+Date: 21 September 
+
+Meeting: Class with Richard 
+
+Meetings every Tuesday 12:00 –13:00 and 13:00-14:00 
+
+First meeting as developers 
+
+12:00 – 13:00 Room 448 
+
+Second meeting as product owners 
+
+13:00 – 14:00 Room 448 
+
+ 
+
+Two perspectives, roles for each perspective 
+
+Product Owners 
+
+Roles 
+
+Product Manager – David 
+
+UI/UX - Matthew 
+
+Data Manager – Victoria 
+
+QA – Nicole 
+
+Product Developers 
+
+Roles 
+
+Project Manager – David 
+
+Lead Developer – Victoria 
+
+ITBA – Matthew 
+
+QA – Nicole 
+
+ 
+
+N.B. 
+
+Look at final deliverables as developer 
+
+Come with a methodology as developer e.g. waterfall, agile etc. 
+
+Only 6 meetings with product owners an hour each make use of time wisely 
+
+Data will be given to us closer to the end of the project, make a variety of data to test, could be from a REST API, web scraped CSV, be sure you know how to import or connect to different source 
+
+Check ERD to know data structure 
+
+ 
+
+To do  
+
+Come up with agenda for meetings  

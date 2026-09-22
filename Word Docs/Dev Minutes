@@ -1,0 +1,77 @@
+#Dev Minutes  
+
+Meeting: 22 September 2026 
+
+Time: 12:00 – 13:00 
+
+Attendance: All 
+
+AGENDA 
+
+ 
+
+Introduction and process overview 
+
+Explain how we plan to attack the project, agile/sprint approach, how decisions get recorded, what’s expected of them between sessions 
+
+ 
+
+Concept walkthrough, section by section 
+
+go through their note as written, confirming your understanding out loud before asking questions, so misreadings surface immediately. 
+
+ 
+
+Clarifying questions 
+
+ 
+
+Foundational / gap-filling 
+
+Your note doesn't include a privacy/anonymity or synthetic-data section — what are your expectations there? Any specific thresholds in mind (e.g. minimum group size before a comparison is shown)? 
+
+Who's the actual end user at a business — owner, manager, staff, multiple roles with different access? 
+
+Given six weeks, if only two of your four features can be a fully working MVP, which two matter most? 
+
+ 
+
+Rush Hour Radar 
+
+What granularity — hourly, half-hourly, day-parts like "lunch rush"? 
+
+How should "recurring" be defined — present in at least X of the last Y weeks? 
+
+Should the promotional suggestion be a specific recommendation, or just a visual flag? 
+
+ 
+
+Fair Comparison Score 
+
+What groups businesses as "similar" — vendor type, location, size, price range? 
+
+Is the score a percentile, an index, an above/below-average label? 
+
+Minimum number of peer businesses before a comparison is shown? 
+
+ 
+
+Honest Results Checker 
+
+Where does exam/holiday/event data come from — do you have a calendar, or should we treat it as another synthetic feed? 
+
+Automatic detection of overlapping events, or manual tagging by staff? 
+
+ 
+
+Demand Forecast 
+
+What horizon matters most — next day, week, month? 
+
+Is a trend/seasonal-average model acceptable, or do you expect ML-level accuracy? (Worth calibrating now — it changes MVP scope significantly.) 
+
+ 
+
+Wrap-up 
+
+confirm deliverables  for them before Session 2 (e.g. "bring examples of a report you'd want to see"), 
