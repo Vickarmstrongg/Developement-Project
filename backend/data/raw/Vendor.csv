@@ -1,0 +1,125 @@
+vendor_id,name,address,gps,type_id
+1,The Copper Lantern — Main Bar,"11 Dorp Street, Stellenbosch",POINT(18.859576 -33.935620),1
+2,The Copper Lantern — Second Bar,"11 Dorp Street, Stellenbosch",POINT(18.859576 -33.935620),1
+3,Static House,"14 Victoria Street, Stellenbosch",POINT(18.867434 -33.930495),1
+4,Velvet Current — Main Bar,"17 Dorp Street, Stellenbosch",POINT(18.860437 -33.934875),1
+5,Velvet Current — Second Bar,"17 Dorp Street, Stellenbosch",POINT(18.860437 -33.934875),1
+6,Velvet Current — Food Till,"17 Dorp Street, Stellenbosch",POINT(18.860437 -33.934875),1
+7,Signal Room,"20 Bird Street, Stellenbosch",POINT(18.854786 -33.937746),1
+8,The Hollow Hour,"23 Dorp Street, Stellenbosch",POINT(18.859770 -33.935917),1
+9,Brass & Bloom,"26 Bird Street, Stellenbosch",POINT(18.854684 -33.940193),1
+10,Mosaic After Dark,"29 Adam Tas Road, Stellenbosch",POINT(18.876188 -33.945601),1
+11,Orbit Lane — Main Bar,"32 Victoria Street, Stellenbosch",POINT(18.866519 -33.929756),1
+12,Orbit Lane — Second Bar,"32 Victoria Street, Stellenbosch",POINT(18.866519 -33.929756),1
+13,Willow Corner,"11 Victoria Street, Stellenbosch",POINT(18.867349 -33.928200),2
+14,Ochre Corner,"14 Bird Street, Stellenbosch",POINT(18.853599 -33.937637),2
+15,Fig Corner,"17 Merriman Avenue, Stellenbosch",POINT(18.873756 -33.921182),2
+16,Morrow Corner,"20 Adam Tas Road, Stellenbosch",POINT(18.875994 -33.945221),2
+17,Copper Corner,"23 Dorp Street, Stellenbosch",POINT(18.860914 -33.937043),2
+18,Juniper Corner,"26 Victoria Street, Stellenbosch",POINT(18.864408 -33.930971),2
+19,Atlas Corner,"29 Bird Street, Stellenbosch",POINT(18.853648 -33.938110),2
+20,Saffron Corner,"32 Merriman Avenue, Stellenbosch",POINT(18.874821 -33.922959),2
+21,Willow Table,"11 Bird Street, Stellenbosch",POINT(18.853025 -33.937309),3
+22,Ochre Table,"14 Merriman Avenue, Stellenbosch",POINT(18.872609 -33.921017),3
+23,Fig Table,"17 Adam Tas Road, Stellenbosch",POINT(18.874388 -33.943424),3
+24,Morrow Table,"20 Dorp Street, Stellenbosch",POINT(18.859954 -33.938251),3
+25,Copper Table,"23 Victoria Street, Stellenbosch",POINT(18.866217 -33.930704),3
+26,Juniper Table,"26 Bird Street, Stellenbosch",POINT(18.853049 -33.940957),3
+27,Atlas Table,"29 Merriman Avenue, Stellenbosch",POINT(18.871615 -33.921194),3
+28,Saffron Table,"32 Adam Tas Road, Stellenbosch",POINT(18.877793 -33.945632),3
+29,Cinder Table,"35 Dorp Street, Stellenbosch",POINT(18.862730 -33.938329),3
+30,Linen Table,"38 Victoria Street, Stellenbosch",POINT(18.864739 -33.929948),3
+31,Dapple Table,"41 Bird Street, Stellenbosch",POINT(18.853515 -33.937549),3
+32,Marble Table,"44 Merriman Avenue, Stellenbosch",POINT(18.872533 -33.924542),3
+33,Hearth Table,"47 Adam Tas Road, Stellenbosch",POINT(18.875912 -33.944971),3
+34,Indigo Table,"50 Dorp Street, Stellenbosch",POINT(18.863139 -33.938310),3
+35,Pine Table,"53 Victoria Street, Stellenbosch",POINT(18.867806 -33.928540),3
+36,Solstice Table,"56 Bird Street, Stellenbosch",POINT(18.855531 -33.938183),3
+37,Fable Table,"59 Merriman Avenue, Stellenbosch",POINT(18.871445 -33.921605),3
+38,Tandem Table,"62 Adam Tas Road, Stellenbosch",POINT(18.876989 -33.942560),3
+39,Terrace Table,"65 Dorp Street, Stellenbosch",POINT(18.861001 -33.937029),3
+40,Clover Table,"68 Victoria Street, Stellenbosch",POINT(18.865563 -33.929484),3
+41,Ripple Table,"71 Bird Street, Stellenbosch",POINT(18.852562 -33.939238),3
+42,Fern Table,"74 Merriman Avenue, Stellenbosch",POINT(18.872207 -33.923615),3
+43,Canvas Table,"77 Adam Tas Road, Stellenbosch",POINT(18.874989 -33.942029),3
+44,Pebble Table,"80 Dorp Street, Stellenbosch",POINT(18.861372 -33.937789),3
+45,Bramble Table,"83 R44, Helderberg",POINT(18.855081 -33.886072),3
+46,Willow Lane,"11 Merriman Avenue, Stellenbosch",POINT(18.872097 -33.923935),4
+47,Ochre Lane,"14 Adam Tas Road, Stellenbosch",POINT(18.875250 -33.945219),4
+48,Fig Lane,"17 Dorp Street, Stellenbosch",POINT(18.862456 -33.936723),4
+49,Morrow Lane,"20 Victoria Street, Stellenbosch",POINT(18.867047 -33.929875),4
+50,Copper Lane,"23 Bird Street, Stellenbosch",POINT(18.854742 -33.940952),4
+51,Juniper Lane,"26 Merriman Avenue, Stellenbosch",POINT(18.872875 -33.922963),4
+52,Atlas Lane,"29 Adam Tas Road, Stellenbosch",POINT(18.874675 -33.943731),4
+53,Saffron Lane,"32 Dorp Street, Stellenbosch",POINT(18.862278 -33.938389),4
+54,Cinder Lane,"35 Victoria Street, Stellenbosch",POINT(18.867440 -33.930091),4
+55,Linen Lane,"38 Bird Street, Stellenbosch",POINT(18.855455 -33.938337),4
+56,Dapple Lane,"41 Merriman Avenue, Stellenbosch",POINT(18.872011 -33.923275),4
+57,Marble Lane,"44 Adam Tas Road, Stellenbosch",POINT(18.874194 -33.945112),4
+58,Hearth Lane,"47 Dorp Street, Stellenbosch",POINT(18.863388 -33.936490),4
+59,Indigo Lane,"50 Victoria Street, Stellenbosch",POINT(18.864773 -33.930315),4
+60,Pine Lane,"53 Bird Street, Stellenbosch",POINT(18.853748 -33.939985),4
+61,Solstice Lane,"56 Merriman Avenue, Stellenbosch",POINT(18.873045 -33.922135),4
+62,Fable Lane,"59 Adam Tas Road, Stellenbosch",POINT(18.877024 -33.943356),4
+63,Tandem Lane,"62 Dorp Street, Stellenbosch",POINT(18.862881 -33.937601),4
+64,Terrace Lane,"65 Victoria Street, Stellenbosch",POINT(18.864353 -33.929649),4
+65,Clover Lane,"68 Bird Street, Stellenbosch",POINT(18.853881 -33.939232),4
+66,Ripple Lane,"71 Merriman Avenue, Stellenbosch",POINT(18.873645 -33.924762),4
+67,Fern Lane,"74 Adam Tas Road, Stellenbosch",POINT(18.874649 -33.944729),4
+68,Canvas Lane,"77 Dorp Street, Stellenbosch",POINT(18.860472 -33.938023),4
+69,Pebble Lane,"80 Victoria Street, Stellenbosch",POINT(18.864575 -33.927390),4
+70,Bramble Lane,"83 Bird Street, Stellenbosch",POINT(18.856450 -33.937364),4
+71,Willow Yard,"11 Adam Tas Road, Stellenbosch",POINT(18.877810 -33.944353),5
+72,Ochre Yard,"14 Dorp Street, Stellenbosch",POINT(18.862411 -33.936755),5
+73,Fig Yard,"17 Victoria Street, Stellenbosch",POINT(18.864252 -33.930518),5
+74,Morrow Yard,"20 Bird Street, Stellenbosch",POINT(18.855832 -33.937068),5
+75,Copper Yard,"23 Merriman Avenue, Stellenbosch",POINT(18.873523 -33.922963),5
+76,Juniper Yard,"26 Adam Tas Road, Stellenbosch",POINT(18.875882 -33.945836),5
+77,Atlas Yard,"29 Dorp Street, Stellenbosch",POINT(18.860886 -33.934856),5
+78,Saffron Yard,"32 Victoria Street, Stellenbosch",POINT(18.867989 -33.929938),5
+79,Cinder Yard,"35 Bird Street, Stellenbosch",POINT(18.852578 -33.938501),5
+80,Linen Yard,"38 Merriman Avenue, Stellenbosch",POINT(18.872194 -33.922527),5
+81,Dapple Yard,"41 Adam Tas Road, Stellenbosch",POINT(18.876353 -33.942124),5
+82,Marble Yard,"44 Dorp Street, Stellenbosch",POINT(18.862017 -33.935145),5
+83,Hearth Yard,"47 Victoria Street, Stellenbosch",POINT(18.864154 -33.930256),5
+84,Indigo Yard,"50 Bird Street, Stellenbosch",POINT(18.855848 -33.937128),5
+85,Pine Yard,"53 Merriman Avenue, Stellenbosch",POINT(18.871046 -33.922071),5
+86,Solstice Yard,"56 Adam Tas Road, Stellenbosch",POINT(18.876489 -33.945597),5
+87,Fable Yard,"59 Dorp Street, Stellenbosch",POINT(18.863356 -33.936923),5
+88,Tandem Yard,"62 Victoria Street, Stellenbosch",POINT(18.867376 -33.930486),5
+89,Terrace Yard,"65 Bird Street, Stellenbosch",POINT(18.855332 -33.940255),5
+90,Clover Yard,"68 Merriman Avenue, Stellenbosch",POINT(18.873632 -33.924890),5
+91,Ripple Yard,"71 Adam Tas Road, Stellenbosch",POINT(18.874447 -33.943177),5
+92,Fern Yard,"74 Dorp Street, Stellenbosch",POINT(18.863373 -33.936436),5
+93,Canvas Yard,"77 Victoria Street, Stellenbosch",POINT(18.865804 -33.930237),5
+94,Pebble Yard,"80 Bird Street, Stellenbosch",POINT(18.854507 -33.937844),5
+95,Bramble Yard,"83 Merriman Avenue, Stellenbosch",POINT(18.873195 -33.924058),5
+96,Olive Yard,"86 Adam Tas Road, Stellenbosch",POINT(18.875110 -33.945655),5
+97,Elm Yard,"89 Dorp Street, Stellenbosch",POINT(18.861967 -33.936115),5
+98,Flint Yard,"92 Victoria Street, Stellenbosch",POINT(18.865895 -33.927739),5
+99,Orchid Yard,"95 Bird Street, Stellenbosch",POINT(18.855858 -33.940680),5
+100,Tallow Yard,"98 Merriman Avenue, Stellenbosch",POINT(18.874389 -33.923445),5
+101,Nectar Yard,"101 Adam Tas Road, Stellenbosch",POINT(18.877866 -33.945199),5
+102,Pavilion Yard,"104 Dorp Street, Stellenbosch",POINT(18.861134 -33.937011),5
+103,Willow Room,"107 Victoria Street, Stellenbosch",POINT(18.864172 -33.929820),5
+104,Ochre Room,"110 Bird Street, Stellenbosch",POINT(18.853178 -33.938319),5
+105,Fig Room,"113 R44, Helderberg",POINT(18.854905 -33.885220),5
+106,Willow Room,"11 Dorp Street, Stellenbosch",POINT(18.863307 -33.937639),6
+107,Ochre Room,"14 Victoria Street, Stellenbosch",POINT(18.864700 -33.927028),6
+108,Fig Room,"17 Bird Street, Stellenbosch",POINT(18.855438 -33.940157),6
+109,Morrow Room,"20 Merriman Avenue, Stellenbosch",POINT(18.874364 -33.922490),6
+110,Copper Room,"23 Adam Tas Road, Stellenbosch",POINT(18.875274 -33.945092),6
+111,Juniper Room,"26 Dorp Street, Stellenbosch",POINT(18.860013 -33.937426),6
+112,Atlas Room,"29 Victoria Street, Stellenbosch",POINT(18.865312 -33.928171),6
+113,Saffron Room,"32 Bird Street, Stellenbosch",POINT(18.854390 -33.939703),6
+114,Cinder Room,"35 R44, Helderberg",POINT(18.853320 -33.887416),6
+115,Willow Kitchen,"11 Victoria Street, Stellenbosch",POINT(18.865023 -33.930489),7
+116,Ochre Kitchen,"14 Bird Street, Stellenbosch",POINT(18.854616 -33.940798),7
+117,Fig Kitchen,"17 Merriman Avenue, Stellenbosch",POINT(18.874617 -33.921293),7
+118,Morrow Kitchen,"20 Adam Tas Road, Stellenbosch",POINT(18.877679 -33.945345),7
+119,Copper Kitchen,"23 Dorp Street, Stellenbosch",POINT(18.862371 -33.937083),7
+120,Juniper Kitchen,"26 Victoria Street, Stellenbosch",POINT(18.864558 -33.929802),7
+121,Atlas Kitchen,"29 Bird Street, Stellenbosch",POINT(18.853265 -33.940318),7
+122,Saffron Kitchen,"32 Merriman Avenue, Stellenbosch",POINT(18.874804 -33.923363),7
+123,Cinder Kitchen,"35 Adam Tas Road, Stellenbosch",POINT(18.874818 -33.944697),7
+124,Linen Kitchen,"38 Dorp Street, Stellenbosch",POINT(18.859483 -33.938034),7
