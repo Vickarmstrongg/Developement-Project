@@ -52,4 +52,49 @@ select {
   white-space: nowrap;
 }
 
-.sidebar
+.sidebar-section {
+  margin-bottom: 25px;
+}
+
+.sidebar-title {
+  display: block;
+  padding: 0 7px 9px;
+  color: #7fa09d;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  font-weight: 700
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 35px;
+  padding: 8px 9px;
+  border-radius: 7px;
+  color: #b6cecb;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.sidevar-link span {
+  width: 13px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.sidevar-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-link.active {
+  background: #2d9088;
+  color: white;
+}
