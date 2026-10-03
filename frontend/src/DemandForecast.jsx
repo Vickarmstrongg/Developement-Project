@@ -15,4 +15,47 @@ function DemandForecast() {
         { day: "Sat", orders: 220, customers: 200, revenue: 9800 },
         { day: "Sun", orders: 230, customers: 210, revenue: 10200 },
     ];
-    // Temporary data - remove when connected to backend   
+    // Temporary data - remove when connected to backend 
+    
+return (
+    <div className="app-layout">
+
+        <aside className="sidebar">
+            <div className="brand">
+                <span className="brand-name">Byte & Bite</span>
+
+                <img
+                    src={logo}
+                    alt="Byte & Bite"
+                    className="brand-logo"
+                />
+            </div>
+
+            <div className="sidebar-section">
+                <span className="sidebar-title">WORKSPACE</span>
+                <nav>
+                    <a href="#rush-hour-radar" className="sidebar-link">
+                        <span>⌁</span>
+                        Rush Hour Radar
+                    </a>
+
+                    <a href="#demand-forecast" className="sidebar-link active">
+                        <span>◉</span>
+                        Demand Forecast
+                    </a>
+
+                     <a href="#demand-forecast" className="sidebar-link active">
+                        <span>◇</span>
+                        Fair Comparison
+                    </a>  
+
+                </nav>
+            </div>
+
+            <div className
+
+
+
+
+        </aside>
+    </div>
