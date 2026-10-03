@@ -48,14 +48,27 @@ return (
                         <span>◇</span>
                         Fair Comparison
                     </a>  
-
                 </nav>
             </div>
 
-            <div className
+            <div className="sidebar-section">
+                <span className="sidebar-title">Reporting</span>
+                <nav>
+                    <a href="#reports" className="sidebar-link">
+                        <span>↥</span>
+                        Reports
+                    </a>
+                </nav>
+            </div>
 
+            <div className="user-profile">
+                <div className="user-avatar">
+                    U
+                </div>
 
-
-
+                <div className="user-details">
+                    <strong>User Name</strong>
+                    <span>Manager</span>
+                </div>
+            </div>
         </aside>
-    </div>
