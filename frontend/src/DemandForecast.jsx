@@ -72,3 +72,33 @@ return (
                 </div>
             </div>
         </aside>
+
+        <main className="main-content">
+
+            <header className="topbar">
+                <div className="breadcrumb">
+                    Workspace / <strong>Demand Forecast</strong>
+                </div>
+
+                <div className="topbar-actions">
+                    <select className="business-selector">
+                        <option>All Businesses</option>
+                        <option>Vendor 1</option>
+                        <option> Vendor 2</option>
+                    </select>
+                </div>
+            </header>
+            
+            <div className="page-content">
+                <div className="page-heading">
+                    <div>
+                        <h1>Demand Forecast</h1>
+                        <p>View expected demand for your business over the next seven days.</p>
+                </div>
+            </div>
+
+
+
+
+
+        </main>
