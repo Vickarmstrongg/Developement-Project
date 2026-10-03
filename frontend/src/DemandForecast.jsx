@@ -97,6 +97,38 @@ return (
                 </div>
             </div>
 
+            <section className="summary-grid">
+                <div className="summary-card">
+                    <span>EXPECTED ORDERS</span>
+                    <strong>
+                        {forecastSummary.expectedOrders}
+                    </strong>
+                    <small>
+                        Next 7 days
+                    </small>
+                </div>
+
+                 <div className="summary-card">
+                    <span>EXPECTED CUSTOMERS</span>
+                    <strong>
+                        {forecastSummary.expectedCustomers}
+                    </strong>
+                    <small>
+                        Next 7 days
+                    </small>
+                </div>
+
+                 <div className="summary-card">
+                    <span>FORECAST PERIOD</span>
+                    <strong>
+                        {forecastSummary.forecastPeriod}
+                    </strong>
+                    <small>
+                        Weekly forecast
+                    </small>
+                </div>
+            </section>
+
 
 
 
