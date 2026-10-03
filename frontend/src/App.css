@@ -129,6 +129,13 @@ select {
   font-size: 8px;
 }
 
+.user-details strong {
+  display: block;
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+}
+
 .main-content {
   flex: 1;
   min-width: 0;

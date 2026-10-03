@@ -1,6 +1,11 @@
 import logo from "./assets/Logo.png";
 
 function DemandForecast() {
+    const currentUser = {
+        name: "User Name",
+        role: "Manager",
+    };
+
     const forecastSummary = {
         expectedOrders: 1240,
         expectedCustomers: 1080,
@@ -65,13 +70,14 @@ function DemandForecast() {
                 </div>
 
                 <div className="user-profile">
+
                     <div className="user-avatar">
-                        U
+                        {currentUser.name.charAt(0)}
                     </div>
 
                     <div className="user-details">
-                        <strong>User Name</strong>
-                        <span>Manager</span>
+                        <strong>{currentUser.name}</strong>
+                        <span>{currentUser.role}</span>
                     </div>
                 </div>
             </aside>
