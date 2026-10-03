@@ -32,11 +32,11 @@ select {
 }
 
 .brand {
-  dispay: flex;
+  display: flex;
   align-items: center;
   justify-content: flex-start;
   padding: 0 5px 25px;
-  gap: 5px
+  gap: 5px;
 }
 
 .brand-logo {
@@ -62,7 +62,7 @@ select {
   color: #7fa09d;
   font-size: 8px;
   letter-spacing: 1.2px;
-  font-weight: 700
+  font-weight: 700;
 }
 
 .sidebar nav {
@@ -84,13 +84,13 @@ select {
   font-weight: 500;
 }
 
-.sidevar-link span {
+.sidebar-link span {
   width: 13px;
   text-align: center;
   font-size: 11px;
 }
 
-.sidevar-link:hover {
+.sidebar-link:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -201,7 +201,7 @@ select {
 
 .summary-card {
   background: white;
-  border: 1px, solid #e0e8e5;
+  border: 1px solid #e0e8e5;
   border-radius: 10px;
   padding: 17px;
   box-shadow: 0 3px 12px rgba(20, 60, 60, 0.04);
@@ -229,7 +229,7 @@ select {
 
 .forecast-card {
   background: white;
-  border: 1-x solid #e0e8e5;
+  border: 1px solid #e0e8e5;
   border-radius: 10px;
   padding: 19px;
   box-shadow: 0 3px 12px rgba(20, 60, 60, 0.04);
@@ -304,11 +304,11 @@ select {
 }
 
 .line-two {
-  top: 85px
+  top: 85px;
 }
 
 .line-three {
-  top: 150px
+  top: 150px;
 }
 
 .line-four {
