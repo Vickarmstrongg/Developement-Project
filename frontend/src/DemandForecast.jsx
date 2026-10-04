@@ -68,18 +68,6 @@ function DemandForecast() {
                         </a>
                     </nav>
                 </div>
-
-                <div className="user-profile">
-
-                    <div className="user-avatar">
-                        {currentUser.name.charAt(0)}
-                    </div>
-
-                    <div className="user-details">
-                        <strong>{currentUser.name}</strong>
-                        <span>{currentUser.role}</span>
-                    </div>
-                </div>
             </aside>
 
             <main className="main-content">
@@ -89,17 +77,30 @@ function DemandForecast() {
                         Workspace / <strong>Demand Forecast</strong>
                     </div>
 
-                    <div className="topbar-actions">
+                    <div className="user-profile">
 
-                        <select className="business-selector">
-                            <option>All Businesses</option>
-                            <option>Vendor 1</option>
-                            <option> Vendor 2</option>
-                        </select>
+                        <div className="user-avatar">
+                            {currentUser.name.charAt(0)}
+                        </div>
+
+                        <div className="user-details">
+                            <strong>{currentUser.name}</strong>
+                            <span>{currentUser.role}</span>
+                        </div>
                     </div>
+
                 </header>
 
                 <div className="page-content">
+
+                    <div className="business-selector-row">
+                        <select className="business-selector">
+                            <option>All Businesses</option>
+                            <option>Vendor 1</option>
+                            <option>Vendor 2</option>
+                        </select>
+                    </div>
+
                     <div className="page-heading">
 
                         <div>
