@@ -18,16 +18,16 @@ import {
 } from "recharts";
 
 function formatRand(value) {
-    return `R ${value.toLocalString("en-Za")}`;
+    return `R ${value.toLocaleString("en-ZA")}`;
 }
 
 function ChartTooltip({ active, payload }) {
-    if (!active || !payload || payload.length === 0 ) return null;
+    if (!active || !payload || payload.length === 0) return null;
 
     const row = payload[0].payload;
 
     return (
-        <div className="cahrt-tooltip">
+        <div className="chart-tooltip">
             <strong>{row.day}</strong>
 
             <div className="tooltip-row">
@@ -66,7 +66,7 @@ function DemandForecast() {
     const forecastSummary = {
         expectedOrders: 1240,
         expectedCustomers: 1080,
-        forecastPeriod: "7 Days",
+        expectedRevenue: 61600,
     };
 
     const forecastData = [
@@ -181,7 +181,7 @@ function DemandForecast() {
                     <section className="summary-grid">
 
                         <div className="summary-card">
-                            <span>EXPECTED ORDERS</span>
+                            <span>EXPECTED TRANSACTIONS</span>
                             <strong>
                                 {forecastSummary.expectedOrders}
                             </strong>
@@ -201,9 +201,9 @@ function DemandForecast() {
                         </div>
 
                         <div className="summary-card">
-                            <span>FORECAST PERIOD</span>
+                            <span>EXPECTED REVENUE</span>
                             <strong>
-                                {forecastSummary.forecastPeriod}
+                                {formatRand(forecastSummary.expectedRevenue)}
                             </strong>
                             <small>
                                 Weekly forecast
@@ -237,50 +237,112 @@ function DemandForecast() {
                         </div>
 
                         <div className="forecast-chart">
-                            <div className="chart-grid-line line-one"></div>
-                            <div className="chart-grid-line line-two"></div>
-                            <div className="chart-grid-line line-three"></div>
-                            <div className="chart-grid-line line-four"></div>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                    data={forecastData}
+                                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                >
+                                    <CartesianGrid stroke="#edf1ef" vertical={false} />
 
-                            <svg
-                                className="forecast-svg"
-                                viewBox="0 0 700 260"
-                                preserveAspectRatio="none"
-                            >
+                                    <XAxis
+                                        dataKey="day"
+                                        tick={{ fontSize: 11, fill: "#7c8987" }}
+                                        tickLine={false}
+                                        axisLine={{ stroke: "#dfe7e4" }}
+                                    />
 
-                                <polyline
-                                    points="20,190 130,170 240,180 350,140 460,120 570,135 680,105"
-                                    className="line-orders"
-                                />
+                                    <YAxis
+                                        yAxisId="left"
+                                        tick={{ fontSize: 11, fill: "#7c8987" }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={40}
+                                    />
 
-                                <polyline
-                                    points="20,210 130,195 240,200 350,165 460,145 570,160 680,130"
-                                    className="line-customers"
-                                />
+                                    <YAxis
+                                        yAxisId="right"
+                                        orientation="right"
+                                        tick={{ fontSize: 11, fill: "#7c8987" }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={48}
+                                        tickFormatter={(v) => `R${v / 1000}k`}
+                                    />
 
-                                <polyline
-                                    points="20,225 130,205 240,190 350,175 460,145 570,125 680,90"
-                                    className="line-revenue"
-                                />
+                                    <Tooltip
+                                        content={<ChartTooltip />}
+                                        cursor={{ stroke: "#c9d6d2" }}
+                                    />
 
-                            </svg>
+                                    <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="orders"
+                                        stroke="#b34c57"
+                                        strokeWidth={3}
+                                        dot={{ r: 3 }}
+                                        activeDot={{ r: 6 }}
+                                    />
 
-                            <div className="chart-labels">
-                                {forecastData.map((item) => (
-                                    <span key={item.day}>
-                                        {item.day}
-                                    </span>
-                                ))}
-                            </div>
+                                    <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="customers"
+                                        stroke="#2e8f87"
+                                        strokeWidth={3}
+                                        dot={{ r: 3 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+
+                                    <Line
+                                        yAxisId="right"
+                                        type="monotone"
+                                        dataKey="revenue"
+                                        stroke="#7faaa4"
+                                        strokeWidth={3}
+                                        strokeDasharray="7 5"
+                                        dot={{ r: 3 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
+
+                        <details className="forecast-details">
+                            <summary>View daily figures</summary>
+
+                            <div className="table-scroll">
+                                <table className="forecast-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Transactions</th>
+                                            <th>Customers</th>
+                                            <th>Revenue</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {forecastData.map((item) => (
+                                            <tr key={item.day}>
+                                                <td>{item.day}</td>
+                                                <td>{item.orders}</td>
+                                                <td>{item.customers}</td>
+                                                <td>{formatRand(item.revenue)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
 
                         <div className="forecast-note">
                             Forecasts are estimates based on historical transaction patterns and may be affected by contextual factors such as holidays, exams and events.
                         </div>
                     </section>
-                </div>
-            </main>
-        </div>
+                </div >
+            </main >
+        </div >
     );
 }
 export default DemandForecast;

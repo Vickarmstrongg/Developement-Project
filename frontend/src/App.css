@@ -312,79 +312,95 @@ select {
 }
 
 .legend-revenue {
-  background: #7faaa4;
+  background: repeating-linear-gradient(
+    90deg,
+    #7faaa4 0,
+    #7faaa4 5px,
+    transparent 5px,
+    transparent 8px
+  );
 }
 
 .forecast-chart {
   position: relative;
   height: 300px;
   margin-top: 20px;
-  padding: 10px 15px 30px;
 }
 
-.chart-grid-line {
-  position: absolute;
-  left: 15px;
-  right: 15px;
-  border-top: 1px solid #edf1ef;
+.chart-tooltip {
+  min-width: 190px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #d8e3df;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(20, 60, 60, 0.12);
+  color: #304846;
+  font-size: 11px;
 }
 
-.line-one {
-  top: 20px;
+.chart-tooltip > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #172f32;
+  font-size: 12px;
 }
 
-.line-two {
-  top: 85px;
-}
-
-.line-three {
-  top: 150px;
-}
-
-.line-four {
-  top: 215px;
-}
-
-.forecast-svg {
-  position: absolute;
-  top: 10px;
-  left: 15px;
-  width: calc(100% - 30px);
-  height: 240px;
-  overflow: visible;
-}
-
-.forecast-svg polyline {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.line-orders {
-  stroke: #b34c57;
-}
-
-.line-customers {
-  stroke: #2e8f87;
-}
-
-.line-revenue {
-  stroke: #7faaa4;
-}
-
-.chart-labels {
-  position: absolute;
-  left: 15px;
-  right: 15px;
-  bottom: 3px;
+.tooltip-row {
   display: flex;
   justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
 }
 
-.chart-labels span {
-  color: #7c8987;
-  font-size: 9px;
+.tooltip-row span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-row i {
+  width: 18px;
+  height: 2px;
+  display: inline-block;
+}
+
+.forecast-details {
+  margin-top: 12px;
+}
+
+.forecast-details summary {
+  cursor: pointer;
+  color: #2d9088;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.table-scroll {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.forecast-table th,
+.forecast-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #edf1ef;
+  white-space: nowrap;
+}
+
+.forecast-table th {
+  color: #71817e;
+  font-weight: 700;
+}
+
+.forecast-table td {
+  color: #304846;
 }
 
 .forecast-note {
