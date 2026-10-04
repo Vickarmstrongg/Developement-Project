@@ -1,4 +1,11 @@
 import logo from "./assets/Logo.png";
+import { 
+    Bell,
+    Clock3,
+    TrendingUp,
+    Scale,
+    FileText,
+} from "lucide-react";
 
 function DemandForecast() {
     const currentUser = {
@@ -43,17 +50,17 @@ function DemandForecast() {
 
                     <nav>
                         <a href="#rush-hour-radar" className="sidebar-link">
-                            <span>⌁</span>
+                            <Clock3 size={16} />
                             Rush Hour Radar
                         </a>
 
                         <a href="#demand-forecast" className="sidebar-link active">
-                            <span>◉</span>
+                            <TrendingUp size={16} />
                             Demand Forecast
                         </a>
 
                         <a href="#fair-comparison" className="sidebar-link">
-                            <span>◇</span>
+                            <Scale size={16} />
                             Fair Comparison
                         </a>
                     </nav>
@@ -63,7 +70,7 @@ function DemandForecast() {
                     <span className="sidebar-title">Reporting</span>
                     <nav>
                         <a href="#reports" className="sidebar-link">
-                            <span>↥</span>
+                            <FileText size={16} />
                             Reports
                         </a>
                     </nav>
@@ -77,18 +84,30 @@ function DemandForecast() {
                         Workspace / <strong>Demand Forecast</strong>
                     </div>
 
-                    <div className="user-profile">
+                    <div className="topbar-right">
 
-                        <div className="user-avatar">
-                            {currentUser.name.charAt(0)}
-                        </div>
+                        <button
+                            className="notification-button"
+                            onClick={() => window.location.href = "/notifications"}
+                            aria-label="Notifications"
+                            title="Notifications"
+                        >
+                            <Bell size={18} />
+                        </button>
 
-                        <div className="user-details">
-                            <strong>{currentUser.name}</strong>
-                            <span>{currentUser.role}</span>
+
+                        <div className="user-profile">
+
+                            <div className="user-avatar">
+                                {currentUser.name.charAt(0)}
+                            </div>
+
+                            <div className="user-details">
+                                <strong>{currentUser.name}</strong>
+                                <span>{currentUser.role}</span>
+                            </div>
                         </div>
                     </div>
-
                 </header>
 
                 <div className="page-content">

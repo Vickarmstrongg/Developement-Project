@@ -84,10 +84,10 @@ select {
   font-weight: 500;
 }
 
-.sidebar-link span {
-  width: 13px;
-  text-align: center;
-  font-size: 11px;
+.sidebar-link svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .sidebar-link:hover {
@@ -97,6 +97,29 @@ select {
 .sidebar-link.active {
   background: #2d9088;
   color: white;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #304846;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notification-button:hover {
+  background: #f3f7f5;
 }
 
 .user-profile {
