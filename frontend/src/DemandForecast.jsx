@@ -1,11 +1,61 @@
 import logo from "./assets/Logo.png";
-import { 
+import {
     Bell,
     Clock3,
     TrendingUp,
     Scale,
     FileText,
 } from "lucide-react";
+
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
+
+function formatRand(value) {
+    return `R ${value.toLocalString("en-Za")}`;
+}
+
+function ChartTooltip({ active, payload }) {
+    if (!active || !payload || payload.length === 0 ) return null;
+
+    const row = payload[0].payload;
+
+    return (
+        <div className="cahrt-tooltip">
+            <strong>{row.day}</strong>
+
+            <div className="tooltip-row">
+                <span>
+                    <i className="legend-orders"></i>
+                    Transactions
+                </span>
+                <b>{row.orders}</b>
+            </div>
+
+            <div className="tooltip-row">
+                <span>
+                    <i className="legend-customers"></i>
+                    Customers
+                </span>
+                <b>{row.customers}</b>
+            </div>
+
+            <div className="tooltip-row">
+                <span>
+                    <i className="legend-revenue"></i>
+                    Revenue
+                </span>
+                <b>{formatRand(row.revenue)}</b>
+            </div>
+        </div>
+    );
+}
 
 function DemandForecast() {
     const currentUser = {
