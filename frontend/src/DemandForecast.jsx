@@ -1,3 +1,4 @@
+import { useState } from "react";
 import logo from "./assets/Logo.png";
 import {
     Bell,
@@ -5,6 +6,7 @@ import {
     TrendingUp,
     Scale,
     FileText,
+    LogOut,
 } from "lucide-react";
 
 import {
@@ -57,7 +59,9 @@ function ChartTooltip({ active, payload }) {
     );
 }
 
-function DemandForecast() {
+function DemandForecast({ onLogout }) {
+    const [profileOpen, setProfileOpen] = useState(false);
+
     const currentUser = {
         name: "User Name",
         role: "Manager",
@@ -145,18 +149,36 @@ function DemandForecast() {
                             <Bell size={18} />
                         </button>
 
+                        <div className="profile-container">
+                            <button
+                                className="user-profile"
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                aria-label="Open user menu"
+                            >
 
-                        <div className="user-profile">
+                                <div className="user-avatar">
+                                    {currentUser.name.charAt(0)}
+                                </div>
 
-                            <div className="user-avatar">
-                                {currentUser.name.charAt(0)}
-                            </div>
+                                <div className="user-details">
+                                    <strong>{currentUser.name}</strong>
+                                    <span>{currentUser.role}</span>
+                                </div>
+                            </button>
 
-                            <div className="user-details">
-                                <strong>{currentUser.name}</strong>
-                                <span>{currentUser.role}</span>
-                            </div>
+                            {profileOpen && (
+                                <div className="profile-dropdown">
+                                    <button
+                                        className="logout-option"
+                                        onClick={onLogout}
+                                    >
+                                        <LogOut size={15} />
+                                        Log Out
+                                    </button>
+                                </div>
+                            )}
                         </div>
+
                     </div>
                 </header>
 

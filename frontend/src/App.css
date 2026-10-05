@@ -122,13 +122,59 @@ select {
   background: #f3f7f5;
 }
 
+.profile-container {
+  position: relative;
+}
+
 .user-profile {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  border: none;
   background: #f3f7f5;
   border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.user-profile:hover {
+  background: #eaf2ef;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 150px;
+  padding: 5px;
+  background: white;
+  border: 1px solid #dfe7e4;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(20, 60, 60, 0.12);
+  z-index: 100;
+}
+
+.logout-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #304846;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.logout-option:hover {
+  background: #f3f7f5;
+  color: #2d9088;
 }
 
 .user-avatar {
@@ -312,13 +358,11 @@ select {
 }
 
 .legend-revenue {
-  background: repeating-linear-gradient(
-    90deg,
-    #7faaa4 0,
-    #7faaa4 5px,
-    transparent 5px,
-    transparent 8px
-  );
+  background: repeating-linear-gradient(90deg,
+      #7faaa4 0,
+      #7faaa4 5px,
+      transparent 5px,
+      transparent 8px);
 }
 
 .forecast-chart {
@@ -338,7 +382,7 @@ select {
   font-size: 11px;
 }
 
-.chart-tooltip > strong {
+.chart-tooltip>strong {
   display: block;
   margin-bottom: 6px;
   color: #172f32;

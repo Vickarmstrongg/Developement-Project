@@ -12,7 +12,9 @@ function App() {
     );
   }
 
-  return <DemandForecast />;
+  return (
+    <DemandForecast onLogout={() => setLoggedIn(false)} />
+  );
 }
 
 export default App;
