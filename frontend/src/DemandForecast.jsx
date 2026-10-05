@@ -73,6 +73,8 @@ function DemandForecast({ onLogout }) {
         expectedRevenue: 0,
     });
 
+    const [forecastPeriod, setForecastPeriod] = useState("");
+
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -150,6 +152,18 @@ function DemandForecast({ onLogout }) {
                     customers: point.expected_customers,
                     revenue: point.expected_revenue,
                 }));
+
+                const firstDate = new Date(data.points[0].date);
+                const lastDate = new Date(data.points[data.points.length - 1].date);
+
+                const formatDate = (date) =>
+                    date.toLocaleDateString("en-ZA", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                    });
+
+                setForecastPeriod(`${formatDate(firstDate)} – ${formatDate(lastDate)}`);
 
                 setForecastData(formattedData);
 
@@ -355,7 +369,7 @@ function DemandForecast({ onLogout }) {
                                     <strong>
                                         {forecastSummary.expectedOrders}
                                     </strong>
-                                    <small>Forecast period</small>
+                                    <small>{forecastPeriod}</small>
                                 </div>
 
                                 <div className="summary-card">
@@ -363,7 +377,7 @@ function DemandForecast({ onLogout }) {
                                     <strong>
                                         {forecastSummary.expectedCustomers}
                                     </strong>
-                                    <small>Forecast period</small>
+                                    <small>{forecastPeriod}</small>
                                 </div>
 
                                 <div className="summary-card">
@@ -373,7 +387,7 @@ function DemandForecast({ onLogout }) {
                                             forecastSummary.expectedRevenue
                                         )}
                                     </strong>
-                                    <small>Forecast period</small>
+                                    <small>{forecastPeriod}</small>
                                 </div>
                             </section>
 
