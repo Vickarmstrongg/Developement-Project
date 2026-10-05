@@ -30,9 +30,10 @@ def get_last_n_occurrences(reference_date, day_of_week, n=4):
     most_recent = reference_date - timedelta(days=days_back)
     return [most_recent - timedelta(weeks=i) for i in range(n)][::-1]
 
-
 def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
-    """Core calculation: compares the latest occurrence of this weekday/hour against a 4-week baseline."""
+    """Core calculation: compares the latest occurrence against a 4-week baseline.
+    Privacy is checked using TOTAL distinct students across all 4 weeks combined,
+    not any single day — a single day is too sparse to fairly assess."""
     dates = get_last_n_occurrences(reference_date, day_of_week, n=4)
 
     rows = db.query(
@@ -41,22 +42,23 @@ def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
     ).filter(
         models.Transaction.vendor_id == vendor_id,
         func.date(models.Transaction.datetime).in_(dates),
-        func.extract("hour", models.Transaction.datetime) == hour,
+        func.extract("hour", models.Transaction.datetime).in_(
+            [hour - 1, hour, hour + 1]
+        ),
     ).all()
 
     counts = {d: 0 for d in dates}
-    students_by_date = {d: set() for d in dates}
+    all_students = set()
     for row in rows:
         counts[row.d] += 1
-        students_by_date[row.d].add(row.student_id)
+        all_students.add(row.student_id)
+
+    if is_suppressed(len(all_students)):
+        return {"status": "suppressed", "level": None, "student_count": len(all_students)}
 
     counts_list = [counts[d] for d in dates]
     baseline = sum(counts_list[:3]) / 3 if counts_list[:3] else 0
     current = counts_list[-1]
-    current_students = len(students_by_date[dates[-1]])
-
-    if is_suppressed(current_students):
-        return {"status": "suppressed", "level": None, "student_count": current_students}
 
     if baseline == 0:
         level = "busy" if current > 0 else "normal"
@@ -76,7 +78,7 @@ def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
     return {
         "status": "ok",
         "level": level,
-        "student_count": current_students,
+        "student_count": len(all_students),
         "recommendation": recommendation,
     }
 
@@ -105,9 +107,9 @@ def get_vendor_size_tiers(db, type_id):
             tiers[v.vendor_id] = "large"
     return tiers
 
-
 def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
-    """Same calculation as get_vendor_status, but for many vendors in ONE database query instead of one-per-vendor."""
+    """Same calculation as get_vendor_status, but for many vendors in one query.
+    Privacy checked against TOTAL distinct students across all 4 weeks combined."""
     dates = get_last_n_occurrences(reference_date, day_of_week, n=4)
 
     rows = db.query(
@@ -117,25 +119,28 @@ def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
     ).filter(
         models.Transaction.vendor_id.in_(vendor_ids),
         func.date(models.Transaction.datetime).in_(dates),
-        func.extract("hour", models.Transaction.datetime) == hour,
+        func.extract("hour", models.Transaction.datetime).in_(
+            [hour - 1, hour, hour + 1]
+        ),
     ).all()
 
     counts = {vid: {d: 0 for d in dates} for vid in vendor_ids}
-    students_by_date = {vid: {d: set() for d in dates} for vid in vendor_ids}
+    all_students_by_vendor = {vid: set() for vid in vendor_ids}
     for row in rows:
         counts[row.vendor_id][row.d] += 1
-        students_by_date[row.vendor_id][row.d].add(row.student_id)
+        all_students_by_vendor[row.vendor_id].add(row.student_id)
 
     results = {}
     for vid in vendor_ids:
+        student_count = len(all_students_by_vendor[vid])
+
+        if is_suppressed(student_count):
+            results[vid] = {"status": "suppressed", "level": None, "student_count": student_count}
+            continue
+
         counts_list = [counts[vid][d] for d in dates]
         baseline = sum(counts_list[:3]) / 3 if counts_list[:3] else 0
         current = counts_list[-1]
-        current_students = len(students_by_date[vid][dates[-1]])
-
-        if is_suppressed(current_students):
-            results[vid] = {"status": "suppressed", "level": None, "student_count": current_students}
-            continue
 
         if baseline == 0:
             level = "busy" if current > 0 else "normal"
@@ -154,7 +159,16 @@ def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
 
         results[vid] = {
             "status": "ok", "level": level,
-            "student_count": current_students,
+            "student_count": student_count,
             "recommendation": recommendation,
         }
     return results
+
+def get_weekly_pattern(db, vendor_id, reference_date):
+    """Returns the quiet/normal/busy level for every hour of every day, for one vendor."""
+    pattern = {}
+    for day_of_week in range(7):
+        for hour in range(24):
+            status = get_vendor_status(db, vendor_id, day_of_week, hour, reference_date)
+            pattern[f"{day_of_week}-{hour}"] = status["level"] if status["status"] == "ok" else "suppressed"
+    return pattern

@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy import func
 import database
 import models
-from rush_hour import get_bulk_vendor_status, get_vendor_size_tiers, get_reference_date, parse_gps
+from rush_hour import get_bulk_vendor_status, get_vendor_size_tiers, get_reference_date, parse_gps, get_vendor_status, get_weekly_pattern
 
 app = FastAPI(title="Byte & Bite API")
 app.add_middleware(
@@ -15,6 +15,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/vendors/{vendor_id}/weekly-pattern")
+def weekly_pattern(vendor_id: int, db: Session = Depends(database.get_db)):
+    reference_date = get_reference_date(db)
+    pattern = get_weekly_pattern(db, vendor_id, reference_date)
+    return {"vendor_id": vendor_id, "pattern": pattern}
 
 @app.get("/")
 def health_check():
