@@ -7,6 +7,7 @@ import {
     Scale,
     FileText,
     LogOut,
+    ChevronDown,
 } from "lucide-react";
 
 import {
@@ -164,6 +165,8 @@ function DemandForecast({ onLogout }) {
                                     <strong>{currentUser.name}</strong>
                                     <span>{currentUser.role}</span>
                                 </div>
+
+                                <ChevronDown size={14} className="profile-chevron" />
                             </button>
 
                             {profileOpen && (

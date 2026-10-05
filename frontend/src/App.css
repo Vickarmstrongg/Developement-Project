@@ -204,6 +204,11 @@ select {
   font-weight: 600;
 }
 
+.profile-chevron {
+  color: #71817e;
+  flex-shrink: 0;
+}
+
 .main-content {
   flex: 1;
   min-width: 0;
