@@ -19,7 +19,7 @@ function Login({ onLogin }) {
                 <div className="login-brand">
                     <img
                         src={logo}
-                        alst="Byte & Bite"
+                        alt="Byte & Bite"
                         className="login-logo"
                     />
 
@@ -94,8 +94,9 @@ function Login({ onLogin }) {
                 </form>
 
                 <div className="login-footer">
-                    <span>Byte & Bite</span>
-                    <span>Access is invite-only - Ask your Admin for a new invite</span>
+                    <div className="footer-divider"></div>
+
+                    <p>Access is invite-only - Ask your Admin for a new invite</p>
                 </div>
 
             </div>
