@@ -41,3 +41,13 @@ class User(Base):
     password_hash = Column(String)
     role = Column(String)
     vendor_id = Column(Integer, ForeignKey("vendors.vendor_id"))
+
+class ContextEvent(Base):
+    __tablename__ = "context_events"
+    context_id = Column(String, primary_key=True)
+    category = Column(String)
+    subcategory = Column(String)
+    title = Column(String)
+    start_date = Column(Date)
+    end_date = Column(Date)
+    notes = Column(String)
