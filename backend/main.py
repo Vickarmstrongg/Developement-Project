@@ -5,7 +5,9 @@ from sqlalchemy import text
 from sqlalchemy import func
 import database
 import models
+
 from rush_hour import get_bulk_vendor_status, get_vendor_size_tiers, get_reference_date, parse_gps, get_vendor_status, get_weekly_pattern
+from demand_forecast import calculate_demand_forecast
 
 app = FastAPI(title="Byte & Bite API")
 app.add_middleware(
@@ -58,6 +60,11 @@ def vendor_summary(vendor_id: int, db: Session = Depends(database.get_db)):
         "total_revenue": float(result.total_revenue) if result.total_revenue else 0,
         "avg_order_value": round(float(result.avg_order_value), 2) if result.avg_order_value else 0,
     }
+
+@app.get("/vendors/{vendor_id}/demand-forecast")
+def get_demand_forecast(vendor_id: int, db: Session = Depends(database.get_db)):
+    result = calculate_demand_forecast(db, vendor_id)
+    return result
 
 @app.get("/rush-hour-radar")
 def rush_hour_radar(

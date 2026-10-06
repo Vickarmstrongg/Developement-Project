@@ -1,24 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import "./App.css";
+import Login from "./Login";
+import DemandForecast from './DemandForecast';
 
 function App() {
-  const [vendors, setVendors] = useState([]);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/vendors")
-      .then((res) => res.json())
-      .then((data) => setVendors(data))
-      .catch((err) => console.error("Error fetching vendors:", err));
-  }, []);
+  if (!loggedIn) {
+    return (
+      <Login onLogin={() => setLoggedIn(true)} />
+    );
+  }
 
   return (
-    <div>
-      <h1>Byte & Bite — Vendors (test)</h1>
-      <ul>
-        {vendors.map((v) => (
-          <li key={v.vendor_id}>{v.name} — {v.address}</li>
-        ))}
-      </ul>
-    </div>
+    <DemandForecast onLogout={() => setLoggedIn(false)} />
   );
 }
 
