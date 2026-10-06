@@ -60,7 +60,7 @@ function ChartTooltip({ active, payload }) {
     );
 }
 
-function DemandForecast({ onLogout }) {
+function DemandForecast({ onLogout, onBack }) {
     const [profileOpen, setProfileOpen] = useState(false);
 
     const [vendors, setVendors] = useState([]);
@@ -221,7 +221,14 @@ function DemandForecast({ onLogout }) {
                     <span className="sidebar-title">WORKSPACE</span>
 
                     <nav>
-                        <a href="#rush-hour-radar" className="sidebar-link">
+                        <a
+                            href="#rush-hour-radar"
+                            className="sidebar-link"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onBack();
+                            }}
+                        >
                             <Clock3 size={16} />
                             Rush Hour Radar
                         </a>
