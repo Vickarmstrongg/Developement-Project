@@ -9,6 +9,9 @@ import models
 from rush_hour import get_bulk_vendor_status, get_vendor_size_tiers, get_reference_date, parse_gps, get_vendor_status, get_weekly_pattern
 from demand_forecast import calculate_demand_forecast
 
+from datetime import date
+from typing import Optional
+from fair_comparison import calculate_fair_comparison
 app = FastAPI(title="Byte & Bite API")
 app.add_middleware(
     CORSMiddleware,
@@ -65,6 +68,14 @@ def vendor_summary(vendor_id: int, db: Session = Depends(database.get_db)):
 def get_demand_forecast(vendor_id: int, db: Session = Depends(database.get_db)):
     result = calculate_demand_forecast(db, vendor_id)
     return result
+
+@app.get("/vendors/{vendor_id}/fair-comparison")
+def get_fair_comparison(
+    vendor_id: int,
+    filter_date: Optional[date] = None,
+    db: Session = Depends(database.get_db)
+):
+    return calculate_fair_comparison(db=db, vendor_id=vendor_id, filter_date=filter_date)
 
 @app.get("/rush-hour-radar")
 def rush_hour_radar(
