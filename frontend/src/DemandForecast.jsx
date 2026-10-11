@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import logo from "./assets/Logo.png";
+
 import {
     Bell,
     Clock3,
@@ -8,6 +9,7 @@ import {
     FileText,
     LogOut,
     ChevronDown,
+    LayoutDashboard,
 } from "lucide-react";
 
 import {
@@ -60,8 +62,14 @@ function ChartTooltip({ active, payload }) {
     );
 }
 
-function DemandForecast({ onLogout, onBack }) {
+function DemandForecast({
+    onLogout,
+    onBack,
+    onDashboard,
+}) {
     const [profileOpen, setProfileOpen] = useState(false);
+
+    const profileRef = useRef(null);
 
     const [vendors, setVendors] = useState([]);
     const [vendorId, setVendorId] = useState("21");
@@ -85,6 +93,29 @@ function DemandForecast({ onLogout, onBack }) {
     };
 
     useEffect(() => {
+        function handleClickOutside(event) {
+            if (
+                profileRef.current &&
+                !profileRef.current.contains(event.target)
+            ) {
+                setProfileOpen(false);
+            }
+        }
+
+        document.addEventListener(
+            "mousedown",
+            handleClickOutside
+        );
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleClickOutside
+            );
+        };
+    }, []);
+
+    useEffect(() => {
         async function loadVendors() {
             try {
                 setLoadingVendors(true);
@@ -94,7 +125,9 @@ function DemandForecast({ onLogout, onBack }) {
                 );
 
                 if (!response.ok) {
-                    throw new Error("Failed to load businesses.");
+                    throw new Error(
+                        "Failed to load businesses."
+                    );
                 }
 
                 const data = await response.json();
@@ -123,7 +156,9 @@ function DemandForecast({ onLogout, onBack }) {
                 );
 
                 if (!response.ok) {
-                    throw new Error("Failed to load demand forecast.");
+                    throw new Error(
+                        "Failed to load demand forecast."
+                    );
                 }
 
                 const data = await response.json();
@@ -134,27 +169,37 @@ function DemandForecast({ onLogout, onBack }) {
                         "No transaction history for this vendor"
                     ) {
                         setForecastData([]);
+
                         setForecastSummary({
                             expectedOrders: 0,
                             expectedCustomers: 0,
                             expectedRevenue: 0,
                         });
+
                         setError("NO_DATA");
+
                         return;
                     }
 
                     throw new Error(data.error);
                 }
 
-                const formattedData = data.points.map((point) => ({
-                    day: point.day_of_week.substring(0, 3),
-                    orders: point.expected_orders,
-                    customers: point.expected_customers,
-                    revenue: point.expected_revenue,
-                }));
+                const formattedData = data.points.map(
+                    (point) => ({
+                        day: point.day_of_week.substring(0, 3),
+                        orders: point.expected_orders,
+                        customers: point.expected_customers,
+                        revenue: point.expected_revenue,
+                    })
+                );
 
-                const firstDate = new Date(data.points[0].date);
-                const lastDate = new Date(data.points[data.points.length - 1].date);
+                const firstDate = new Date(
+                    data.points[0].date
+                );
+
+                const lastDate = new Date(
+                    data.points[data.points.length - 1].date
+                );
 
                 const formatDate = (date) =>
                     date.toLocaleDateString("en-ZA", {
@@ -163,24 +208,34 @@ function DemandForecast({ onLogout, onBack }) {
                         year: "numeric",
                     });
 
-                setForecastPeriod(`${formatDate(firstDate)} – ${formatDate(lastDate)}`);
+                setForecastPeriod(
+                    `${formatDate(firstDate)} – ${formatDate(
+                        lastDate
+                    )}`
+                );
 
                 setForecastData(formattedData);
 
-                const expectedOrders = formattedData.reduce(
-                    (total, item) => total + item.orders,
-                    0
-                );
+                const expectedOrders =
+                    formattedData.reduce(
+                        (total, item) =>
+                            total + item.orders,
+                        0
+                    );
 
-                const expectedCustomers = formattedData.reduce(
-                    (total, item) => total + item.customers,
-                    0
-                );
+                const expectedCustomers =
+                    formattedData.reduce(
+                        (total, item) =>
+                            total + item.customers,
+                        0
+                    );
 
-                const expectedRevenue = formattedData.reduce(
-                    (total, item) => total + item.revenue,
-                    0
-                );
+                const expectedRevenue =
+                    formattedData.reduce(
+                        (total, item) =>
+                            total + item.revenue,
+                        0
+                    );
 
                 setForecastSummary({
                     expectedOrders,
@@ -189,6 +244,7 @@ function DemandForecast({ onLogout, onBack }) {
                 });
             } catch (err) {
                 setForecastData([]);
+
                 setForecastSummary({
                     expectedOrders: 0,
                     expectedCustomers: 0,
@@ -204,11 +260,19 @@ function DemandForecast({ onLogout, onBack }) {
         loadForecast();
     }, [vendorId]);
 
+    function handleLogout() {
+        setProfileOpen(false);
+        onLogout();
+    }
+
     return (
         <div className="app-layout">
+
             <aside className="sidebar">
                 <div className="brand">
-                    <span className="brand-name">Byte & Bite</span>
+                    <span className="brand-name">
+                        Byte & Bite
+                    </span>
 
                     <img
                         src={logo}
@@ -218,9 +282,24 @@ function DemandForecast({ onLogout, onBack }) {
                 </div>
 
                 <div className="sidebar-section">
-                    <span className="sidebar-title">WORKSPACE</span>
+                    <span className="sidebar-title">
+                        WORKSPACE
+                    </span>
 
                     <nav>
+
+                        <a
+                            href="#dashboard"
+                            className="sidebar-link"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onDashboard();
+                            }}
+                        >
+                            <LayoutDashboard size={16} />
+                            Dashboard
+                        </a>
+
                         <a
                             href="#rush-hour-radar"
                             className="sidebar-link"
@@ -241,18 +320,27 @@ function DemandForecast({ onLogout, onBack }) {
                             Demand Forecast
                         </a>
 
-                        <a href="#fair-comparison" className="sidebar-link">
+                        <a
+                            href="#fair-comparison"
+                            className="sidebar-link"
+                        >
                             <Scale size={16} />
                             Fair Comparison
                         </a>
+
                     </nav>
                 </div>
 
                 <div className="sidebar-section">
-                    <span className="sidebar-title">Reporting</span>
+                    <span className="sidebar-title">
+                        Reporting
+                    </span>
 
                     <nav>
-                        <a href="#reports" className="sidebar-link">
+                        <a
+                            href="#reports"
+                            className="sidebar-link"
+                        >
                             <FileText size={16} />
                             Reports
                         </a>
@@ -261,16 +349,21 @@ function DemandForecast({ onLogout, onBack }) {
             </aside>
 
             <main className="main-content">
+
                 <header className="topbar">
+
                     <div className="breadcrumb">
-                        Workspace / <strong>Demand Forecast</strong>
+                        Workspace /{" "}
+                        <strong>Demand Forecast</strong>
                     </div>
 
                     <div className="topbar-right">
+
                         <button
                             className="notification-button"
                             onClick={() =>
-                                (window.location.href = "/notifications")
+                            (window.location.href =
+                                "/notifications")
                             }
                             aria-label="Notifications"
                             title="Notifications"
@@ -278,21 +371,33 @@ function DemandForecast({ onLogout, onBack }) {
                             <Bell size={18} />
                         </button>
 
-                        <div className="profile-container">
+                        <div
+                            className="profile-container"
+                            ref={profileRef}
+                        >
                             <button
                                 className="user-profile"
                                 onClick={() =>
-                                    setProfileOpen(!profileOpen)
+                                    setProfileOpen(
+                                        (open) => !open
+                                    )
                                 }
                                 aria-label="Open user menu"
                             >
                                 <div className="user-avatar">
-                                    {currentUser.name.charAt(0)}
+                                    {currentUser.name.charAt(
+                                        0
+                                    )}
                                 </div>
 
                                 <div className="user-details">
-                                    <strong>{currentUser.name}</strong>
-                                    <span>{currentUser.role}</span>
+                                    <strong>
+                                        {currentUser.name}
+                                    </strong>
+
+                                    <span>
+                                        {currentUser.role}
+                                    </span>
                                 </div>
 
                                 <ChevronDown
@@ -305,7 +410,7 @@ function DemandForecast({ onLogout, onBack }) {
                                 <div className="profile-dropdown">
                                     <button
                                         className="logout-option"
-                                        onClick={onLogout}
+                                        onClick={handleLogout}
                                     >
                                         <LogOut size={15} />
                                         Log Out
@@ -313,259 +418,376 @@ function DemandForecast({ onLogout, onBack }) {
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </header>
 
                 <div className="page-content">
-                    <div className="business-selector-row">
-                        <select
-                            className="business-selector"
-                            value={vendorId}
-                            onChange={(event) =>
-                                setVendorId(event.target.value)
-                            }
-                            disabled={loadingVendors}
-                        >
-                            {loadingVendors ? (
-                                <option value="">
-                                    Loading businesses...
-                                </option>
-                            ) : (
-                                vendors.map((vendor) => (
-                                    <option
-                                        key={vendor.vendor_id}
-                                        value={vendor.vendor_id}
-                                    >
-                                        {vendor.name}
-                                    </option>
-                                ))
-                            )}
-                        </select>
-                    </div>
 
-                    <div className="page-heading">
-                        <div>
+                    <div className="demand-page-header">
+                        <div className="page-heading">
                             <h1>Demand Forecast</h1>
+
                             <p>
-                                View expected demand based on historical
-                                transaction patterns.
+                                View expected demand based on
+                                historical transaction patterns.
                             </p>
+                        </div>
+
+                        <div className="business-selector-row">
+                            <select
+                                className="business-selector"
+                                value={vendorId}
+                                onChange={(event) =>
+                                    setVendorId(
+                                        event.target.value
+                                    )
+                                }
+                                disabled={loadingVendors}
+                            >
+                                {loadingVendors ? (
+                                    <option value="">
+                                        Loading businesses...
+                                    </option>
+                                ) : (
+                                    vendors.map((vendor) => (
+                                        <option
+                                            key={vendor.vendor_id}
+                                            value={
+                                                vendor.vendor_id
+                                            }
+                                        >
+                                            {vendor.name}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
                         </div>
                     </div>
 
-                    {loading && <p>Loading demand forecast...</p>}
+                    {loading && (
+                        <p>
+                            Loading demand forecast...
+                        </p>
+                    )}
 
                     {error === "NO_DATA" && (
                         <p>
-                            No forecast is available for this business because
-                            there is no transaction history available.
+                            No forecast is available for this
+                            business because there is no
+                            transaction history available.
                         </p>
                     )}
 
                     {error && error !== "NO_DATA" && (
                         <p style={{ color: "#b34c57" }}>
-                            Unable to load demand forecast: {error}
+                            Unable to load demand forecast:{" "}
+                            {error}
                         </p>
                     )}
 
-                    {!loading && !error && forecastData.length > 0 && (
-                        <>
-                            <section className="summary-grid">
-                                <div className="summary-card">
-                                    <span>EXPECTED TRANSACTIONS</span>
-                                    <strong>
-                                        {forecastSummary.expectedOrders}
-                                    </strong>
-                                    <small>{forecastPeriod}</small>
-                                </div>
+                    {!loading &&
+                        !error &&
+                        forecastData.length > 0 && (
+                            <>
+                                <section className="summary-grid">
 
-                                <div className="summary-card">
-                                    <span>EXPECTED CUSTOMERS</span>
-                                    <strong>
-                                        {forecastSummary.expectedCustomers}
-                                    </strong>
-                                    <small>{forecastPeriod}</small>
-                                </div>
+                                    <div className="summary-card">
+                                        <span>
+                                            EXPECTED TRANSACTIONS
+                                        </span>
 
-                                <div className="summary-card">
-                                    <span>EXPECTED REVENUE</span>
-                                    <strong>
-                                        {formatRand(
-                                            forecastSummary.expectedRevenue
-                                        )}
-                                    </strong>
-                                    <small>{forecastPeriod}</small>
-                                </div>
-                            </section>
+                                        <strong>
+                                            {
+                                                forecastSummary.expectedOrders
+                                            }
+                                        </strong>
 
-                            <section className="forecast-card">
-                                <div className="forecast-card-header">
-                                    <div>
-                                        <h2>Weekly Demand Forecast</h2>
-                                        <p>
-                                            Expected transactions, customers
-                                            and revenue for the forecast
-                                            period.
-                                        </p>
+                                        <small>
+                                            {forecastPeriod}
+                                        </small>
                                     </div>
 
-                                    <div className="forecast-legend">
+                                    <div className="summary-card">
                                         <span>
-                                            <i className="legend-orders"></i>
-                                            Transactions
+                                            EXPECTED CUSTOMERS
                                         </span>
 
-                                        <span>
-                                            <i className="legend-customers"></i>
-                                            Customers
-                                        </span>
+                                        <strong>
+                                            {
+                                                forecastSummary.expectedCustomers
+                                            }
+                                        </strong>
 
-                                        <span>
-                                            <i className="legend-revenue"></i>
-                                            Revenue
-                                        </span>
+                                        <small>
+                                            {forecastPeriod}
+                                        </small>
                                     </div>
-                                </div>
 
-                                <div className="forecast-chart">
-                                    <ResponsiveContainer
-                                        width="100%"
-                                        height="100%"
-                                    >
-                                        <LineChart
-                                            data={forecastData}
-                                            margin={{
-                                                top: 10,
-                                                right: 10,
-                                                left: 0,
-                                                bottom: 0,
-                                            }}
+                                    <div className="summary-card">
+                                        <span>
+                                            EXPECTED REVENUE
+                                        </span>
+
+                                        <strong>
+                                            {formatRand(
+                                                forecastSummary.expectedRevenue
+                                            )}
+                                        </strong>
+
+                                        <small>
+                                            {forecastPeriod}
+                                        </small>
+                                    </div>
+
+                                </section>
+
+                                <section className="forecast-card">
+
+                                    <div className="forecast-card-header">
+
+                                        <div>
+                                            <h2>
+                                                Weekly Demand Forecast
+                                            </h2>
+
+                                            <p>
+                                                Expected
+                                                transactions,
+                                                customers and
+                                                revenue for the
+                                                forecast period.
+                                            </p>
+                                        </div>
+
+                                        <div className="forecast-legend">
+
+                                            <span>
+                                                <i className="legend-orders"></i>
+                                                Transactions
+                                            </span>
+
+                                            <span>
+                                                <i className="legend-customers"></i>
+                                                Customers
+                                            </span>
+
+                                            <span>
+                                                <i className="legend-revenue"></i>
+                                                Revenue
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div className="forecast-chart">
+
+                                        <ResponsiveContainer
+                                            width="100%"
+                                            height="100%"
                                         >
-                                            <CartesianGrid
-                                                stroke="#edf1ef"
-                                                vertical={false}
-                                            />
-
-                                            <XAxis
-                                                dataKey="day"
-                                                tick={{
-                                                    fontSize: 11,
-                                                    fill: "#7c8987",
-                                                }}
-                                                tickLine={false}
-                                                axisLine={{
-                                                    stroke: "#dfe7e4",
-                                                }}
-                                            />
-
-                                            <YAxis
-                                                yAxisId="left"
-                                                tick={{
-                                                    fontSize: 11,
-                                                    fill: "#7c8987",
-                                                }}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                width={40}
-                                            />
-
-                                            <YAxis
-                                                yAxisId="right"
-                                                orientation="right"
-                                                tick={{
-                                                    fontSize: 11,
-                                                    fill: "#7c8987",
-                                                }}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                width={48}
-                                                tickFormatter={(v) =>
-                                                    `R${v / 1000}k`
+                                            <LineChart
+                                                data={
+                                                    forecastData
                                                 }
-                                            />
-
-                                            <Tooltip
-                                                content={<ChartTooltip />}
-                                                cursor={{
-                                                    stroke: "#c9d6d2",
+                                                margin={{
+                                                    top: 10,
+                                                    right: 10,
+                                                    left: 0,
+                                                    bottom: 0,
                                                 }}
-                                            />
+                                            >
 
-                                            <Line
-                                                yAxisId="left"
-                                                type="monotone"
-                                                dataKey="orders"
-                                                stroke="#b34c57"
-                                                strokeWidth={3}
-                                                dot={{ r: 3 }}
-                                                activeDot={{ r: 6 }}
-                                            />
+                                                <CartesianGrid
+                                                    stroke="#edf1ef"
+                                                    vertical={false}
+                                                />
 
-                                            <Line
-                                                yAxisId="left"
-                                                type="monotone"
-                                                dataKey="customers"
-                                                stroke="#2e8f87"
-                                                strokeWidth={3}
-                                                dot={{ r: 3 }}
-                                                activeDot={{ r: 6 }}
-                                            />
+                                                <XAxis
+                                                    dataKey="day"
+                                                    tick={{
+                                                        fontSize: 11,
+                                                        fill: "#7c8987",
+                                                    }}
+                                                    tickLine={false}
+                                                    axisLine={{
+                                                        stroke:
+                                                            "#dfe7e4",
+                                                    }}
+                                                />
 
-                                            <Line
-                                                yAxisId="right"
-                                                type="monotone"
-                                                dataKey="revenue"
-                                                stroke="#7faaa4"
-                                                strokeWidth={3}
-                                                strokeDasharray="7 5"
-                                                dot={{ r: 3 }}
-                                                activeDot={{ r: 6 }}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
+                                                <YAxis
+                                                    yAxisId="left"
+                                                    tick={{
+                                                        fontSize: 11,
+                                                        fill: "#7c8987",
+                                                    }}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    width={40}
+                                                />
 
-                                <details className="forecast-details">
-                                    <summary>View daily figures</summary>
+                                                <YAxis
+                                                    yAxisId="right"
+                                                    orientation="right"
+                                                    tick={{
+                                                        fontSize: 11,
+                                                        fill: "#7c8987",
+                                                    }}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    width={48}
+                                                    tickFormatter={(
+                                                        v
+                                                    ) =>
+                                                        `R${v / 1000
+                                                        }k`
+                                                    }
+                                                />
 
-                                    <div className="table-scroll">
-                                        <table className="forecast-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Day</th>
-                                                    <th>Transactions</th>
-                                                    <th>Customers</th>
-                                                    <th>Revenue</th>
-                                                </tr>
-                                            </thead>
+                                                <Tooltip
+                                                    content={
+                                                        <ChartTooltip />
+                                                    }
+                                                    cursor={{
+                                                        stroke:
+                                                            "#c9d6d2",
+                                                    }}
+                                                />
 
-                                            <tbody>
-                                                {forecastData.map((item) => (
-                                                    <tr key={item.day}>
-                                                        <td>{item.day}</td>
-                                                        <td>{item.orders}</td>
-                                                        <td>{item.customers}</td>
-                                                        <td>
-                                                            {formatRand(
-                                                                item.revenue
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                <Line
+                                                    yAxisId="left"
+                                                    type="monotone"
+                                                    dataKey="orders"
+                                                    stroke="#b34c57"
+                                                    strokeWidth={3}
+                                                    dot={{ r: 3 }}
+                                                    activeDot={{
+                                                        r: 6,
+                                                    }}
+                                                />
+
+                                                <Line
+                                                    yAxisId="left"
+                                                    type="monotone"
+                                                    dataKey="customers"
+                                                    stroke="#2e8f87"
+                                                    strokeWidth={3}
+                                                    dot={{ r: 3 }}
+                                                    activeDot={{
+                                                        r: 6,
+                                                    }}
+                                                />
+
+                                                <Line
+                                                    yAxisId="right"
+                                                    type="monotone"
+                                                    dataKey="revenue"
+                                                    stroke="#7faaa4"
+                                                    strokeWidth={3}
+                                                    strokeDasharray="7 5"
+                                                    dot={{ r: 3 }}
+                                                    activeDot={{
+                                                        r: 6,
+                                                    }}
+                                                />
+
+                                            </LineChart>
+                                        </ResponsiveContainer>
+
                                     </div>
-                                </details>
 
-                                <div className="forecast-note">
-                                    Forecasts are estimates based on
-                                    historical transaction patterns and may
-                                    be affected by contextual factors such as
-                                    holidays, exams and events.
-                                </div>
-                            </section>
-                        </>
-                    )}
+                                    <details className="forecast-details">
+
+                                        <summary>
+                                            View daily figures
+                                        </summary>
+
+                                        <div className="table-scroll">
+
+                                            <table className="forecast-table">
+
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            Day
+                                                        </th>
+
+                                                        <th>
+                                                            Transactions
+                                                        </th>
+
+                                                        <th>
+                                                            Customers
+                                                        </th>
+
+                                                        <th>
+                                                            Revenue
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+
+                                                    {forecastData.map(
+                                                        (
+                                                            item
+                                                        ) => (
+                                                            <tr
+                                                                key={
+                                                                    item.day
+                                                                }
+                                                            >
+                                                                <td>
+                                                                    {
+                                                                        item.day
+                                                                    }
+                                                                </td>
+
+                                                                <td>
+                                                                    {
+                                                                        item.orders
+                                                                    }
+                                                                </td>
+
+                                                                <td>
+                                                                    {
+                                                                        item.customers
+                                                                    }
+                                                                </td>
+
+                                                                <td>
+                                                                    {formatRand(
+                                                                        item.revenue
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        )
+                                                    )}
+
+                                                </tbody>
+
+                                            </table>
+
+                                        </div>
+
+                                    </details>
+
+                                    <div className="forecast-note">
+                                        Forecasts are estimates
+                                        based on historical
+                                        transaction patterns and
+                                        may be affected by
+                                        contextual factors such
+                                        as holidays, exams and
+                                        events.
+                                    </div>
+
+                                </section>
+                            </>
+                        )}
+
                 </div>
             </main>
         </div>
