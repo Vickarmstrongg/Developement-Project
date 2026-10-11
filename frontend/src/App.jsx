@@ -14,6 +14,7 @@ import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Login from "./Login";
 import DemandForecast from "./DemandForecast";
+import FairComparison from "./FairComparison";
 import logo from "./assets/Logo.png";
 
 const DAYS = [
@@ -138,6 +139,18 @@ function App() {
         onLogout={handleLogout}
         onBack={() => setView("rush")}
         onDashboard={() => setView("dashboard")}
+        onFairComparison={() => setView("fair")}
+      />
+    );
+  }
+
+  if (view === "fair") {
+    return (
+      <FairComparison
+        onLogout={handleLogout}
+        onBack={() => setView("rush")}
+        onDashboard={() => setView("dashboard")}
+        onDemandForecast={() => setView("demand")}
       />
     );
   }
@@ -200,6 +213,10 @@ function App() {
               <a
                 href="#fair-comparison"
                 className="sidebar-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setView("fair");
+                }}
               >
                 <Scale size={16} />
                 Fair Comparison
@@ -356,6 +373,10 @@ function App() {
             <a
               href="#fair-comparison"
               className="sidebar-link"
+              onClick={(event) => {
+                event.preventDefault();
+                setView("fair");
+              }}
             >
               <Scale size={16} />
               Fair Comparison
@@ -596,17 +617,17 @@ function App() {
                       pathOptions={{
                         color:
                           LEVEL_COLORS[
-                            v.status ===
+                          v.status ===
                             "suppressed"
-                              ? "suppressed"
-                              : v.level
+                            ? "suppressed"
+                            : v.level
                           ],
                         fillColor:
                           LEVEL_COLORS[
-                            v.status ===
+                          v.status ===
                             "suppressed"
-                              ? "suppressed"
-                              : v.level
+                            ? "suppressed"
+                            : v.level
                           ],
                         fillOpacity: 0.45,
                         weight: 2,
@@ -729,30 +750,29 @@ function App() {
                       <span
                         className="pulse-pill"
                         style={{
-                          background: `${
-                            LEVEL_COLORS[
-                              v.status ===
+                          background: `${LEVEL_COLORS[
+                            v.status ===
                               "suppressed"
-                                ? "suppressed"
-                                : v.level
+                              ? "suppressed"
+                              : v.level
                             ]
-                          }22`,
+                            }22`,
 
                           color:
                             LEVEL_COLORS[
-                              v.status ===
+                            v.status ===
                               "suppressed"
-                                ? "suppressed"
-                                : v.level
+                              ? "suppressed"
+                              : v.level
                             ],
                         }}
                       >
                         {v.status ===
-                        "suppressed"
+                          "suppressed"
                           ? "No data"
                           : LEVEL_LABELS[
-                              v.level
-                            ]}
+                          v.level
+                          ]}
                       </span>
                     </div>
                   ))}
@@ -773,10 +793,10 @@ function App() {
             {vendors.filter(
               (v) => v.recommendation
             ).length === 0 && (
-              <p className="loading-text">
-                No recommendations for this day/hour.
-              </p>
-            )}
+                <p className="loading-text">
+                  No recommendations for this day/hour.
+                </p>
+              )}
 
             {vendors
               .filter((v) => v.recommendation)

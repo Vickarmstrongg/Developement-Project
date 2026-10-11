@@ -66,6 +66,7 @@ function DemandForecast({
     onLogout,
     onBack,
     onDashboard,
+    onFairComparison,
 }) {
     const [profileOpen, setProfileOpen] = useState(false);
 
@@ -315,6 +316,9 @@ function DemandForecast({
                         <a
                             href="#demand-forecast"
                             className="sidebar-link active"
+                            onClick={(event) => {
+                                event.preventDefault();
+                            }}
                         >
                             <TrendingUp size={16} />
                             Demand Forecast
@@ -323,6 +327,10 @@ function DemandForecast({
                         <a
                             href="#fair-comparison"
                             className="sidebar-link"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onFairComparison();
+                            }}
                         >
                             <Scale size={16} />
                             Fair Comparison
