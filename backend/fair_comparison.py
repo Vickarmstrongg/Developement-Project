@@ -123,6 +123,61 @@ def calculate_fair_comparison(
     peer_avg_txns = round(sum(s.txn_count for s in cohort_stats) / total_cohort_businesses, 1)
     peer_avg_revenue = round(sum(float(s.total_revenue or 0.0) for s in cohort_stats) / total_cohort_businesses, 2)
 
+    # Fair Comparison (if don't like then delete this code below here and above 6. This is for the daily transaction counts for venue and peer group
+
+    daily_stats = (
+        db.query(
+            func.date(models.Transaction.datetime).label("transaction_date"),
+            models.Transaction.vendor_id,
+            func.count(models.Transaction.transaction_id).label("txn_count")
+        )
+        .filter(
+            models.Transaction.vendor_id.in_(peer_vendor_ids),
+            func.date(models.Transaction.datetime) >= start_date,
+            func.date(models.Transaction.datetime) <= end_date
+        )
+        .group_by(
+            func.date(models.Transaction.datetime),
+            models.Transaction.vendor_id
+        )
+        .all()
+    )
+
+    daily_counts = {}
+
+    for row in daily_stats:
+        day = str(row.transaction_date)
+        daily_counts[(day, row.vendor_id)] = row.txn_count
+
+    daily_trend = []
+    current_date = start_date
+
+    while current_date <= end_date:
+        day = current_date.isoformat()
+
+        venue_count = daily_counts.get((day, vendor_id), 0)
+
+        peer_total = sum(
+            daily_counts.get((day, peer_id), 0)
+            for peer_id in peer_vendor_ids
+        )
+
+        daily_peer_average = round(
+            peer_total / total_cohort_businesses,
+            1
+        )
+
+        daily_trend.append({
+            "date": day,
+            "vendor_transactions": venue_count,
+            "peer_average_transactions": daily_peer_average
+        })
+
+        current_date += timedelta(days=1)
+
+
+    # -------------------------Ends here------------------------------
+
     # 6. Determine classification label (above_average / average / below_average)
     if peer_avg_txns > 0:
         ratio = vendor_txns / peer_avg_txns
@@ -157,5 +212,7 @@ def calculate_fair_comparison(
             "vendor_revenue": round(vendor_revenue, 2),
             "peer_average_revenue": peer_avg_revenue,
             "comparison_result": comparison_result
-        }
+        },
+        # Delete this if don't like (this is for the trend line graph)
+        "daily_trend": daily_trend 
     }
