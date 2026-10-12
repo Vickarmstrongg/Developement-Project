@@ -2,10 +2,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
+from datetime import date
+from typing import Optional
 
 import database
 import models
 import context_events
+from fair_comparison import calculate_fair_comparison
 
 from rush_hour import (
     get_bulk_vendor_status,
@@ -123,6 +126,19 @@ def get_demand_forecast(
     return result
 
 
+@app.get("/vendors/{vendor_id}/fair-comparison")
+def get_fair_comparison(
+    vendor_id: int,
+    filter_date: Optional[date] = None,
+    db: Session = Depends(database.get_db)
+):
+    return calculate_fair_comparison(
+        db=db,
+        vendor_id=vendor_id,
+        filter_date=filter_date
+    )
+
+
 @app.get("/rush-hour-radar")
 def rush_hour_radar(
     day: int,
@@ -173,4 +189,3 @@ def rush_hour_radar(
         "hour": hour,
         "vendors": results
     }
-
