@@ -1,9 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+Bell,
+Clock3,
+TrendingUp,
+Scale,
+FileText,
+LogOut,
+ChevronDown,
+LayoutDashboard,
+CalendarDays,
+} from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Login from "./Login";
 import DemandForecast from "./DemandForecast";
+import FairComparison from "./FairComparison";
+import ContextEvents from "./ContextEvents";
+import logo from "./assets/Logo.png";
 
 const DAYS = [
   { value: 0, label: "Monday" },
@@ -45,13 +59,43 @@ const LEVEL_LABELS = {
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
-  const [view, setView] = useState("rush");
+
+  const [view, setView] = useState("dashboard");
 
   const [day, setDay] = useState(4);
   const [hour, setHour] = useState(12);
   const [typeId, setTypeId] = useState("");
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const profileRef = useRef(null);
+
+  const currentUser = {
+    name: "User Name",
+    role: "Manager",
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!loggedIn || view !== "rush") return;
@@ -67,313 +111,766 @@ function App() {
     fetch(url)
       .then((res) => res.json())
       .then((data) => setVendors(data.vendors || []))
-      .catch((err) => console.error("Error fetching rush hour radar:", err))
+      .catch((err) =>
+        console.error("Error fetching rush hour radar:", err)
+      )
       .finally(() => setLoading(false));
   }, [day, hour, typeId, loggedIn, view]);
 
+  function handleLogout() {
+    setProfileOpen(false);
+    setLoggedIn(false);
+    setView("dashboard");
+  }
+
   if (!loggedIn) {
-    return <Login onLogin={() => setLoggedIn(true)} />;
+    return (
+      <Login
+        onLogin={() => {
+          setProfileOpen(false);
+          setView("dashboard");
+          setLoggedIn(true);
+        }}
+      />
+    );
   }
 
   if (view === "demand") {
     return (
       <DemandForecast
-        onLogout={() => setLoggedIn(false)}
+        onLogout={handleLogout}
         onBack={() => setView("rush")}
+        onDashboard={() => setView("dashboard")}
+        onFairComparison={() => setView("fair")}
       />
     );
   }
 
-  const busyCount = vendors.filter((v) => v.level === "busy").length;
-  const quietCount = vendors.filter((v) => v.level === "quiet").length;
-  const recCount = vendors.filter((v) => v.recommendation).length;
+  if (view === "fair") {
+    return (
+      <FairComparison
+        onLogout={handleLogout}
+        onBack={() => setView("rush")}
+        onDashboard={() => setView("dashboard")}
+        onDemandForecast={() => setView("demand")}
+      />
+    );
+  }
+
+  if (view === "context") {
+  return (
+    <ContextEvents
+      currentUser={currentUser}
+      onDashboard={() => setView("dashboard")}
+      onRushHourRadar={() => setView("rush")}
+      onDemandForecast={() => setView("demand")}
+      onFairComparison={() => setView("fair")}
+      onLogout={handleLogout}
+    />
+  );
+}
+
+  if (view === "dashboard") {
+    return (
+      <div className="app-layout">
+
+        <aside className="sidebar">
+          <div className="brand">
+            <span className="brand-name">Byte & Bite</span>
+
+            <img
+              src={logo}
+              alt="Byte & Bite"
+              className="brand-logo"
+            />
+          </div>
+
+          <div className="sidebar-section">
+            <span className="sidebar-title">WORKSPACE</span>
+
+            <nav>
+              <a
+                href="#dashboard"
+                className="sidebar-link active"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setView("dashboard");
+                }}
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </a>
+
+              <a
+                href="#rush-hour-radar"
+                className="sidebar-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setView("rush");
+                }}
+              >
+                <Clock3 size={16} />
+                Rush Hour Radar
+              </a>
+
+              <a
+                href="#demand-forecast"
+                className="sidebar-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setView("demand");
+                }}
+              >
+                <TrendingUp size={16} />
+                Demand Forecast
+              </a>
+
+              <a
+                href="#fair-comparison"
+                className="sidebar-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setView("fair");
+                }}
+              >
+                <Scale size={16} />
+                Fair Comparison
+              </a>
+              <a
+                href="#context-events"
+                className="sidebar-link"
+                onClick={(event) => {
+                   event.preventDefault();
+                   setView("context");
+                 }}
+>
+  <CalendarDays size={16} />
+  Calendar / Context Events
+</a>
+            </nav>
+          </div>
+
+          <div className="sidebar-section">
+            <span className="sidebar-title">Reporting</span>
+
+            <nav>
+              <a
+                href="#reports"
+                className="sidebar-link"
+              >
+                <FileText size={16} />
+                Reports
+              </a>
+            </nav>
+          </div>
+        </aside>
+
+        <main className="main-content">
+
+          <header className="topbar">
+            <div className="breadcrumb">
+              Workspace / <strong>Dashboard</strong>
+            </div>
+
+            <div className="topbar-right">
+              <button
+                className="notification-button"
+                onClick={() =>
+                  (window.location.href = "/notifications")
+                }
+                aria-label="Notifications"
+                title="Notifications"
+              >
+                <Bell size={18} />
+              </button>
+
+              <div
+                className="profile-container"
+                ref={profileRef}
+              >
+                <button
+                  className="user-profile"
+                  onClick={() =>
+                    setProfileOpen((open) => !open)
+                  }
+                  aria-label="Open user menu"
+                >
+                  <div className="user-avatar">
+                    {currentUser.name.charAt(0)}
+                  </div>
+
+                  <div className="user-details">
+                    <strong>{currentUser.name}</strong>
+                    <span>{currentUser.role}</span>
+                  </div>
+
+                  <ChevronDown
+                    size={14}
+                    className="profile-chevron"
+                  />
+                </button>
+
+                {profileOpen && (
+                  <div className="profile-dropdown">
+                    <button
+                      className="logout-option"
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={15} />
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+        </main>
+      </div>
+    );
+  }
+
+  const busyCount = vendors.filter(
+    (v) => v.level === "busy"
+  ).length;
+
+  const quietCount = vendors.filter(
+    (v) => v.level === "quiet"
+  ).length;
+
+  const recCount = vendors.filter(
+    (v) => v.recommendation
+  ).length;
 
   return (
-    <div className="app-shell">
+    <div className="app-layout">
+
       <aside className="sidebar">
         <div className="brand">
-          <span className="logo-dot" /> Byte &amp; Bite
+          <span className="brand-name">Byte & Bite</span>
+
+          <img
+            src={logo}
+            alt="Byte & Bite"
+            className="brand-logo"
+          />
         </div>
 
-        <nav>
-          <div className="nav-item">Dashboard</div>
+        <div className="sidebar-section">
+          <span className="sidebar-title">WORKSPACE</span>
 
-          <div
-            className="nav-item active"
-            onClick={() => setView("rush")}
-          >
-            Rush Hour Radar
-          </div>
+          <nav>
+            <a
+              href="#dashboard"
+              className="sidebar-link"
+              onClick={(event) => {
+                event.preventDefault();
+                setView("dashboard");
+              }}
+            >
+              <LayoutDashboard size={16} />
+              Dashboard
+            </a>
 
-          <div
-            className="nav-item"
-            onClick={() => setView("demand")}
-          >
-            Demand Forecast
-          </div>
+            <a
+              href="#rush-hour-radar"
+              className="sidebar-link active"
+              onClick={(event) => {
+                event.preventDefault();
+                setView("rush");
+              }}
+            >
+              <Clock3 size={16} />
+              Rush Hour Radar
+            </a>
 
-          <div className="nav-item">Fair Comparison</div>
-          <div className="nav-item">Context Checker</div>
-          <div className="nav-item">Reports</div>
+            <a
+              href="#demand-forecast"
+              className="sidebar-link"
+              onClick={(event) => {
+                event.preventDefault();
+                setView("demand");
+              }}
+            >
+              <TrendingUp size={16} />
+              Demand Forecast
+            </a>
 
-          <div
-            className="nav-item"
-            onClick={() => setLoggedIn(false)}
-          >
-            Logout
-          </div>
-        </nav>
+            <a
+              href="#fair-comparison"
+              className="sidebar-link"
+              onClick={(event) => {
+                event.preventDefault();
+                setView("fair");
+              }}
+            >
+              <Scale size={16} />
+              Fair Comparison
+            </a>
+            <a
+              href="#context-events"
+              className="sidebar-link"
+              onClick={(event) => {
+              event.preventDefault();
+              setView("context");
+              }}
+
+>
+
+              <CalendarDays size={16} />
+              Calendar / Context Events
+            </a>
+
+          </nav>
+        </div>
+
+        <div className="sidebar-section">
+          <span className="sidebar-title">Reporting</span>
+
+          <nav>
+            <a
+              href="#reports"
+              className="sidebar-link"
+            >
+              <FileText size={16} />
+              Reports
+            </a>
+          </nav>
+        </div>
       </aside>
 
-      <main className="content">
-        <div className="breadcrumb">MVP / OPERATIONS VIEW</div>
+      <main className="main-content">
 
-        <div className="page-header">
-          <div>
-            <h1>Rush Hour Radar</h1>
-            <p className="subtitle">
-              Find the busy and quiet moments across Stellenbosch before they happen.
-            </p>
+        <header className="topbar">
+          <div className="breadcrumb">
+            Workspace / <strong>Rush Hour Radar</strong>
           </div>
 
-          <div className="filters">
-            <select
-              value={day}
-              onChange={(e) => setDay(Number(e.target.value))}
+          <div className="topbar-right">
+            <button
+              className="notification-button"
+              onClick={() =>
+                (window.location.href = "/notifications")
+              }
+              aria-label="Notifications"
+              title="Notifications"
             >
-              {DAYS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
+              <Bell size={18} />
+            </button>
 
-            <select
-              value={hour}
-              onChange={(e) => setHour(Number(e.target.value))}
-            >
-              {MEAL_SLOTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={typeId}
-              onChange={(e) => setTypeId(e.target.value)}
-            >
-              {VENDOR_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="stat-row">
-          <div className="stat-card">
-            <div className="stat-label">Vendors in view</div>
-            <div className="stat-value">{vendors.length}</div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-label">Busy now</div>
             <div
-              className="stat-value"
-              style={{ color: LEVEL_COLORS.busy }}
+              className="profile-container"
+              ref={profileRef}
             >
-              {busyCount}
-            </div>
-          </div>
+              <button
+                className="user-profile"
+                onClick={() =>
+                  setProfileOpen((open) => !open)
+                }
+                aria-label="Open user menu"
+              >
+                <div className="user-avatar">
+                  {currentUser.name.charAt(0)}
+                </div>
 
-          <div className="stat-card">
-            <div className="stat-label">Quiet now</div>
-            <div
-              className="stat-value"
-              style={{ color: LEVEL_COLORS.quiet }}
-            >
-              {quietCount}
-            </div>
-          </div>
+                <div className="user-details">
+                  <strong>{currentUser.name}</strong>
+                  <span>{currentUser.role}</span>
+                </div>
 
-          <div className="stat-card">
-            <div className="stat-label">Open recommendations</div>
-            <div className="stat-value">{recCount}</div>
-          </div>
-        </div>
+                <ChevronDown
+                  size={14}
+                  className="profile-chevron"
+                />
+              </button>
 
-        <div className="main-grid">
-          <div className="panel map-panel">
-            <h3>Vendor activity map</h3>
-
-            {loading && <p className="loading-text">Loading...</p>}
-
-            <MapContainer
-              center={[-33.9346, 18.8617]}
-              zoom={14}
-              style={{ height: "420px", width: "100%" }}
-            >
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-
-              {vendors
-                .filter((v) => v.lat && v.lon)
-                .map((v) => (
-                  <CircleMarker
-                    key={v.vendor_id}
-                    center={[v.lat, v.lon]}
-                    radius={v.status === "suppressed" ? 7 : 14}
-                    pathOptions={{
-                      color:
-                        LEVEL_COLORS[
-                          v.status === "suppressed"
-                            ? "suppressed"
-                            : v.level
-                        ],
-                      fillColor:
-                        LEVEL_COLORS[
-                          v.status === "suppressed"
-                            ? "suppressed"
-                            : v.level
-                        ],
-                      fillOpacity: 0.45,
-                      weight: 2,
-                    }}
+              {profileOpen && (
+                <div className="profile-dropdown">
+                  <button
+                    className="logout-option"
+                    onClick={handleLogout}
                   >
-                    <Popup>
-                      <strong>{v.name}</strong>
-                      <br />
+                    <LogOut size={15} />
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
 
-                      {v.status === "suppressed" ? (
-                        <em>
-                          Not enough data to show (privacy threshold)
-                        </em>
-                      ) : (
-                        <>
-                          Status: {LEVEL_LABELS[v.level]}
-                          <br />
-                          {v.recommendation}
-                        </>
-                      )}
-                    </Popup>
-                  </CircleMarker>
+        <div className="rush-content">
+
+          <div className="rush-page-header">
+            <div>
+              <h1>Rush Hour Radar</h1>
+
+              <p className="rush-subtitle">
+                Find the busy and quiet moments across Stellenbosch before they happen.
+              </p>
+            </div>
+
+            <div className="filters">
+              <select
+                value={day}
+                onChange={(e) =>
+                  setDay(Number(e.target.value))
+                }
+              >
+                {DAYS.map((d) => (
+                  <option
+                    key={d.value}
+                    value={d.value}
+                  >
+                    {d.label}
+                  </option>
                 ))}
-            </MapContainer>
+              </select>
 
-            <div className="legend">
-              <span>
-                <i style={{ background: LEVEL_COLORS.quiet }} /> Quiet
-              </span>
+              <select
+                value={hour}
+                onChange={(e) =>
+                  setHour(Number(e.target.value))
+                }
+              >
+                {MEAL_SLOTS.map((s) => (
+                  <option
+                    key={s.value}
+                    value={s.value}
+                  >
+                    {s.label}
+                  </option>
+                ))}
+              </select>
 
-              <span>
-                <i style={{ background: LEVEL_COLORS.normal }} /> Normal
-              </span>
-
-              <span>
-                <i style={{ background: LEVEL_COLORS.busy }} /> Busy
-              </span>
-
-              <span>
-                <i style={{ background: LEVEL_COLORS.suppressed }} /> Suppressed
-                (privacy)
-              </span>
+              <select
+                value={typeId}
+                onChange={(e) =>
+                  setTypeId(e.target.value)
+                }
+              >
+                {VENDOR_TYPES.map((t) => (
+                  <option
+                    key={t.value}
+                    value={t.value}
+                  >
+                    {t.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="panel pulse-panel">
-            <h3>Vendor pulse</h3>
+          <div className="stat-row">
 
-            <p className="panel-sub">
-              Current status for the selected day/hour
-            </p>
+            <div className="stat-card">
+              <div className="stat-label">
+                Vendors in view
+              </div>
 
-            <div className="pulse-list">
-              {[...vendors]
-                .sort((a, b) => {
-                  if (a.status === "ok" && b.status !== "ok") return -1;
-                  if (a.status !== "ok" && b.status === "ok") return 1;
-                  return 0;
-                })
-                .map((v) => (
-                  <div className="pulse-item" key={v.vendor_id}>
-                    <div>
-                      <div className="pulse-name">{v.name}</div>
+              <div className="stat-value">
+                {vendors.length}
+              </div>
+            </div>
 
-                      <div className="pulse-meta">
-                        {v.recommendation || "No action needed"}
-                      </div>
-                    </div>
+            <div className="stat-card">
+              <div className="stat-label">
+                Busy now
+              </div>
 
-                    <span
-                      className="pulse-pill"
-                      style={{
-                        background: `${
-                          LEVEL_COLORS[
-                            v.status === "suppressed"
-                              ? "suppressed"
-                              : v.level
-                          ]
-                        }22`,
+              <div
+                className="stat-value"
+                style={{
+                  color: LEVEL_COLORS.busy,
+                }}
+              >
+                {busyCount}
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">
+                Quiet now
+              </div>
+
+              <div
+                className="stat-value"
+                style={{
+                  color: LEVEL_COLORS.quiet,
+                }}
+              >
+                {quietCount}
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">
+                Open recommendations
+              </div>
+
+              <div className="stat-value">
+                {recCount}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="main-grid">
+
+            <div className="panel map-panel">
+
+              <h3>Vendor activity map</h3>
+
+              {loading && (
+                <p className="loading-text">
+                  Loading...
+                </p>
+              )}
+
+              <MapContainer
+                center={[-33.9346, 18.8617]}
+                zoom={14}
+                style={{
+                  height: "420px",
+                  width: "100%",
+                }}
+              >
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                {vendors
+                  .filter((v) => v.lat && v.lon)
+                  .map((v) => (
+                    <CircleMarker
+                      key={v.vendor_id}
+                      center={[
+                        v.lat,
+                        v.lon,
+                      ]}
+                      radius={
+                        v.status === "suppressed"
+                          ? 7
+                          : 14
+                      }
+                      pathOptions={{
                         color:
                           LEVEL_COLORS[
-                            v.status === "suppressed"
-                              ? "suppressed"
-                              : v.level
+                          v.status ===
+                            "suppressed"
+                            ? "suppressed"
+                            : v.level
                           ],
+                        fillColor:
+                          LEVEL_COLORS[
+                          v.status ===
+                            "suppressed"
+                            ? "suppressed"
+                            : v.level
+                          ],
+                        fillOpacity: 0.45,
+                        weight: 2,
                       }}
                     >
-                      {v.status === "suppressed"
-                        ? "No data"
-                        : LEVEL_LABELS[v.level]}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
+                      <Popup>
+                        <strong>{v.name}</strong>
 
-        <div className="panel recs-panel">
-          <h3>Auto-generated recommendations</h3>
+                        <br />
 
-          <p className="panel-sub">
-            Shown only when a recurring pattern crosses the threshold
-          </p>
+                        {v.status === "suppressed" ? (
+                          <em>
+                            Not enough data to show
+                            (privacy threshold)
+                          </em>
+                        ) : (
+                          <>
+                            Status:{" "}
+                            {LEVEL_LABELS[v.level]}
 
-          {vendors.filter((v) => v.recommendation).length === 0 && (
-            <p className="loading-text">
-              No recommendations for this day/hour.
-            </p>
-          )}
+                            <br />
 
-          {vendors
-            .filter((v) => v.recommendation)
-            .map((v) => (
-              <div className={`rec-row ${v.level}`} key={v.vendor_id}>
-                <div>
-                  <strong>{v.name}</strong>
+                            {v.recommendation}
+                          </>
+                        )}
+                      </Popup>
+                    </CircleMarker>
+                  ))}
+              </MapContainer>
 
-                  <div className="pulse-meta">
-                    {v.recommendation}
-                  </div>
-                </div>
+              <div className="legend">
 
-                <div className="rec-actions">
-                  <button className="btn-primary">
-                    {v.level === "quiet"
-                      ? "Run promotion"
-                      : "Hold pricing"}
-                  </button>
+                <span>
+                  <i
+                    style={{
+                      background:
+                        LEVEL_COLORS.quiet,
+                    }}
+                  />
+                  Quiet
+                </span>
 
-                  <button className="btn-ghost">
-                    Dismiss
-                  </button>
-                </div>
+                <span>
+                  <i
+                    style={{
+                      background:
+                        LEVEL_COLORS.normal,
+                    }}
+                  />
+                  Normal
+                </span>
+
+                <span>
+                  <i
+                    style={{
+                      background:
+                        LEVEL_COLORS.busy,
+                    }}
+                  />
+                  Busy
+                </span>
+
+                <span>
+                  <i
+                    style={{
+                      background:
+                        LEVEL_COLORS.suppressed,
+                    }}
+                  />
+                  Suppressed (privacy)
+                </span>
+
               </div>
-            ))}
+            </div>
+
+            <div className="panel pulse-panel">
+
+              <h3>Vendor pulse</h3>
+
+              <p className="panel-sub">
+                Current status for the selected day/hour
+              </p>
+
+              <div className="pulse-list">
+
+                {[...vendors]
+                  .sort((a, b) => {
+                    if (
+                      a.status === "ok" &&
+                      b.status !== "ok"
+                    ) {
+                      return -1;
+                    }
+
+                    if (
+                      a.status !== "ok" &&
+                      b.status === "ok"
+                    ) {
+                      return 1;
+                    }
+
+                    return 0;
+                  })
+                  .map((v) => (
+                    <div
+                      className="pulse-item"
+                      key={v.vendor_id}
+                    >
+                      <div>
+                        <div className="pulse-name">
+                          {v.name}
+                        </div>
+
+                        <div className="pulse-meta">
+                          {v.recommendation ||
+                            "No action needed"}
+                        </div>
+                      </div>
+
+                      <span
+                        className="pulse-pill"
+                        style={{
+                          background: `${LEVEL_COLORS[
+                            v.status ===
+                              "suppressed"
+                              ? "suppressed"
+                              : v.level
+                            ]
+                            }22`,
+
+                          color:
+                            LEVEL_COLORS[
+                            v.status ===
+                              "suppressed"
+                              ? "suppressed"
+                              : v.level
+                            ],
+                        }}
+                      >
+                        {v.status ===
+                          "suppressed"
+                          ? "No data"
+                          : LEVEL_LABELS[
+                          v.level
+                          ]}
+                      </span>
+                    </div>
+                  ))}
+
+              </div>
+            </div>
+
+          </div>
+
+          <div className="panel recs-panel">
+
+            <h3>Auto-generated recommendations</h3>
+
+            <p className="panel-sub">
+              Shown only when a recurring pattern crosses the threshold
+            </p>
+
+            {vendors.filter(
+              (v) => v.recommendation
+            ).length === 0 && (
+                <p className="loading-text">
+                  No recommendations for this day/hour.
+                </p>
+              )}
+
+            {vendors
+              .filter((v) => v.recommendation)
+              .map((v) => (
+                <div
+                  className={`rec-row ${v.level}`}
+                  key={v.vendor_id}
+                >
+                  <div>
+                    <strong>{v.name}</strong>
+
+                    <div className="pulse-meta">
+                      {v.recommendation}
+                    </div>
+                  </div>
+
+                  <div className="rec-actions">
+
+                    <button className="btn-primary">
+                      {v.level === "quiet"
+                        ? "Run promotion"
+                        : "Hold pricing"}
+                    </button>
+
+                    <button className="btn-ghost">
+                      Dismiss
+                    </button>
+
+                  </div>
+                </div>
+              ))}
+
+          </div>
+
         </div>
       </main>
     </div>
