@@ -22,6 +22,8 @@ import {
     YAxis,
 } from "recharts";
 
+import ReportButton from "./ReportButton";
+
 function formatRand(value) {
     return `R ${value.toLocaleString("en-ZA")}`;
 }
@@ -87,11 +89,15 @@ function DemandForecast({
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
+    const [printing, setPrinting] = useState(false);
     const currentUser = {
         name: "User Name",
         role: "Manager",
     };
+
+        const selectedVendorName =
+        vendors.find((v) => String(v.vendor_id) === String(vendorId))?.name ||
+        "";
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -432,7 +438,7 @@ function DemandForecast({
 
                 <div className="page-content">
 
-                    <div className="demand-page-header">
+                    <div className="demand-page-header report-heading">
                         <div className="page-heading">
                             <h1>Demand Forecast</h1>
 
@@ -471,6 +477,15 @@ function DemandForecast({
                                 )}
                             </select>
                         </div>
+
+                        {forecastData.length > 0 && (
+                            <ReportButton
+                                title="Demand Forecast"
+                                subtitle={`${selectedVendorName} · ${forecastPeriod}`}
+                                onPrintStart={() => setPrinting(true)}
+                                onPrintEnd={() => setPrinting(false)}
+                            />
+                        )}
                     </div>
 
                     {loading && (
@@ -592,7 +607,7 @@ function DemandForecast({
                                     <div className="forecast-chart">
 
                                         <ResponsiveContainer
-                                            width="100%"
+                                            width={printing ? 640 : "100%"}
                                             height="100%"
                                         >
                                             <LineChart
@@ -671,6 +686,7 @@ function DemandForecast({
                                                     stroke="#b34c57"
                                                     strokeWidth={3}
                                                     dot={{ r: 3 }}
+                                                    isAnimationActive={!printing}
                                                     activeDot={{
                                                         r: 6,
                                                     }}
@@ -683,6 +699,7 @@ function DemandForecast({
                                                     stroke="#2e8f87"
                                                     strokeWidth={3}
                                                     dot={{ r: 3 }}
+                                                    isAnimationActive={!printing}
                                                     activeDot={{
                                                         r: 6,
                                                     }}
@@ -696,6 +713,7 @@ function DemandForecast({
                                                     strokeWidth={3}
                                                     strokeDasharray="7 5"
                                                     dot={{ r: 3 }}
+                                                    isAnimationActive={!printing}
                                                     activeDot={{
                                                         r: 6,
                                                     }}
