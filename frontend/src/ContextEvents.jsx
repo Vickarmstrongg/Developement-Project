@@ -14,8 +14,9 @@ import {
   Trash2,
 } from "lucide-react";
 import logo from "./assets/Logo.png";
+import { apiFetch } from "./api";
 
-const API = "http://127.0.0.1:8000/context-events";
+const API = "/context-events";
 
 function ContextEvents({
   currentUser,
@@ -67,7 +68,7 @@ try {
   if (filterType) params.set("event_type", filterType);
 
   const url = API + "?" + params.toString();
-  const response = await fetch(url);
+  const response = await apiFetch(url);
 
 
   if (!response.ok) {
@@ -86,7 +87,7 @@ try {
 
 async function loadTypes() {
 try {
-const response = await fetch(`${API}/types`);
+const response = await apiFetch(`${API}/types`);
 
   if (!response.ok) {
     throw new Error("Could not load event types.");
@@ -145,7 +146,7 @@ setError("");
 try {
   const url = editingId ? `${API}/${editingId}` : API;
 
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: editingId ? "PUT" : "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(form),
@@ -174,7 +175,7 @@ if (!window.confirm("Delete this event?")) return;
 setError("");
 
 try {
-  const response = await fetch(`${API}/${eventId}`, {
+  const response = await apiFetch(`${API}/${eventId}`, {
     method: "DELETE",
   });
 

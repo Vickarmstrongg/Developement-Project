@@ -6,9 +6,16 @@ from sqlalchemy.orm import Session
 
 import database
 import models
-from auth_stub import require_admin
+from access.constants import Role
+from access.deps import get_current_user, require_roles
 
-router = APIRouter(prefix="/context-events", tags=["Context events"])
+require_admin = require_roles(Role.ADMIN)
+
+router = APIRouter(
+    prefix="/context-events",
+    tags=["Context events"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 class EventIn(BaseModel):
@@ -129,7 +136,7 @@ def create_event(
         start_date=body.start_date,
         end_date=body.end_date,
         source="Admin entry",
-        created_by_user_id=admin.get("user_id"),
+        created_by_user_id=admin.user_id,
         updated_at=datetime.now(timezone.utc),
     )
 

@@ -171,3 +171,22 @@
     color: #879592;
     font-size: 9px;
 }
+
+.login-error {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fdecea;
+    color: #b42318;
+    font-size: 0.875rem;
+}
+
+.login-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+
+.login-success {
+    color: #067647;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import logo from "./assets/Logo.png";
+import { apiFetch, getStoredUser } from "./api";
 
 import {
     Bell,
@@ -25,10 +26,10 @@ import {
 import ReportButton from "./ReportButton";
 
 function formatRand(value) {
-    return `R ${value.toLocaleString("en-ZA")}`;
+    return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
 }
 
-function ChartTooltip({ active, payload }) {
+function ChartTooltip({ active, payload, isStaff }) {
     if (!active || !payload || payload.length === 0) return null;
 
     const row = payload[0].payload;
@@ -53,13 +54,15 @@ function ChartTooltip({ active, payload }) {
                 <b>{row.customers}</b>
             </div>
 
-            <div className="tooltip-row">
-                <span>
-                    <i className="legend-revenue"></i>
-                    Revenue
-                </span>
-                <b>{formatRand(row.revenue)}</b>
-            </div>
+            {!isStaff && (
+                <div className="tooltip-row">
+                    <span>
+                        <i className="legend-revenue"></i>
+                        Revenue
+                    </span>
+                    <b>{formatRand(row.revenue)}</b>
+                </div>
+            )}
         </div>
     );
 }
@@ -90,12 +93,16 @@ function DemandForecast({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [printing, setPrinting] = useState(false);
-    const currentUser = {
-        name: "User Name",
-        role: "Manager",
-    };
 
-        const selectedVendorName =
+    const storedUser = getStoredUser();
+    const currentUser = {
+        name: storedUser?.full_name || storedUser?.email || "",
+        role: storedUser?.role || "",
+    };
+    const isStaff = currentUser.role === "Staff"; // Staff never see revenue
+
+
+    const selectedVendorName =
         vendors.find((v) => String(v.vendor_id) === String(vendorId))?.name ||
         "";
 
@@ -127,9 +134,8 @@ function DemandForecast({
             try {
                 setLoadingVendors(true);
 
-                const response = await fetch(
-                    "http://127.0.0.1:8000/vendors"
-                );
+                 const response = await apiFetch("/vendors");
+
 
                 if (!response.ok) {
                     throw new Error(
@@ -140,6 +146,12 @@ function DemandForecast({
                 const data = await response.json();
 
                 setVendors(data);
+                  if (
+                    data.length > 0 &&
+                    !data.some((v) => String(v.vendor_id) === vendorId)
+                ) {
+                    setVendorId(String(data[0].vendor_id));
+                }
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -150,6 +162,8 @@ function DemandForecast({
         loadVendors();
     }, []);
 
+
+
     useEffect(() => {
         async function loadForecast() {
             if (!vendorId) return;
@@ -158,8 +172,8 @@ function DemandForecast({
                 setLoading(true);
                 setError("");
 
-                const response = await fetch(
-                    `http://127.0.0.1:8000/vendors/${vendorId}/demand-forecast`
+                 const response = await apiFetch(
+                    `/vendors/${vendorId}/demand-forecast`
                 );
 
                 if (!response.ok) {
@@ -547,21 +561,15 @@ function DemandForecast({
                                         </small>
                                     </div>
 
-                                    <div className="summary-card">
-                                        <span>
-                                            EXPECTED REVENUE
-                                        </span>
-
-                                        <strong>
-                                            {formatRand(
-                                                forecastSummary.expectedRevenue
-                                            )}
-                                        </strong>
-
-                                        <small>
-                                            {forecastPeriod}
-                                        </small>
-                                    </div>
+                                    {!isStaff && (
+                                        <div className="summary-card">
+                                            <span>EXPECTED REVENUE</span>
+                                            <strong>
+                                                {formatRand(forecastSummary.expectedRevenue)}
+                                            </strong>
+                                            <small>{forecastPeriod}</small>
+                                        </div>
+                                    )}
 
                                 </section>
 
@@ -595,10 +603,12 @@ function DemandForecast({
                                                 Customers
                                             </span>
 
-                                            <span>
-                                                <i className="legend-revenue"></i>
-                                                Revenue
-                                            </span>
+                                            {!isStaff && (
+                                                <span>
+                                                    <i className="legend-revenue"></i>
+                                                    Revenue
+                                                </span>
+                                            )}
 
                                         </div>
 
@@ -671,7 +681,7 @@ function DemandForecast({
 
                                                 <Tooltip
                                                     content={
-                                                        <ChartTooltip />
+                                                        <ChartTooltip isStaff={isStaff} />
                                                     }
                                                     cursor={{
                                                         stroke:
@@ -705,19 +715,19 @@ function DemandForecast({
                                                     }}
                                                 />
 
-                                                <Line
-                                                    yAxisId="right"
-                                                    type="monotone"
-                                                    dataKey="revenue"
-                                                    stroke="#7faaa4"
-                                                    strokeWidth={3}
-                                                    strokeDasharray="7 5"
-                                                    dot={{ r: 3 }}
-                                                    isAnimationActive={!printing}
-                                                    activeDot={{
-                                                        r: 6,
-                                                    }}
-                                                />
+                                                {!isStaff && (
+                                                    <Line
+                                                        yAxisId="right"
+                                                        type="monotone"
+                                                        dataKey="revenue"
+                                                        stroke="#7faaa4"
+                                                        strokeWidth={3}
+                                                        strokeDasharray="7 5"
+                                                        dot={{ r: 3 }}
+                                                        isAnimationActive={!printing}
+                                                        activeDot={{ r: 6 }}
+                                                    />
+                                                )}
 
                                             </LineChart>
                                         </ResponsiveContainer>
@@ -748,9 +758,7 @@ function DemandForecast({
                                                             Customers
                                                         </th>
 
-                                                        <th>
-                                                            Revenue
-                                                        </th>
+                                                        {!isStaff && <th>Revenue</th>}
                                                     </tr>
                                                 </thead>
 
@@ -783,11 +791,11 @@ function DemandForecast({
                                                                     }
                                                                 </td>
 
-                                                                <td>
-                                                                    {formatRand(
-                                                                        item.revenue
-                                                                    )}
-                                                                </td>
+                                                                {!isStaff && (
+                                                                    <td>
+                                                                        {formatRand(item.revenue)}
+                                                                    </td>
+                                                                )}
                                                             </tr>
                                                         )
                                                     )}
