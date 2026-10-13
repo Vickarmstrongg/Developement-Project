@@ -109,13 +109,23 @@ function App() {
       setView("dashboard");
     };
 
-      useEffect(() => {
+    window.addEventListener("bb-logout", onExpired);
+    return () => window.removeEventListener("bb-logout", onExpired);
+  }, []);
+
+useEffect(() => {
     document.body.dataset.role = sessionUser?.role || "";
   }, [sessionUser]);
 
-  
-    window.addEventListener("bb-logout", onExpired);
-    return () => window.removeEventListener("bb-logout", onExpired);
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === "#users" && getStoredUser()?.role === "Admin") {
+        setView("users");
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   useEffect(() => {

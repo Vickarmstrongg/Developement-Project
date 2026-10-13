@@ -14,6 +14,11 @@ import models
 import context_events
 from fair_comparison import calculate_fair_comparison
 
+from access import routes as auth_routes, users as user_routes
+from access.settings import CORS_ORIGINS
+from access.deps import get_current_user, require_vendor_access, require_roles, shape_for_role
+from access.constants import Role
+
 from rush_hour import (
     get_bulk_vendor_status,
     get_vendor_size_tiers,
@@ -44,16 +49,13 @@ app.include_router(user_routes.router)   # /users/... (Admin only)
 @app.get("/vendors/{vendor_id}/weekly-pattern")
 def weekly_pattern(
     vendor_id: int,
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    user: models.User = Depends(require_vendor_access)
+
 ):
     reference_date = get_reference_date(db)
     pattern = get_weekly_pattern(db, vendor_id, reference_date)
-
-    return {
-        "vendor_id": vendor_id,
-        "pattern": pattern
-    }
-
+    return shape_for_role(user, {"vendor_id": vendor_id, "pattern": pattern})
 
 @app.get("/")
 def health_check():
@@ -67,16 +69,18 @@ def db_check(db: Session = Depends(database.get_db)):
 
 
 @app.get("/vendors")
-def get_vendors(db: Session = Depends(database.get_db)):
-    vendors = db.query(models.Vendor).all()
-
+def get_vendors(
+    db: Session = Depends(database.get_db),
+    user: models.User = Depends(get_current_user),
+):
+    query = db.query(models.Vendor)
+    if not user.all_vendors:  # Manager / Staff only see their linked vendors
+        if not user.vendor_ids:
+            return []
+        query = query.filter(models.Vendor.vendor_id.in_(user.vendor_ids))
+    vendors = query.all()
     return [
-        {
-            "vendor_id": v.vendor_id,
-            "name": v.name,
-            "address": v.address,
-            "type_id": v.type_id,
-        }
+        {"vendor_id": v.vendor_id, "name": v.name, "address": v.address, "type_id": v.type_id}
         for v in vendors
     ]
 
@@ -84,7 +88,8 @@ def get_vendors(db: Session = Depends(database.get_db)):
 @app.get("/vendors/{vendor_id}/summary")
 def vendor_summary(
     vendor_id: int,
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    user: models.User = Depends(require_vendor_access)
 ):
     vendor = (
         db.query(models.Vendor)
@@ -109,7 +114,7 @@ def vendor_summary(
         models.Transaction.vendor_id == vendor_id
     ).first()
 
-    return {
+    return shape_for_role(user,{
         "vendor_id": vendor.vendor_id,
         "vendor_name": vendor.name,
         "total_transactions": result.total_transactions,
@@ -121,19 +126,21 @@ def vendor_summary(
             round(float(result.avg_order_value), 2)
             if result.avg_order_value else 0
         ),
-    }
+    })
 
 
 @app.get("/vendors/{vendor_id}/demand-forecast")
 def get_demand_forecast(
     vendor_id: int,
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    user: models.User = Depends(require_vendor_access)
 ):
     result = calculate_demand_forecast(db, vendor_id)
-    return result
+    return shape_for_role(user, result)
 
 
-@app.get("/vendors/{vendor_id}/fair-comparison")
+@app.get("/vendors/{vendor_id}/fair-comparison",
+        dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER)), Depends(require_vendor_access)])
 def get_fair_comparison(
     vendor_id: int,
     filter_date: Optional[date] = None,
@@ -146,7 +153,7 @@ def get_fair_comparison(
     )
 
 
-@app.get("/rush-hour-radar")
+@app.get("/rush-hour-radar", dependencies=[Depends(get_current_user)])
 def rush_hour_radar(
     day: int,
     hour: int,
