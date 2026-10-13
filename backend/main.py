@@ -2,10 +2,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
+from datetime import date
+from typing import Optional
 
 import database
 import models
 import context_events
+import dashboard
+from fair_comparison import calculate_fair_comparison
 
 from rush_hour import (
     get_bulk_vendor_status,
@@ -21,10 +25,15 @@ from demand_forecast import calculate_demand_forecast
 app = FastAPI(title="Byte & Bite API")
 
 app.include_router(context_events.router)
+app.include_router(dashboard.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -123,6 +132,19 @@ def get_demand_forecast(
     return result
 
 
+@app.get("/vendors/{vendor_id}/fair-comparison")
+def get_fair_comparison(
+    vendor_id: int,
+    filter_date: Optional[date] = None,
+    db: Session = Depends(database.get_db)
+):
+    return calculate_fair_comparison(
+        db=db,
+        vendor_id=vendor_id,
+        filter_date=filter_date
+    )
+
+
 @app.get("/rush-hour-radar")
 def rush_hour_radar(
     day: int,
@@ -173,4 +195,3 @@ def rush_hour_radar(
         "hour": hour,
         "vendors": results
     }
-

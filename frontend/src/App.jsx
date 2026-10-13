@@ -17,6 +17,7 @@ import Login from "./Login";
 import DemandForecast from "./DemandForecast";
 import FairComparison from "./FairComparison";
 import ContextEvents from "./ContextEvents";
+import Dashboard from "./DashboardPage";
 import logo from "./assets/Logo.png";
 
 const DAYS = [
@@ -324,6 +325,11 @@ function App() {
               </div>
             </div>
           </header>
+
+          <Dashboard
+            onContextEvents={() => setView("context")}
+            onRushHourRadar={() => setView("rush")}
+          />
 
         </main>
       </div>
