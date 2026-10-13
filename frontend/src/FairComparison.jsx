@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import logo from "./assets/Logo.png";
+import { apiFetch, getStoredUser } from "./api";
 
 import {
     Bell,
@@ -22,7 +23,6 @@ import {
     Info,
 } from "lucide-react";
 
-const API_URL = "http://127.0.0.1:8000";
 
 const RESULT_LABELS = {
     above_average: "Above average",
@@ -109,9 +109,10 @@ function FairComparison({
     const [reloadVendorsKey, setReloadVendorsKey] = useState(0);
     const [reloadComparisonKey, setReloadComparisonKey] = useState(0);
 
+    const storedUser = getStoredUser();
     const currentUser = {
-        name: "User Name",
-        role: "Manager",
+        name: storedUser?.full_name || storedUser?.email || "",
+        role: storedUser?.role || "",
     };
 
     useEffect(() => {
@@ -147,7 +148,7 @@ function FairComparison({
             setVendorError("");
 
             try {
-                const response = await fetch(`${API_URL}/vendors`, {
+                const response = await apiFetch("/vendors", {
                     signal: controller.signal,
                 });
 
@@ -227,13 +228,13 @@ function FairComparison({
             setLoading(true);
 
             try {
-                let url = `${API_URL}/vendors/${vendorId}/fair-comparison`;
+                  let url = `/vendors/${vendorId}/fair-comparison`;
 
                 if (periodMode === "day" && filterDate) {
                     url += `?filter_date=${encodeURIComponent(filterDate)}`;
                 }
 
-                const response = await fetch(url, {
+                const response = await apiFetch(url, {
                     signal: controller.signal,
                 });
 

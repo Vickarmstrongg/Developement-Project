@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import logo from "./assets/Logo.png";
+import { apiFetch, getStoredUser } from "./api";
 
 import {
     Bell,
@@ -23,7 +24,7 @@ import {
 } from "recharts";
 
 function formatRand(value) {
-    return `R ${value.toLocaleString("en-ZA")}`;
+    return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
 }
 
 function ChartTooltip({ active, payload }) {
@@ -88,10 +89,13 @@ function DemandForecast({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+        const storedUser = getStoredUser();
     const currentUser = {
-        name: "User Name",
-        role: "Manager",
+        name: storedUser?.full_name || storedUser?.email || "",
+        role: storedUser?.role || "",
     };
+    const isStaff = currentUser.role === "Staff"; // Staff never see revenue
+
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -121,9 +125,8 @@ function DemandForecast({
             try {
                 setLoadingVendors(true);
 
-                const response = await fetch(
-                    "http://127.0.0.1:8000/vendors"
-                );
+                 const response = await apiFetch("/vendors");
+
 
                 if (!response.ok) {
                     throw new Error(
@@ -134,6 +137,12 @@ function DemandForecast({
                 const data = await response.json();
 
                 setVendors(data);
+                  if (
+                    data.length > 0 &&
+                    !data.some((v) => String(v.vendor_id) === vendorId)
+                ) {
+                    setVendorId(String(data[0].vendor_id));
+                }
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -144,6 +153,8 @@ function DemandForecast({
         loadVendors();
     }, []);
 
+
+
     useEffect(() => {
         async function loadForecast() {
             if (!vendorId) return;
@@ -152,8 +163,8 @@ function DemandForecast({
                 setLoading(true);
                 setError("");
 
-                const response = await fetch(
-                    `http://127.0.0.1:8000/vendors/${vendorId}/demand-forecast`
+                 const response = await apiFetch(
+                    `/vendors/${vendorId}/demand-forecast`
                 );
 
                 if (!response.ok) {

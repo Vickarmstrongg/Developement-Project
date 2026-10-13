@@ -18,6 +18,8 @@ import DemandForecast from "./DemandForecast";
 import FairComparison from "./FairComparison";
 import ContextEvents from "./ContextEvents";
 import logo from "./assets/Logo.png";
+import SetPassword from "./SetPassword";
+import { apiFetch, clearSession, getStoredUser, getToken } from "./api";
 
 const DAYS = [
   { value: 0, label: "Monday" },
@@ -58,7 +60,10 @@ const LEVEL_LABELS = {
 };
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+    const [sessionUser, setSessionUser] = useState(() =>
+    getToken() ? getStoredUser() : null
+  );
+  const loggedIn = sessionUser !== null;
 
   const [view, setView] = useState("dashboard");
 
@@ -73,10 +78,11 @@ function App() {
   const profileRef = useRef(null);
 
   const currentUser = {
-    name: "User Name",
-    role: "Manager",
+    ...sessionUser,
+    name: sessionUser?.full_name || sessionUser?.email || "",
   };
-
+  
+  
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -97,18 +103,33 @@ function App() {
     };
   }, []);
 
+   useEffect(() => {
+    const onExpired = () => {
+      setSessionUser(null);
+      setView("dashboard");
+    };
+
+      useEffect(() => {
+    document.body.dataset.role = sessionUser?.role || "";
+  }, [sessionUser]);
+
+  
+    window.addEventListener("bb-logout", onExpired);
+    return () => window.removeEventListener("bb-logout", onExpired);
+  }, []);
+
   useEffect(() => {
     if (!loggedIn || view !== "rush") return;
 
     setLoading(true);
 
-    let url = `http://127.0.0.1:8000/rush-hour-radar?day=${day}&hour=${hour}`;
+        let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
 
     if (typeId) {
       url += `&type_id=${typeId}`;
     }
 
-    fetch(url)
+    apiFetch(url)
       .then((res) => res.json())
       .then((data) => setVendors(data.vendors || []))
       .catch((err) =>
@@ -117,23 +138,30 @@ function App() {
       .finally(() => setLoading(false));
   }, [day, hour, typeId, loggedIn, view]);
 
+
   function handleLogout() {
+    clearSession();
     setProfileOpen(false);
-    setLoggedIn(false);
+    setSessionUser(null);
     setView("dashboard");
+  }
+
+  if (window.location.pathname === "/set-password") {
+    return <SetPassword />;
   }
 
   if (!loggedIn) {
     return (
       <Login
-        onLogin={() => {
+        onLogin={(user) => {
           setProfileOpen(false);
           setView("dashboard");
-          setLoggedIn(true);
+          setSessionUser(user);
         }}
       />
     );
   }
+
 
   if (view === "demand") {
     return (
