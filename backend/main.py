@@ -1,9 +1,13 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from datetime import date
 from typing import Optional
+
+from access import routes as auth_routes, users as user_routes
+from access.settings import CORS_ORIGINS
+from access.deps import get_current_user, require_vendor_access, shape_for_role
 
 import database
 import models
@@ -32,6 +36,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_routes.router)   # /auth/...
+app.include_router(user_routes.router)   # /users/... (Admin only)
 
 
 @app.get("/vendors/{vendor_id}/weekly-pattern")
