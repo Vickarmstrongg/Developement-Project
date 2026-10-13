@@ -31,13 +31,11 @@ const RESULT_LABELS = {
 };
 
 function formatNumber(value) {
-    const number = Number(value);
-
-    if (!Number.isFinite(number)) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
         return "—";
     }
 
-    return Math.round(number).toLocaleString("en-ZA");
+    return Math.round(value).toLocaleString("en-ZA");
 }
 
 function capitalise(value) {
@@ -283,16 +281,20 @@ function FairComparison({
     const peerGroup = result?.peer_group || {};
     const period = result?.period || {};
 
-    const vendorTransactions = Number(metrics.vendor_transactions);
-    const peerAverageTransactions = Number(
-        metrics.peer_average_transactions
-    );
-
+    const vendorTransactions = metrics.vendor_transactions;
+    const peerAverageTransactions = metrics.peer_average_transactions;
     const comparisonResult = metrics.comparison_result;
 
+    const hasValidComparisonResult =
+        typeof comparisonResult === "string" &&
+        Object.prototype.hasOwnProperty.call(RESULT_LABELS, comparisonResult);
     const validTransactionNumbers =
+        typeof vendorTransactions === "number" &&
         Number.isFinite(vendorTransactions) &&
+        typeof peerAverageTransactions === "number" &&
         Number.isFinite(peerAverageTransactions);
+    const hasScore =
+        isOk && hasValidComparisonResult && validTransactionNumbers;
 
     const percentageDifference =
         validTransactionNumbers && peerAverageTransactions > 0
@@ -723,21 +725,22 @@ function FairComparison({
                             !error &&
                             !vendorError &&
                             result &&
-                            result.status !== "ok" &&
+                            (result.status !== "ok" || !hasScore) &&
                             result.status !== "suppressed" && (
                                 <section className="fair-message">
                                     <Info size={22} />
                                     <div>
                                         <h2>Comparison unavailable</h2>
                                         <p>
-                                            The backend did not return a completed comparison for
-                                            this business and period.
+                                            {result.status === "ok"
+                                                ? "The response is missing a valid comparison result or transaction metrics."
+                                                : "The backend did not return a completed comparison for this business and period."}
                                         </p>
                                     </div>
                                 </section>
                             )}
 
-                        {!loading && !error && !vendorError && isOk && (
+                        {!loading && !error && !vendorError && hasScore && (
                             <>
                                 <section className="fair-score-card">
                                     <div className="fair-score-left">

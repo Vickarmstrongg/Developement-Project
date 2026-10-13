@@ -8,6 +8,7 @@ from typing import Optional
 import database
 import models
 import context_events
+import dashboard
 from fair_comparison import calculate_fair_comparison
 
 from rush_hour import (
@@ -24,10 +25,15 @@ from demand_forecast import calculate_demand_forecast
 app = FastAPI(title="Byte & Bite API")
 
 app.include_router(context_events.router)
+app.include_router(dashboard.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
