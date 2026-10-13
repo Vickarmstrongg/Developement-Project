@@ -1,13 +1,13 @@
-from collections.abc import Mapping
 from datetime import date, timedelta
-import os
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 import models
+from access.constants import Role
+from access.deps import get_current_user
 from database import get_db
 from privacy import MIN_STUDENTS_THRESHOLD, is_suppressed
 from rush_hour import get_bulk_vendor_status
@@ -25,41 +25,23 @@ TIME_PERIODS = (
     {"label": "20:00–22:00", "start_hour": 20, "end_hour": 22},
 )
 
-LOCAL_PREVIEW_ENABLED = os.getenv("DASHBOARD_LOCAL_PREVIEW", "").strip().casefold() in {
-    "1",
-    "true",
-    "yes",
-}
+
+def _can_view_revenue(user: models.User) -> bool:
+    return user.role in {Role.ADMIN.value, Role.MANAGER.value}
 
 
-def get_current_user(request: Request) -> Any:
-    """Use app auth, or a deliberately limited local-only preview identity."""
-    user = getattr(request.state, "user", None)
-    if user is None:
-        if LOCAL_PREVIEW_ENABLED:
-            return {"role": "viewer", "permissions": ()}
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return user
+def _accessible_vendor_ids(user: models.User) -> list[int] | None:
+    return None if user.all_vendors else user.vendor_ids
 
 
-def _user_field(user: Any, name: str, default: Any = None) -> Any:
-    if isinstance(user, Mapping):
-        return user.get(name, default)
-    return getattr(user, name, default)
-
-
-def _can_view_revenue(user: Any) -> bool:
-    role = str(_user_field(user, "role", "")).casefold()
-    permissions = _user_field(user, "permissions", ()) or ()
-    if isinstance(permissions, str):
-        permissions = (permissions,)
-    return (
-        role in {"owner", "manager", "admin"}
-        or "revenue:read" in permissions
-    )
-
-
-def _base_query(db: Session, start_date: date, end_date: date, vendor_id, vendor_type):
+def _base_query(
+    db: Session,
+    start_date: date,
+    end_date: date,
+    vendor_id,
+    vendor_type,
+    accessible_vendor_ids: list[int] | None,
+):
     query = (
         db.query(models.Transaction)
         .join(models.Vendor, models.Vendor.vendor_id == models.Transaction.vendor_id)
@@ -72,14 +54,18 @@ def _base_query(db: Session, start_date: date, end_date: date, vendor_id, vendor
         query = query.filter(models.Transaction.vendor_id == vendor_id)
     if vendor_type is not None:
         query = query.filter(models.Vendor.type_id == vendor_type)
+    if accessible_vendor_ids is not None:
+        query = query.filter(models.Transaction.vendor_id.in_(accessible_vendor_ids))
     return query
 
 
-def _get_filter_options(db: Session) -> dict[str, list[dict[str, Any]]]:
+def _get_filter_options(
+    db: Session,
+    accessible_vendor_ids: list[int] | None,
+) -> dict[str, list[dict[str, Any]]]:
     vendor_types = (
         db.query(models.VendorType.type_id, models.VendorType.name)
         .order_by(models.VendorType.name)
-        .all()
     )
     vendors = (
         db.query(
@@ -88,12 +74,20 @@ def _get_filter_options(db: Session) -> dict[str, list[dict[str, Any]]]:
             models.Vendor.type_id,
         )
         .order_by(models.Vendor.name, models.Vendor.vendor_id)
-        .all()
     )
+    if accessible_vendor_ids is not None:
+        vendors = vendors.filter(models.Vendor.vendor_id.in_(accessible_vendor_ids))
+        vendor_types = (
+            db.query(models.VendorType.type_id, models.VendorType.name)
+            .join(models.Vendor, models.Vendor.type_id == models.VendorType.type_id)
+            .filter(models.Vendor.vendor_id.in_(accessible_vendor_ids))
+            .distinct()
+            .order_by(models.VendorType.name)
+        )
     return {
         "vendor_types": [
             {"id": row.type_id, "name": row.name}
-            for row in vendor_types
+            for row in vendor_types.all()
         ],
         "vendors": [
             {
@@ -101,7 +95,7 @@ def _get_filter_options(db: Session) -> dict[str, list[dict[str, Any]]]:
                 "name": row.name,
                 "vendor_type_id": row.type_id,
             }
-            for row in vendors
+            for row in vendors.all()
         ],
     }
 
@@ -155,7 +149,7 @@ def get_dashboard_overview(
     vendor_id: int | None = Query(default=None, gt=0),
     vendor_type: int | None = Query(default=None, gt=0),
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: models.User = Depends(get_current_user),
 ) -> dict[str, Any]:
     if start_date and end_date and start_date > end_date:
         raise HTTPException(
@@ -163,19 +157,29 @@ def get_dashboard_overview(
             detail="start_date must be on or before end_date",
         )
 
-    latest_date = db.query(func.max(func.date(models.Transaction.datetime))).scalar()
-    earliest_date = db.query(func.min(func.date(models.Transaction.datetime))).scalar()
+    accessible_vendor_ids = _accessible_vendor_ids(current_user)
+    transaction_scope = db.query(models.Transaction)
+    if accessible_vendor_ids is not None:
+        transaction_scope = transaction_scope.filter(
+            models.Transaction.vendor_id.in_(accessible_vendor_ids)
+        )
+    latest_date = transaction_scope.with_entities(
+        func.max(func.date(models.Transaction.datetime))
+    ).scalar()
+    earliest_date = transaction_scope.with_entities(
+        func.min(func.date(models.Transaction.datetime))
+    ).scalar()
     if latest_date is None:
         return {
             "sample_data": False,
-            "access_mode": "local_preview" if LOCAL_PREVIEW_ENABLED else "authenticated",
+            "access_mode": "authenticated",
             "date_range": {"start": None, "end": None},
             "selected_filters": {
                 "vendor_id": vendor_id,
                 "vendor_type": vendor_type,
             },
             "permissions": {"can_view_revenue": _can_view_revenue(current_user)},
-            "filter_options": _get_filter_options(db),
+            "filter_options": _get_filter_options(db, accessible_vendor_ids),
             "kpis": {
                 "total_transactions": None,
                 "distinct_customers": None,
@@ -212,11 +216,15 @@ def get_dashboard_overview(
         )
 
     if vendor_id is not None:
-        vendor = (
+        vendor_query = (
             db.query(models.Vendor.vendor_id, models.Vendor.type_id)
             .filter(models.Vendor.vendor_id == vendor_id)
-            .first()
         )
+        if accessible_vendor_ids is not None:
+            vendor_query = vendor_query.filter(
+                models.Vendor.vendor_id.in_(accessible_vendor_ids)
+            )
+        vendor = vendor_query.first()
         if vendor is None:
             raise HTTPException(status_code=404, detail="Vendor not found")
         if vendor_type is not None and vendor.type_id != vendor_type:
@@ -233,7 +241,14 @@ def get_dashboard_overview(
         if vendor_type_exists is None:
             raise HTTPException(status_code=422, detail="Unknown vendor type")
 
-    base = _base_query(db, start_date, end_date, vendor_id, vendor_type)
+    base = _base_query(
+        db,
+        start_date,
+        end_date,
+        vendor_id,
+        vendor_type,
+        accessible_vendor_ids,
+    )
     can_view_revenue = _can_view_revenue(current_user)
     summary_fields = [
         func.count(models.Transaction.transaction_id).label("transactions"),
@@ -405,7 +420,7 @@ def get_dashboard_overview(
 
     return {
         "sample_data": False,
-        "access_mode": "local_preview" if LOCAL_PREVIEW_ENABLED else "authenticated",
+        "access_mode": "authenticated",
         "date_range": {
             "start": start_date.isoformat(),
             "end": end_date.isoformat(),
@@ -418,7 +433,7 @@ def get_dashboard_overview(
             "vendor_type_name": selected_type,
         },
         "permissions": {"can_view_revenue": can_view_revenue},
-        "filter_options": _get_filter_options(db),
+        "filter_options": _get_filter_options(db, accessible_vendor_ids),
         "kpis": kpis,
         "demand_trend": trend,
         "demand_heatmap": {

@@ -19,9 +19,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-const API = import.meta.env.VITE_DASHBOARD_API_URL
-  || "http://127.0.0.1:8000/api/dashboard/overview";
+import { apiFetch } from "./api";
 
 function formatNumber(value) {
   return typeof value === "number" && Number.isFinite(value)
@@ -112,9 +110,10 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
       setError("");
       setData(null);
       try {
-        const response = await fetch(`${API}${query ? `?${query}` : ""}`, {
-          signal: controller.signal,
-        });
+        const response = await apiFetch(
+          `/api/dashboard/overview${query ? `?${query}` : ""}`,
+          { signal: controller.signal }
+        );
         const result = await response.json();
         if (!response.ok) {
           throw new Error(result.detail || `Could not load dashboard (${response.status}).`);
