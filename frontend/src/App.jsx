@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
 Bell,
-Clock3,
-TrendingUp,
-Scale,
-FileText,
 LogOut,
 ChevronDown,
-LayoutDashboard,
-CalendarDays,
 } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -18,9 +12,25 @@ import DemandForecast from "./DemandForecast";
 import FairComparison from "./FairComparison";
 import ContextEvents from "./ContextEvents";
 import Dashboard from "./DashboardPage";
-import logo from "./assets/Logo.png";
 import SetPassword from "./SetPassword";
 import { apiFetch, clearSession, getStoredUser, getToken } from "./api";
+import WorkspaceSidebar from "./WorkspaceSidebar";
+
+const HASH_TO_VIEW = {
+  "#dashboard": "dashboard",
+  "#rush-hour-radar": "rush",
+  "#demand-forecast": "demand",
+  "#fair-comparison": "fair",
+  "#context-events": "context",
+};
+
+const VIEW_TO_HASH = Object.fromEntries(
+  Object.entries(HASH_TO_VIEW).map(([hash, view]) => [view, hash])
+);
+
+function viewFromHash(hash = window.location.hash) {
+  return HASH_TO_VIEW[hash] || "dashboard";
+}
 
 const DAYS = [
   { value: 0, label: "Monday" },
@@ -66,7 +76,7 @@ function App() {
   );
   const loggedIn = sessionUser !== null;
 
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => viewFromHash());
 
   const [day, setDay] = useState(4);
   const [hour, setHour] = useState(12);
@@ -82,6 +92,14 @@ function App() {
     ...sessionUser,
     name: sessionUser?.full_name || sessionUser?.email || "",
   };
+
+  function navigateTo(nextView) {
+    setView(nextView);
+    const hash = VIEW_TO_HASH[nextView];
+    if (hash && window.location.hash !== hash) {
+      window.location.hash = hash;
+    }
+  }
 
 
   useEffect(() => {
@@ -120,9 +138,12 @@ useEffect(() => {
 
   useEffect(() => {
     const onHash = () => {
+      const nextView = viewFromHash();
+      if (nextView !== "dashboard" || window.location.hash === "#dashboard") {
+        setView(nextView);
+      }
       if (window.location.hash === "#users" && getStoredUser()?.role === "Admin") {
         setView("users");
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
       }
     };
     window.addEventListener("hashchange", onHash);
@@ -166,7 +187,7 @@ useEffect(() => {
       <Login
         onLogin={(user) => {
           setProfileOpen(false);
-          setView("dashboard");
+          setView(viewFromHash());
           setSessionUser(user);
         }}
       />
@@ -178,9 +199,10 @@ useEffect(() => {
     return (
       <DemandForecast
         onLogout={handleLogout}
-        onBack={() => setView("rush")}
-        onDashboard={() => setView("dashboard")}
-        onFairComparison={() => setView("fair")}
+        onBack={() => navigateTo("rush")}
+        onDashboard={() => navigateTo("dashboard")}
+        onFairComparison={() => navigateTo("fair")}
+        onContextEvents={() => navigateTo("context")}
       />
     );
   }
@@ -189,9 +211,10 @@ useEffect(() => {
     return (
       <FairComparison
         onLogout={handleLogout}
-        onBack={() => setView("rush")}
-        onDashboard={() => setView("dashboard")}
-        onDemandForecast={() => setView("demand")}
+        onBack={() => navigateTo("rush")}
+        onDashboard={() => navigateTo("dashboard")}
+        onDemandForecast={() => navigateTo("demand")}
+        onContextEvents={() => navigateTo("context")}
       />
     );
   }
@@ -200,10 +223,7 @@ useEffect(() => {
   return (
     <ContextEvents
       currentUser={currentUser}
-      onDashboard={() => setView("dashboard")}
-      onRushHourRadar={() => setView("rush")}
-      onDemandForecast={() => setView("demand")}
-      onFairComparison={() => setView("fair")}
+      onNavigate={navigateTo}
       onLogout={handleLogout}
     />
   );
@@ -213,96 +233,7 @@ useEffect(() => {
     return (
       <div className="app-layout">
 
-        <aside className="sidebar">
-          <div className="brand">
-            <span className="brand-name">Byte & Bite</span>
-
-            <img
-              src={logo}
-              alt="Byte & Bite"
-              className="brand-logo"
-            />
-          </div>
-
-          <div className="sidebar-section">
-            <span className="sidebar-title">WORKSPACE</span>
-
-            <nav>
-              <a
-                href="#dashboard"
-                className="sidebar-link active"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setView("dashboard");
-                }}
-              >
-                <LayoutDashboard size={16} />
-                Dashboard
-              </a>
-
-              <a
-                href="#rush-hour-radar"
-                className="sidebar-link"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setView("rush");
-                }}
-              >
-                <Clock3 size={16} />
-                Rush Hour Radar
-              </a>
-
-              <a
-                href="#demand-forecast"
-                className="sidebar-link"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setView("demand");
-                }}
-              >
-                <TrendingUp size={16} />
-                Demand Forecast
-              </a>
-
-              <a
-                href="#fair-comparison"
-                className="sidebar-link"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setView("fair");
-                }}
-              >
-                <Scale size={16} />
-                Fair Comparison
-              </a>
-              <a
-                href="#context-events"
-                className="sidebar-link"
-                onClick={(event) => {
-                   event.preventDefault();
-                   setView("context");
-                 }}
->
-  <CalendarDays size={16} />
-  Calendar / Context Events
-</a>
-            </nav>
-          </div>
-
-          <div className="sidebar-section">
-            <span className="sidebar-title">Reporting</span>
-
-            <nav>
-              <a
-                href="#reports"
-                className="sidebar-link"
-              >
-                <FileText size={16} />
-                Reports
-              </a>
-            </nav>
-          </div>
-        </aside>
+        <WorkspaceSidebar activeView="dashboard" onNavigate={navigateTo} />
 
         <main className="main-content">
 
@@ -365,8 +296,8 @@ useEffect(() => {
           </header>
 
           <Dashboard
-            onContextEvents={() => setView("context")}
-            onRushHourRadar={() => setView("rush")}
+            onContextEvents={() => navigateTo("context")}
+            onRushHourRadar={() => navigateTo("rush")}
           />
 
         </main>
@@ -389,99 +320,7 @@ useEffect(() => {
   return (
     <div className="app-layout">
 
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-name">Byte & Bite</span>
-
-          <img
-            src={logo}
-            alt="Byte & Bite"
-            className="brand-logo"
-          />
-        </div>
-
-        <div className="sidebar-section">
-          <span className="sidebar-title">WORKSPACE</span>
-
-          <nav>
-            <a
-              href="#dashboard"
-              className="sidebar-link"
-              onClick={(event) => {
-                event.preventDefault();
-                setView("dashboard");
-              }}
-            >
-              <LayoutDashboard size={16} />
-              Dashboard
-            </a>
-
-            <a
-              href="#rush-hour-radar"
-              className="sidebar-link active"
-              onClick={(event) => {
-                event.preventDefault();
-                setView("rush");
-              }}
-            >
-              <Clock3 size={16} />
-              Rush Hour Radar
-            </a>
-
-            <a
-              href="#demand-forecast"
-              className="sidebar-link"
-              onClick={(event) => {
-                event.preventDefault();
-                setView("demand");
-              }}
-            >
-              <TrendingUp size={16} />
-              Demand Forecast
-            </a>
-
-            <a
-              href="#fair-comparison"
-              className="sidebar-link"
-              onClick={(event) => {
-                event.preventDefault();
-                setView("fair");
-              }}
-            >
-              <Scale size={16} />
-              Fair Comparison
-            </a>
-            <a
-              href="#context-events"
-              className="sidebar-link"
-              onClick={(event) => {
-              event.preventDefault();
-              setView("context");
-              }}
-
->
-
-              <CalendarDays size={16} />
-              Calendar / Context Events
-            </a>
-
-          </nav>
-        </div>
-
-        <div className="sidebar-section">
-          <span className="sidebar-title">Reporting</span>
-
-          <nav>
-            <a
-              href="#reports"
-              className="sidebar-link"
-            >
-              <FileText size={16} />
-              Reports
-            </a>
-          </nav>
-        </div>
-      </aside>
+      <WorkspaceSidebar activeView="rush" onNavigate={navigateTo} />
 
       <main className="main-content">
 

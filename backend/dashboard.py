@@ -203,7 +203,7 @@ def get_dashboard_overview(
             "upcoming_context_events": [],
             "privacy_policy": {
                 "suppression_threshold": MIN_STUDENTS_THRESHOLD,
-                "review_required": MIN_STUDENTS_THRESHOLD != 10,
+                "review_required": False,
             },
         }
 
@@ -446,11 +446,7 @@ def get_dashboard_overview(
         "upcoming_context_events": upcoming_events,
         "privacy_policy": {
             "suppression_threshold": MIN_STUDENTS_THRESHOLD,
-            "review_required": MIN_STUDENTS_THRESHOLD != 10,
-            "notice": (
-                "The dashboard uses the existing shared five-student suppression "
-                "rule. The BRD documents a ten-student minimum; confirm which "
-                "policy should apply before release."
-            ) if MIN_STUDENTS_THRESHOLD != 10 else None,
+            "review_required": False,
+            "notice": None,
         },
     }

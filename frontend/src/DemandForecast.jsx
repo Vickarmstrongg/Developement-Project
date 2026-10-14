@@ -1,16 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import logo from "./assets/Logo.png";
 import { apiFetch, getStoredUser } from "./api";
 
 import {
     Bell,
-    Clock3,
-    TrendingUp,
-    Scale,
-    FileText,
     LogOut,
     ChevronDown,
-    LayoutDashboard,
 } from "lucide-react";
 
 import {
@@ -24,6 +18,7 @@ import {
 } from "recharts";
 
 import ReportButton from "./ReportButton";
+import WorkspaceSidebar from "./WorkspaceSidebar";
 
 function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
@@ -72,6 +67,7 @@ function DemandForecast({
     onBack,
     onDashboard,
     onFairComparison,
+    onContextEvents,
 }) {
     const [profileOpen, setProfileOpen] = useState(false);
 
@@ -289,92 +285,15 @@ function DemandForecast({
     return (
         <div className="app-layout">
 
-            <aside className="sidebar">
-                <div className="brand">
-                    <span className="brand-name">
-                        Byte & Bite
-                    </span>
-
-                    <img
-                        src={logo}
-                        alt="Byte & Bite"
-                        className="brand-logo"
-                    />
-                </div>
-
-                <div className="sidebar-section">
-                    <span className="sidebar-title">
-                        WORKSPACE
-                    </span>
-
-                    <nav>
-
-                        <a
-                            href="#dashboard"
-                            className="sidebar-link"
-                            onClick={(event) => {
-                                event.preventDefault();
-                                onDashboard();
-                            }}
-                        >
-                            <LayoutDashboard size={16} />
-                            Dashboard
-                        </a>
-
-                        <a
-                            href="#rush-hour-radar"
-                            className="sidebar-link"
-                            onClick={(event) => {
-                                event.preventDefault();
-                                onBack();
-                            }}
-                        >
-                            <Clock3 size={16} />
-                            Rush Hour Radar
-                        </a>
-
-                        <a
-                            href="#demand-forecast"
-                            className="sidebar-link active"
-                            onClick={(event) => {
-                                event.preventDefault();
-                            }}
-                        >
-                            <TrendingUp size={16} />
-                            Demand Forecast
-                        </a>
-
-                        <a
-                            href="#fair-comparison"
-                            className="sidebar-link"
-                            onClick={(event) => {
-                                event.preventDefault();
-                                onFairComparison();
-                            }}
-                        >
-                            <Scale size={16} />
-                            Fair Comparison
-                        </a>
-
-                    </nav>
-                </div>
-
-                <div className="sidebar-section">
-                    <span className="sidebar-title">
-                        Reporting
-                    </span>
-
-                    <nav>
-                        <a
-                            href="#reports"
-                            className="sidebar-link"
-                        >
-                            <FileText size={16} />
-                            Reports
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            <WorkspaceSidebar
+                activeView="demand"
+                onNavigate={(view) => ({
+                    dashboard: onDashboard,
+                    rush: onBack,
+                    fair: onFairComparison,
+                    context: onContextEvents,
+                }[view]?.())}
+            />
 
             <main className="main-content">
 
