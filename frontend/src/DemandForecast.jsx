@@ -19,6 +19,7 @@ import {
 
 import ReportButton from "./ReportButton";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import HonestResultsChecker from "./HonestResultsChecker";
 
 function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
@@ -70,6 +71,7 @@ function DemandForecast({
     onContextEvents,
 }) {
     const [profileOpen, setProfileOpen] = useState(false);
+    const [activeFeature, setActiveFeature] = useState("forecast");
 
     const profileRef = useRef(null);
 
@@ -371,6 +373,27 @@ function DemandForecast({
 
                 <div className="page-content">
 
+                    <nav className="demand-feature-tabs" aria-label="Demand Forecast tools">
+                        <button
+                            type="button"
+                            className={activeFeature === "forecast" ? "active" : ""}
+                            aria-current={activeFeature === "forecast" ? "page" : undefined}
+                            onClick={() => setActiveFeature("forecast")}
+                        >
+                            Demand Forecast
+                        </button>
+                        <button
+                            type="button"
+                            className={activeFeature === "honest" ? "active" : ""}
+                            aria-current={activeFeature === "honest" ? "page" : undefined}
+                            onClick={() => setActiveFeature("honest")}
+                        >
+                            Honest Results Checker
+                        </button>
+                    </nav>
+
+                    {activeFeature === "forecast" ? (
+                    <>
                     <div className="demand-page-header report-heading">
                         <div className="page-heading">
                             <h1>Demand Forecast</h1>
@@ -740,6 +763,14 @@ function DemandForecast({
                                 </section>
                             </>
                         )}
+                    </>
+                    ) : (
+                        <HonestResultsChecker
+                            key={vendorId}
+                            currentUser={currentUser}
+                            defaultVendorId={vendorId}
+                        />
+                    )}
 
                 </div>
             </main>
