@@ -311,6 +311,7 @@ useEffect(() => {
           <Dashboard
             onContextEvents={() => navigateTo("context")}
             onRushHourRadar={() => navigateTo("rush")}
+            onDemandForecast={() => navigateTo("demand")}
           />
 
         </main>

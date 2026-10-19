@@ -292,4 +292,65 @@
     white-space: normal;
     font-size: 7px;
   }
+
+
+  
+  /* ---------- Dashboard ---------- */
+  .dashboard-heading-row,
+  .dashboard-heading-actions {
+    display: contents;
+  }
+
+  .dashboard-heading-row .page-heading,
+  .dashboard-refresh,
+  .dashboard-filters,
+  .dashboard-refreshing,
+  .dashboard-text-link {
+    display: none !important;
+  }
+
+  .dashboard-page {
+    max-width: none;
+  }
+
+  /* stack everything so cards never split across pages */
+  .dashboard-kpi-grid,
+  .dashboard-main-grid,
+  .dashboard-lower-grid {
+    display: block;
+  }
+
+  .dashboard-kpi-grid > .dashboard-kpi,
+  .dashboard-main-grid > .dashboard-panel,
+  .dashboard-lower-grid > .dashboard-panel {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-kpi-group,
+  .dashboard-lower-group {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-panel,
+  .dashboard-kpi {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .dashboard-kpi-copy > strong {
+    white-space: normal;
+  }
+
+  .dashboard-heatmap-scroll {
+    overflow: visible;
+  }
+
+  .dashboard-heatmap {
+    min-width: 0;
+  }
+
+  .dashboard-clickable::after {
+    display: none;
+  }
+
 }

@@ -19,7 +19,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { apiFetch } from "./api";
+import { apiFetch, getStoredUser } from "./api";
+import ReportButton from "./ReportButton";
 
 function formatNumber(value) {
   return typeof value === "number" && Number.isFinite(value)
@@ -67,10 +68,15 @@ function TrendTooltip({ active, payload, label }) {
   );
 }
 
-function KpiCard({ title, value, detail, icon: Icon, tone = "green" }) {
+function KpiCard({ title, value, detail, icon: Icon, tone = "green", linkProps = {} }) {
   return (
-    <article className="dashboard-kpi panel">
-      <div className={`dashboard-kpi-icon ${tone}`}><Icon size={18} /></div>
+    <article
+      className={`dashboard-kpi panel ${tone}${linkProps.onClick ? " dashboard-clickable" : ""}`}
+      {...linkProps}
+    >
+      <div className="dashboard-kpi-strip">
+        <Icon size={20} />
+      </div>
       <div className="dashboard-kpi-copy">
         <span>{title}</span>
         <strong>{value}</strong>
@@ -80,7 +86,7 @@ function KpiCard({ title, value, detail, icon: Icon, tone = "green" }) {
   );
 }
 
-function DashboardPage({ onContextEvents, onRushHourRadar }) {
+function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
   const [filters, setFilters] = useState({
     start_date: "",
     end_date: "",
@@ -91,6 +97,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [printing, setPrinting] = useState(false);
   const skipDefaultRequest = useRef(null);
 
   useEffect(() => {
@@ -151,6 +158,11 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
       )
     : options.vendors;
   const kpis = data?.kpis || {};
+  const vendorLabel = filters.vendor_id
+    ? vendors.find((vendor) => String(vendor.id) === filters.vendor_id)?.name
+    : filters.vendor_type
+      ? options.vendor_types.find((type) => String(type.id) === filters.vendor_type)?.name
+      : "All vendors";
   const trend = data?.demand_trend || [];
   const heatmap = data?.demand_heatmap;
   const heatmapMaximum = Math.max(
@@ -170,6 +182,25 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
     }));
   }
 
+  const isAdmin = getStoredUser()?.role === "Admin";
+
+  function cardLink(onOpen, label) {
+    if (!onOpen) return {};
+    return {
+      role: "link",
+      tabIndex: 0,
+      title: `Click to go to ${label}`,
+      "data-hint": `Open ${label} →`,
+      onClick: onOpen,
+      onKeyDown: (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      },
+    };
+  }
+
   return (
     <div className="dashboard-page page-content">
       <div className="dashboard-heading-row">
@@ -177,14 +208,28 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
           <h1>Dashboard</h1>
           <p>Your overview of student food demand and vendor performance.</p>
         </div>
-        <button
-          className="btn-ghost dashboard-refresh"
-          type="button"
-          onClick={() => setRefreshKey((key) => key + 1)}
-          disabled={loading}
-        >
-          <RefreshCw size={15} /> Refresh
-        </button>
+        <div className="dashboard-heading-actions">
+          <button
+            className="btn-ghost dashboard-refresh"
+            type="button"
+            onClick={() => setRefreshKey((key) => key + 1)}
+            disabled={loading}
+          >
+            <RefreshCw size={15} /> Refresh
+          </button>
+          {data && !data.sample_data && !loading && (
+            <ReportButton
+              title="Dashboard"
+              subtitle={`${formatDate(filters.start_date)} – ${formatDate(filters.end_date)} · ${vendorLabel || "All vendors"}`}
+              reportType="dashboard"
+              vendorId={filters.vendor_id}
+              periodStart={filters.start_date}
+              periodEnd={filters.end_date}
+              onPrintStart={() => setPrinting(true)}
+              onPrintEnd={() => setPrinting(false)}
+            />
+          )}
+        </div>
       </div>
 
       <section className="dashboard-filters panel" aria-label="Dashboard filters">
@@ -285,27 +330,39 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
         <>
           {loading && <p className="dashboard-refreshing" aria-live="polite">Updating results…</p>}
           <section className="dashboard-kpi-grid" aria-label="Key metrics">
-            <KpiCard
-              title="Transactions"
-              value={kpis.status === "available" ? formatNumber(kpis.total_transactions) : "Unavailable"}
-              detail={kpis.status === "suppressed" ? "Hidden for privacy" : "Historical actuals"}
-              icon={Utensils}
-            />
-            <KpiCard
-              title="Distinct customers"
-              value={kpis.status === "available" ? formatNumber(kpis.distinct_customers) : "Unavailable"}
-              detail={kpis.status === "suppressed" ? "Hidden for privacy" : "Unique students in period"}
-              icon={Users}
-              tone="amber"
-            />
-            {Object.prototype.hasOwnProperty.call(kpis, "revenue") && (
+            <div className="dashboard-kpi-group">
               <KpiCard
-                title="Revenue"
-                value={formatCurrency(kpis.revenue)}
-                detail={data.permissions?.can_view_revenue ? "Historical actuals" : "Unavailable"}
-                icon={Wallet}
+                title="Transactions"
+                value={kpis.status === "available" ? formatNumber(kpis.total_transactions) : "Unavailable"}
+                detail={kpis.status === "suppressed" ? "Hidden for privacy" : "Historical actuals"}
+                icon={Utensils}
+                linkProps={cardLink(onDemandForecast, "Demand Forecast")}
               />
-            )}
+              <KpiCard
+                title="Distinct customers"
+                value={kpis.status === "available" ? formatNumber(kpis.distinct_customers) : "Unavailable"}
+                detail={kpis.status === "suppressed" ? "Hidden for privacy" : "Unique students in period"}
+                icon={Users}
+                tone="amber"
+                linkProps={cardLink(onDemandForecast, "Demand Forecast")}
+              />
+              {Object.prototype.hasOwnProperty.call(kpis, "revenue") && (
+                <KpiCard
+                  title="Revenue"
+                  value={formatCurrency(kpis.revenue)}
+                  detail={data.permissions?.can_view_revenue ? "Historical actuals" : "Unavailable"}
+                  icon={Wallet}
+                  linkProps={cardLink(onDemandForecast, "Demand Forecast")}
+                />
+              )}
+              <KpiCard
+                title="Vendors covered"
+                value={formatNumber(kpis.vendors_covered)}
+                detail="With transactions in this range"
+                icon={Store}
+                linkProps={cardLink(onRushHourRadar, "Rush Hour Radar")}
+              />
+            </div>
             <KpiCard
               title="Busiest observed period"
               value={data.service_outlook?.status === "available"
@@ -314,17 +371,12 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
               detail="Historical, not a forecast"
               icon={Clock3}
               tone="red"
-            />
-            <KpiCard
-              title="Vendors covered"
-              value={formatNumber(kpis.vendors_covered)}
-              detail="With transactions in this range"
-              icon={Store}
+              linkProps={cardLink(onDemandForecast, "Demand Forecast")}
             />
           </section>
 
           <section className="dashboard-main-grid">
-            <article className="dashboard-panel panel">
+            <article className="dashboard-panel panel dashboard-clickable" {...cardLink(onDemandForecast, "Demand Forecast")}>
               <div className="dashboard-section-heading">
                 <div>
                   <h2>Demand trend</h2>
@@ -334,9 +386,9 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
               </div>
               {trend.length ? (
                 <div className="dashboard-chart">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width={printing ? 640 : "100%"} height={printing ? 240 : "100%"}>
                     <LineChart data={trend} margin={{ top: 8, right: 12, left: -14, bottom: 2 }}>
-                      <CartesianGrid stroke="#e9efec" vertical={false} />
+                      <CartesianGrid stroke="#dde6e2" strokeDasharray="3 3" />
                       <XAxis
                         dataKey="date"
                         tickFormatter={formatDate}
@@ -361,6 +413,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
                         dot={{ r: 2 }}
                         activeDot={{ r: 5 }}
                         connectNulls={false}
+                        isAnimationActive={!printing}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -373,7 +426,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
               </p>
             </article>
 
-            <article className="dashboard-panel panel">
+            <article className="dashboard-panel panel dashboard-clickable" {...cardLink(onRushHourRadar, "Rush Hour Radar")}>
               <div className="dashboard-section-heading">
                 <div>
                   <h2>Demand by day and time</h2>
@@ -431,7 +484,8 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
           </section>
 
           <section className="dashboard-lower-grid">
-            <article className="dashboard-panel dashboard-outlook panel">
+            <div className="dashboard-lower-group">
+            <article className="dashboard-panel dashboard-outlook panel dashboard-clickable" {...cardLink(onDemandForecast, "Demand Forecast")}>
               <div className="dashboard-section-heading">
                 <div>
                   <span className="dashboard-eyebrow">SERVICE OUTLOOK</span>
@@ -449,7 +503,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
               )}
             </article>
 
-            <article className="dashboard-panel panel">
+            <article className="dashboard-panel panel dashboard-clickable" {...cardLink(onRushHourRadar, "Rush Hour Radar")}>
               <div className="dashboard-section-heading">
                 <div>
                   <span className="dashboard-eyebrow">RUSH HOUR RADAR</span>
@@ -477,8 +531,12 @@ function DashboardPage({ onContextEvents, onRushHourRadar }) {
                 <div className="dashboard-empty">{data.rush_hour_radar?.reason || "Radar summary unavailable."}</div>
               )}
             </article>
+            </div>
 
-            <article className="dashboard-panel panel dashboard-events-panel">
+            <article
+              className={`dashboard-panel panel dashboard-events-panel${isAdmin ? " dashboard-clickable" : ""}`}
+              {...(isAdmin ? cardLink(onContextEvents, "Calendar") : {})}
+            >
               <div className="dashboard-section-heading">
                 <div>
                   <span className="dashboard-eyebrow">CALENDAR</span>

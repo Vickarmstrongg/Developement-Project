@@ -2885,3 +2885,130 @@ body[data-role="Manager"] a[href="#context-events"] {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------- Dashboard cards and alignment ---------- */
+.dashboard-kpi-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.dashboard-kpi-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-kpi {
+  align-items: stretch;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.dashboard-kpi-strip {
+  display: grid;
+  flex: 0 0 38px;
+  place-items: center;
+  background: #2d9088;
+  color: #fff;
+}
+
+.dashboard-kpi.amber .dashboard-kpi-strip {
+  background: #d19a3f;
+}
+
+.dashboard-kpi.red .dashboard-kpi-strip {
+  background: #ac3e49;
+}
+
+.dashboard-kpi-copy {
+  align-self: center;
+  padding: 14px 14px 14px 16px;
+}
+
+.dashboard-kpi-copy > span {
+  color: #4f625e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-kpi-copy > strong {
+  color: #103f40;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.dashboard-kpi-copy small {
+  font-size: 11px;
+}
+
+.dashboard-lower-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.dashboard-lower-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-kpi-grid,
+  .dashboard-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .dashboard-kpi-group,
+  .dashboard-lower-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dashboard-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* ---------- Dashboard clickable widgets ---------- */
+.dashboard-clickable {
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.dashboard-clickable:hover,
+.dashboard-clickable:focus-visible {
+  border-color: #2d9088;
+  box-shadow: 0 6px 18px rgba(16, 63, 64, 0.12);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.dashboard-clickable::after {
+  content: attr(data-hint);
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #103f40;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.dashboard-clickable:hover::after,
+.dashboard-clickable:focus-visible::after {
+  opacity: 1;
+}
