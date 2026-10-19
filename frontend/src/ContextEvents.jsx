@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import UsersLink from "./UsersLink";
 
 const API = "/context-events";
 const CALENDAR_MODES = ["month", "week", "day"];
