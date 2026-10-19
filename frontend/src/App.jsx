@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
-Bell,
-LogOut,
-ChevronDown,
+  Bell,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -119,7 +119,7 @@ function ResetMapButton() {
   };
 
   return (
-    <button 
+    <button
       type="button"
       className="reset-map-button"
       onClick={resetMap}
@@ -130,7 +130,7 @@ function ResetMapButton() {
 }
 
 function App() {
-    const [sessionUser, setSessionUser] = useState(() =>
+  const [sessionUser, setSessionUser] = useState(() =>
     getToken() ? getStoredUser() : null
   );
   const loggedIn = sessionUser !== null;
@@ -142,6 +142,8 @@ function App() {
   const [typeId, setTypeId] = useState("");
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recommendationPage, setRecommendationPage] = useState(1);
+  const recommendationsPerPage = 15;
 
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -181,7 +183,7 @@ function App() {
     };
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     const onExpired = () => {
       setSessionUser(null);
       setView("dashboard");
@@ -191,7 +193,7 @@ function App() {
     return () => window.removeEventListener("bb-logout", onExpired);
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     document.body.dataset.role = sessionUser?.role || "";
   }, [sessionUser]);
 
@@ -214,7 +216,7 @@ useEffect(() => {
 
     setLoading(true);
 
-        let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
+    let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
 
     if (typeId) {
       url += `&type_id=${typeId}`;
@@ -228,6 +230,10 @@ useEffect(() => {
       )
       .finally(() => setLoading(false));
   }, [day, hour, typeId, loggedIn, view]);
+
+  useEffect(() => {
+    setRecommendationPage(1);
+  }, [day, hour, typeId]);
 
 
   function handleLogout() {
@@ -279,14 +285,14 @@ useEffect(() => {
   }
 
   if (view === "context") {
-  return (
-    <ContextEvents
-      currentUser={currentUser}
-      onNavigate={navigateTo}
-      onLogout={handleLogout}
-    />
-  );
-}
+    return (
+      <ContextEvents
+        currentUser={currentUser}
+        onNavigate={navigateTo}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   if (view === "dashboard") {
     return (
@@ -363,6 +369,29 @@ useEffect(() => {
       </div>
     );
   }
+
+  const recommendations = vendors.filter(
+    (v) => v.recommendation
+  );
+
+  const totalRecommendationPages = Math.ceil(
+    recommendations.length / recommendationsPerPage
+  );
+
+  const startIndex =
+    (recommendationPage - 1) * recommendationsPerPage;
+
+const sortedRecommendations = [...recommendations].sort(
+  (a, b) => {
+    const priority = (v) => v.level === "quiet" ? 1 : 2;
+    return priority(a) - priority(b);
+  }
+);
+
+const visibleRecommendations = sortedRecommendations.slice(
+  startIndex,
+  startIndex + recommendationsPerPage
+);
 
   const busyCount = vendors.filter(
     (v) => v.level === "busy"
@@ -580,8 +609,8 @@ useEffect(() => {
                 zoomSnap={0.25}
               >
 
-                <TrackpadMapPan/>
-                <ResetMapButton/>
+                <TrackpadMapPan />
+                <ResetMapButton />
 
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
@@ -743,7 +772,7 @@ useEffect(() => {
                               "suppressed"
                               ? "suppressed"
                               : v.level
-                            ]
+                          ]
                             }22`,
 
                           color:
@@ -771,27 +800,19 @@ useEffect(() => {
           </div>
 
           <div className="panel recs-panel">
-
             <h3>Auto-generated recommendations</h3>
 
             <p className="panel-sub">
               Shown only when a recurring pattern crosses the threshold
             </p>
 
-            {vendors.filter((v) => v.recommendation).length === 0 && (
-                <p className="loading-text">
-                  No recommendations for this day/hour.
-                </p>
-              )}
+            {recommendations.length === 0 && (
+              <p className="loading-text">
+                No recommendations for this day/hour.
+              </p>
+            )}
 
-            {[...vendors]
-              .filter((v) => v.recommendation)
-              .sort((a, b) => {
-                const priority = (v) =>
-                  v.level === "quiet" ? 1 : 2;
-
-                return priority(a) - priority(b);
-              })
+            {visibleRecommendations
               .map((v) => (
                 <div
                   className={`rec-row ${v.level}`}
@@ -815,11 +836,39 @@ useEffect(() => {
                     <span className="recommendation-label dismiss-label">
                       Dismiss
                     </span>
-
                   </div>
                 </div>
               ))}
 
+            {totalRecommendationPages > 1 && (
+              <div className="recommendation-pagination">
+                <button
+                  type="button"
+                  disabled={recommendationPage === 1}
+                  onClick={() =>
+                    setRecommendationPage((page) => page - 1)
+                  }
+                >
+                  Previous
+                </button>
+
+                <span>
+                  Page {recommendationPage} of {totalRecommendationPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={
+                    recommendationPage === totalRecommendationPages
+                  }
+                  onClick={() =>
+                    setRecommendationPage((page) => page + 1)
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
 
         </div>
