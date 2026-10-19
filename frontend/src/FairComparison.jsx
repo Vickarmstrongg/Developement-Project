@@ -95,6 +95,8 @@ function FairComparison({
     const [periodMode, setPeriodMode] = useState("week");
     const [filterDate, setFilterDate] = useState("");
     const [result, setResult] = useState(null);
+    const [contextEvents, setContextEvents] = useState([]);
+    const [contextEventError, setContextEventError] = useState("");
 
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -134,6 +136,58 @@ function FairComparison({
             onLogout();
         }
     }
+
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function loadContextEvents() {
+            setContextEvents([]);
+            setContextEventError("");
+
+            if (periodMode !== "day" || !filterDate) {
+                return;
+            }
+
+            try {
+                const response = await apiFetch("/context-events", {
+                    signal: controller.signal,
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail || "Could not load contextual events."
+                    );
+                }
+
+                const events = Array.isArray(data.events) ? data.events : [];
+
+                const matchingEvents = events.filter((event) =>
+                    event.start_date <= filterDate &&
+                    event.end_date >= filterDate
+                );
+
+                if (!controller.signal.aborted) {
+                    setContextEvents(matchingEvents);
+                }
+            } catch (err) {
+                if (err.name !== "AbortError" && !controller.signal.aborted) {
+                    setContextEventError(
+                        "Contextual events could not be loaded."
+                    );
+                }
+            }
+        }
+
+        loadContextEvents();
+
+        return () => {
+            controller.abort();
+        };
+    }, [periodMode, filterDate]);
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -223,7 +277,7 @@ function FairComparison({
             setLoading(true);
 
             try {
-                  let url = `/vendors/${vendorId}/fair-comparison`;
+                let url = `/vendors/${vendorId}/fair-comparison`;
 
                 if (periodMode === "day" && filterDate) {
                     url += `?filter_date=${encodeURIComponent(filterDate)}`;
@@ -395,6 +449,31 @@ function FairComparison({
 
     // ends here
 
+
+    const selectedDateMax = Math.max(
+        Number(vendorTransactions) || 0,
+        Number(peerAverageTransactions) || 0,
+        1
+    );
+
+    const selectedDateBars = [
+        {
+            label: "Your venue",
+            value: Number(vendorTransactions) || 0,
+            className: "fair-chart-venue-bar",
+        },
+        {
+            label: `${groupName} average`,
+            value: Number(peerAverageTransactions) || 0,
+            className: "fair-chart-peer-bar",
+        },
+    ].map((bar, index) => ({
+        ...bar,
+        x: index === 0 ? 200 : 400,
+        height: (bar.value / selectedDateMax) * 150,
+    }));
+
+
     const resultClass =
         comparisonResult === "above_average"
             ? "above"
@@ -534,6 +613,8 @@ function FairComparison({
                                     </div>
                                 </div>
 
+
+
                                 {periodMode === "day" && (
                                     <div className="fair-filter-field fair-date-field">
                                         <label htmlFor="fair-filter-date">Date</label>
@@ -548,6 +629,7 @@ function FairComparison({
                                         />
                                     </div>
                                 )}
+
 
                             </div>
                         </section>
@@ -822,21 +904,21 @@ function FairComparison({
 
                                 {/* starts here */}
 
+
                                 <section className="fair-comparison-layout">
                                     <section className="fair-panel fair-trend-panel">
                                         <div className="fair-panel-heading">
                                             <div>
                                                 <h2>Your venue &amp; shared pattern</h2>
                                                 <p>
-                                                    A quick view of venue activity beside the aggregated
-                                                    peer trend.
+                                                    {periodMode === "day"
+                                                        ? "Compare transaction counts for the selected date."
+                                                        : "A quick view of venue activity beside the aggregated peer trend."}
                                                 </p>
                                             </div>
 
                                             <span className="fair-trend-badge">
-                                                {periodMode === "day"
-                                                    ? "Selected date"
-                                                    : "7-day trend"}
+                                                {periodMode === "day" ? "Selected date" : "7-day trend"}
                                             </span>
                                         </div>
 
@@ -855,84 +937,196 @@ function FairComparison({
                                                 </div>
 
                                                 <div className="fair-trend-chart">
-                                                    <svg
-                                                        viewBox="0 0 700 240"
-                                                        role="img"
-                                                        aria-label="Line chart comparing your venue's daily transactions with the aggregated peer average"
-                                                        preserveAspectRatio="xMidYMid meet"
-                                                    >
-                                                        {[0, 1, 2, 3].map((line) => {
-                                                            const y = 22 + line * (170 / 3);
+                                                    {periodMode === "day" ? (
+                                                        <>
+                                                            <svg
+                                                                viewBox="0 0 700 240"
+                                                                role="img"
+                                                                aria-label={`Bar chart for ${formatDate(filterDate)}, comparing your venue's ${formatNumber(vendorTransactions)} transactions with the peer-group average of ${formatNumber(peerAverageTransactions)} transactions`}
+                                                                preserveAspectRatio="xMidYMid meet"
+                                                            >
+                                                                {[0, 1, 2, 3].map((line) => {
+                                                                    const y = 30 + line * 50;
 
-                                                            return (
-                                                                <line
-                                                                    key={line}
-                                                                    x1="38"
-                                                                    y1={y}
-                                                                    x2="662"
-                                                                    y2={y}
-                                                                    className="fair-chart-gridline"
-                                                                />
-                                                            );
-                                                        })}
+                                                                    return (
+                                                                        <line
+                                                                            key={line}
+                                                                            x1="70"
+                                                                            y1={y}
+                                                                            x2="630"
+                                                                            y2={y}
+                                                                            className="fair-chart-gridline"
+                                                                        />
+                                                                    );
+                                                                })}
 
-                                                        {trendPoints.length > 1 && (
-                                                            <>
-                                                                <path
-                                                                    d={peerLine}
-                                                                    className="fair-chart-peer-line"
-                                                                />
+                                                                {selectedDateBars.map((bar) => {
+                                                                    const barY = 190 - bar.height;
 
-                                                                <path
-                                                                    d={venueLine}
-                                                                    className="fair-chart-venue-line"
-                                                                />
-                                                            </>
-                                                        )}
+                                                                    return (
+                                                                        <g key={bar.label}>
+                                                                            <rect
+                                                                                x={bar.x}
+                                                                                y={barY}
+                                                                                width="100"
+                                                                                height={bar.height}
+                                                                                rx="5"
+                                                                                className={bar.className}
+                                                                            />
 
-                                                        {trendPoints.map((point) => (
-                                                            <g key={point.date}>
-                                                                <circle
-                                                                    cx={point.x}
-                                                                    cy={point.peerY}
-                                                                    r="4"
-                                                                    className="fair-chart-peer-point"
-                                                                />
+                                                                            <text
+                                                                                x={bar.x + 50}
+                                                                                y={Math.max(barY - 10, 18)}
+                                                                                textAnchor="middle"
+                                                                                className="fair-chart-value"
+                                                                            >
+                                                                                {formatNumber(bar.value)}
+                                                                            </text>
 
-                                                                <circle
-                                                                    cx={point.x}
-                                                                    cy={point.venueY}
-                                                                    r="4.5"
-                                                                    className="fair-chart-venue-point"
-                                                                />
+                                                                            <text
+                                                                                x={bar.x + 50}
+                                                                                y="215"
+                                                                                textAnchor="middle"
+                                                                                className="fair-chart-day"
+                                                                            >
+                                                                                {bar.label === "Your venue"
+                                                                                    ? "Your venue"
+                                                                                    : "Peer average"}
+                                                                            </text>
+                                                                        </g>
+                                                                    );
+                                                                })}
 
                                                                 <text
-                                                                    x={point.x}
-                                                                    y="218"
+                                                                    x="350"
+                                                                    y="237"
                                                                     textAnchor="middle"
-                                                                    className="fair-chart-day"
+                                                                    className="fair-chart-date"
                                                                 >
-                                                                    {point.dayLabel}
+                                                                    {formatDate(filterDate)}
                                                                 </text>
+                                                            </svg>
 
-                                                                {trendPoints.length === 1 && (
+
+                                                        </>
+                                                    ) : (
+                                                        <svg
+                                                            viewBox="0 0 700 240"
+                                                            role="img"
+                                                            aria-label="Line chart comparing your venue's daily transactions with the aggregated peer average"
+                                                            preserveAspectRatio="xMidYMid meet"
+                                                        >
+                                                            {[0, 1, 2, 3].map((line) => {
+                                                                const y = 22 + line * (170 / 3);
+
+                                                                return (
+                                                                    <line
+                                                                        key={line}
+                                                                        x1="38"
+                                                                        y1={y}
+                                                                        x2="662"
+                                                                        y2={y}
+                                                                        className="fair-chart-gridline"
+                                                                    />
+                                                                );
+                                                            })}
+
+                                                            {trendPoints.length > 1 && (
+                                                                <>
+                                                                    <path
+                                                                        d={peerLine}
+                                                                        className="fair-chart-peer-line"
+                                                                    />
+
+                                                                    <path
+                                                                        d={venueLine}
+                                                                        className="fair-chart-venue-line"
+                                                                    />
+                                                                </>
+                                                            )}
+
+                                                            {trendPoints.map((point) => (
+                                                                <g key={point.date}>
+                                                                    <circle
+                                                                        cx={point.x}
+                                                                        cy={point.peerY}
+                                                                        r="4"
+                                                                        className="fair-chart-peer-point"
+                                                                    />
+
+                                                                    <circle
+                                                                        cx={point.x}
+                                                                        cy={point.venueY}
+                                                                        r="4.5"
+                                                                        className="fair-chart-venue-point"
+                                                                    />
+
                                                                     <text
                                                                         x={point.x}
-                                                                        y="235"
+                                                                        y="218"
                                                                         textAnchor="middle"
-                                                                        className="fair-chart-date"
+                                                                        className="fair-chart-day"
                                                                     >
-                                                                        {point.dateLabel}
+                                                                        {point.dayLabel}
                                                                     </text>
-                                                                )}
-                                                            </g>
-                                                        ))}
-                                                    </svg>
+                                                                </g>
+                                                            ))}
+                                                        </svg>
+                                                    )}
                                                 </div>
                                             </>
+
+
                                         ) : (
                                             <div className="fair-trend-empty">
                                                 Daily trend data is not available for this period.
+                                            </div>
+                                        )}
+
+                                        {periodMode === "day" && (
+                                            <div className="fair-context-events">
+                                                <div className="fair-context-heading">
+                                                    <CalendarDays size={18} />
+                                                    <strong>Context recorded for this date</strong>
+                                                </div>
+
+                                                {contextEventError ? (
+                                                    <p className="fair-context-error" role="status">
+                                                        {contextEventError}
+                                                    </p>
+                                                ) : contextEvents.length > 0 ? (
+                                                    <>
+                                                        {contextEvents.map((event) => (
+                                                            <article
+                                                                className="fair-context-event"
+                                                                key={event.event_id}
+                                                            >
+                                                                <strong>{event.name}</strong>
+                                                                <span>{event.event_type}</span>
+
+                                                                {event.notes && (
+                                                                    <p>{event.notes}</p>
+                                                                )}
+
+                                                                <small>
+                                                                    {formatDate(event.start_date)}
+                                                                    {event.start_date !== event.end_date &&
+                                                                        ` – ${formatDate(event.end_date)}`}
+                                                                </small>
+                                                            </article>
+                                                        ))}
+
+                                                        <p className="fair-context-disclaimer">
+                                                            These events provide background context only. Their
+                                                            presence does not establish that they caused the
+                                                            transaction pattern.
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <p>
+                                                        No contextual events have been recorded for this date.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
                                     </section>
@@ -954,12 +1148,9 @@ function FairComparison({
                                                     <div className="fair-guide-icon above">
                                                         <ArrowUpRight size={18} />
                                                     </div>
-
                                                     <div>
                                                         <strong>Above average</strong>
-                                                        <p>
-                                                            More than 10% above the peer-group average.
-                                                        </p>
+                                                        <p>More than 10% above the peer-group average.</p>
                                                     </div>
                                                 </div>
 
@@ -967,12 +1158,9 @@ function FairComparison({
                                                     <div className="fair-guide-icon average">
                                                         <Minus size={18} />
                                                     </div>
-
                                                     <div>
                                                         <strong>Around average</strong>
-                                                        <p>
-                                                            Within 10% of the peer-group average.
-                                                        </p>
+                                                        <p>Within 10% of the peer-group average.</p>
                                                     </div>
                                                 </div>
 
@@ -980,12 +1168,9 @@ function FairComparison({
                                                     <div className="fair-guide-icon below">
                                                         <ArrowDownRight size={18} />
                                                     </div>
-
                                                     <div>
                                                         <strong>Below average</strong>
-                                                        <p>
-                                                            More than 10% below the peer-group average.
-                                                        </p>
+                                                        <p>More than 10% below the peer-group average.</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -996,7 +1181,6 @@ function FairComparison({
                                                 <div className="fair-group-icon">
                                                     <ShieldCheck size={20} />
                                                 </div>
-
                                                 <div>
                                                     <h2>A fair comparison</h2>
                                                     <p>Like-for-like groups. Private by design.</p>
@@ -1005,12 +1189,11 @@ function FairComparison({
 
                                             <ul className="fair-list">
                                                 <li>
-                                                    Peers are grouped by business type and operational
-                                                    scale.
+                                                    Peers are grouped by business type and operational scale.
                                                 </li>
                                                 <li>
-                                                    A comparison is only shown when the minimum
-                                                    peer-group requirement is met.
+                                                    A comparison is only shown when the minimum peer-group
+                                                    requirement is met.
                                                 </li>
                                                 <li>
                                                     The result shows an above, around or below-average
@@ -1020,6 +1203,7 @@ function FairComparison({
                                         </section>
                                     </div>
                                 </section>
+
 
                                 {/* ends here */}
 

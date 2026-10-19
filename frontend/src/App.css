@@ -2676,6 +2676,69 @@ body,
   overflow: visible;
 }
 
+
+.fair-chart-venue-bar {
+    fill: var(--fair-venue-color, #287f78);
+}
+
+.fair-chart-peer-bar {
+    fill: var(--fair-peer-color, #c69a62);
+}
+
+.fair-chart-value {
+    fill: currentColor;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.fair-context-events {
+    margin: 16px 0;
+    padding: 14px 16px;
+    border: 1px solid #d9e5e3;
+    border-radius: 10px;
+    background: #f6f9f8;
+}
+
+.fair-context-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.fair-context-event {
+    display: grid;
+    gap: 5px;
+    padding: 10px 0;
+    border-top: 1px solid #e0e8e6;
+}
+
+.fair-context-event > span {
+    font-size: 0.875rem;
+    color: #526966;
+}
+
+.fair-context-event p {
+    margin: 2px 0;
+}
+
+.fair-context-event small {
+    color: #647572;
+}
+
+.fair-context-disclaimer,
+.fair-context-error {
+    margin: 12px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #526966;
+}
+
+.fair-context-error {
+    color: #8a5a28;
+}
+
+
 /* Hide menu items a role cannot use. The server enforces access as well. */
 body[data-role="Staff"] a[href="#fair-comparison"],
 body[data-role="Staff"] a[href="#reports"],
