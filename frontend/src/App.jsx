@@ -4,7 +4,7 @@ Bell,
 LogOut,
 ChevronDown,
 } from "lucide-react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Login from "./Login";
@@ -69,6 +69,65 @@ const LEVEL_LABELS = {
   normal: "Normal",
   busy: "Busy",
 };
+
+function TrackpadMapPan() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    const handleWheel = (event) => {
+      if (event.ctrlKey) {
+        event.preventDefault();
+
+        const point = map.mouseEventToContainerPoint(event);
+        const zoomChange = -event.deltaY * 0.07;
+
+        map.setZoomAround(
+          point,
+          map.getZoom() + zoomChange
+        );
+      } else {
+        event.preventDefault();
+
+        map.panBy(
+          [-event.deltaX, -event.deltaY],
+          { animate: false }
+        );
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, {
+      passive: false,
+    });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function ResetMapButton() {
+  const map = useMap();
+
+  const resetMap = () => {
+    map.setView([-33.9346, 18.8617], 13, {
+      animate: true,
+    });
+  };
+
+  return (
+    <button 
+      type="button"
+      className="reset-map-button"
+      onClick={resetMap}
+    >
+      Reset map
+    </button>
+  );
+}
 
 function App() {
     const [sessionUser, setSessionUser] = useState(() =>
@@ -511,13 +570,19 @@ useEffect(() => {
               )}
 
               <MapContainer
+                className="rush-map"
                 center={[-33.9346, 18.8617]}
                 zoom={14}
-                style={{
-                  height: "420px",
-                  width: "100%",
-                }}
+                minZoom={12}
+                maxZoom={16}
+                scrollWheelZoom={false}
+                touchZoom={true}
+                zoomSnap={0.25}
               >
+
+                <TrackpadMapPan/>
+                <ResetMapButton/>
+
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
