@@ -1,22 +1,34 @@
 import { useState } from "react";
-import { Lock } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import logo from "./assets/Logo.png";
 import "./Login.css";
 import { apiFetch } from "./api";
 
 // Opened from the invite / reset email: /set-password?token=...
 function SetPassword() {
-    const token = new URLSearchParams(window.location.search).get("token");
+    
+const [token, setToken] = useState(
+    () => new URLSearchParams(window.location.search).get("token") || ""
+);
+
 
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [done, setDone] = useState(false);
 
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError("");
+        
+        if (!token.trim()) {
+            setError("Please enter your invitation token.");
+            return;
+        }
 
         if (password.length < 8) {
             setError("Password must be at least 8 characters long.");
@@ -31,7 +43,7 @@ function SetPassword() {
         try {
             const response = await apiFetch("/auth/set-password", {
                 method: "POST",
-                body: JSON.stringify({ token, password }),
+                body: JSON.stringify({ token: token.trim(), password }),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -60,7 +72,8 @@ function SetPassword() {
                     <p>Business Intelligence Platform</p>
                 </div>
 
-                {!token ? (
+            {/*
+{!token ? (
                     <>
                         <div className="login-heading">
                             <h2>Link not valid</h2>
@@ -74,7 +87,9 @@ function SetPassword() {
                             Back to log in
                         </button>
                     </>
-                ) : done ? (
+                    */}
+                
+                { done ? (
                     <>
                         <div className="login-heading">
                             <h2>Password set</h2>
@@ -97,12 +112,29 @@ function SetPassword() {
 
                         <form onSubmit={handleSubmit}>
                             <div className="login-field">
+                                <label htmlFor="invite-token">Invitation token</label>
+
+                                    <div className="input-wrapper">
+                                        <Lock size={17} />
+
+                                        <input
+                                            id="invite-token"
+                                            type="text"
+                                            placeholder="Enter your invitation token"
+                                            value={token}
+                                            onChange={(e) => setToken(e.target.value)}
+                                            autoComplete="off"
+                                            disabled={loading}
+                                            required
+                                        />
+                                    </div>
+
                                 <label htmlFor="new-password">New password</label>
                                 <div className="input-wrapper">
                                     <Lock size={17} />
                                     <input
                                         id="new-password"
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="At least 8 characters"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
@@ -110,6 +142,15 @@ function SetPassword() {
                                         disabled={loading}
                                         required
                                     />
+                                     <button
+                                        type="button"
+                                        className="password-toggle"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        aria-pressed={showPassword}
+                                        >
+                                             {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                                             </button>
                                 </div>
                             </div>
 
@@ -119,7 +160,7 @@ function SetPassword() {
                                     <Lock size={17} />
                                     <input
                                         id="confirm-password"
-                                        type="password"
+                                        type={showConfirm ? "text" : "password"}
                                         placeholder="Repeat your password"
                                         value={confirm}
                                         onChange={(e) => setConfirm(e.target.value)}
@@ -127,6 +168,15 @@ function SetPassword() {
                                         disabled={loading}
                                         required
                                     />
+                                     <button
+                                        type="button"
+                                        className="password-toggle"
+                                        onClick={() => setShowConfirm(!showConfirm)}
+                                        aria-label={showConfirm ? "Hide password" : "Show password"}
+                                        aria-pressed={showConfirm}
+                                    >
+                                        {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
+                                    </button>
                                 </div>
                             </div>
 
