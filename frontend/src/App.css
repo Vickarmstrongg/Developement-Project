@@ -2560,7 +2560,6 @@ body,
 
 /* Hide menu items a role cannot use. The server enforces access as well. */
 body[data-role="Staff"] a[href="#fair-comparison"],
-body[data-role="Staff"] a[href="#reports"],
 body[data-role="Staff"] a[href="#context-events"],
 body[data-role="Manager"] a[href="#context-events"] {
   display: none;

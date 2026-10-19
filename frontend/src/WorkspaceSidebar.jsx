@@ -49,7 +49,11 @@ function WorkspaceSidebar({ activeView, onNavigate }) {
         <div className="sidebar-section">
           <span className="sidebar-title">Reporting</span>
           <nav aria-label="Reporting">
-            <a href="#reports" className="sidebar-link">
+            <a
+              href="#reports"
+              className={`sidebar-link${activeView === "reports" ? " active" : ""}`}
+              aria-current={activeView === "reports" ? "page" : undefined}
+            >
               <FileText size={16} />
               Reports
             </a>

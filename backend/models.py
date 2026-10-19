@@ -132,3 +132,16 @@ class ContextualEvent(Base):
         Integer, ForeignKey("users.user_id")
     )
     updated_at = Column(DateTime(timezone=True), nullable=False)
+
+class ReportExport(Base):
+    __tablename__ = "report_exports"
+
+    report_id = Column(Integer, primary_key=True)
+    vendor_id = Column(Integer)  # no foreign key, same as user_vendor_links
+    generated_by_user_id = Column(Integer, ForeignKey("users.user_id"))
+    report_type = Column(String)
+    period_start = Column(Date)
+    period_end = Column(Date)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+
+    generated_by = relationship("User", lazy="joined")
