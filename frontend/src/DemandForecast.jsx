@@ -644,8 +644,10 @@ function DemandForecast({
                                                     >
 
                                                         <CartesianGrid
-                                                            stroke="#edf1ef"
-                                                            vertical={false}
+                                                            stroke="#e0e0e0"
+                                                            strokeWidth={1}
+                                                            horizontal={true}
+                                                            vertical={true}                                                                                                               
                                                         />
 
                                                         <XAxis
@@ -659,6 +661,7 @@ function DemandForecast({
                                                                 stroke:
                                                                     "#dfe7e4",
                                                             }}
+                                                            interval={0}
                                                         />
 
                                                         <YAxis
@@ -670,6 +673,7 @@ function DemandForecast({
                                                             tickLine={false}
                                                             axisLine={false}
                                                             width={40}
+                                                            tickCount={6}
                                                         />
 
                                                         <YAxis
