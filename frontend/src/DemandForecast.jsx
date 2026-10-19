@@ -78,6 +78,10 @@ function DemandForecast({
     const [vendors, setVendors] = useState([]);
     const [vendorId, setVendorId] = useState("21");
 
+    const [businessSearch, setBusinessSearch] = useState("");
+    const [debouncedBusinessSearch, setDebouncedBusinessSearch] = useState("");
+    const [businessDropdownOpen, setBusinessDropdownOpen] = useState(false);
+
     const [forecastData, setForecastData] = useState([]);
     const [forecastSummary, setForecastSummary] = useState({
         expectedOrders: 0,
@@ -104,6 +108,14 @@ function DemandForecast({
         vendors.find((v) => String(v.vendor_id) === String(vendorId))?.name ||
         "";
 
+
+    const filteredVendors = vendors.filter((vendor) =>
+        (vendor.name || "")
+            .toLowerCase()
+            .includes(debouncedBusinessSearch.toLowerCase())
+    );
+
+
     useEffect(() => {
         function handleClickOutside(event) {
             if (
@@ -126,6 +138,16 @@ function DemandForecast({
             );
         };
     }, []);
+
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedBusinessSearch(businessSearch);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [businessSearch]);
+
 
     useEffect(() => {
         async function loadVendors() {
@@ -404,43 +426,82 @@ function DemandForecast({
                                     </p>
                                 </div>
 
+
                                 <div className="business-selector-row">
                                     <div className="business-selector-field">
                                         <label className="business-selector-label">
                                             Business
                                         </label>
-                                    
-                                    <div className="business-selector-wrap">
-                                    <select
-                                        className="business-selector"
-                                        value={vendorId}
-                                        onChange={(event) =>
-                                            setVendorId(
-                                                event.target.value
-                                            )
-                                        }
-                                        disabled={loadingVendors}
-                                    >
-                                        {loadingVendors ? (
-                                            <option value="">
-                                                Loading businesses...
-                                            </option>
-                                        ) : (
-                                            vendors.map((vendor) => (
-                                                <option
-                                                    key={vendor.vendor_id}
-                                                    value={
-                                                        vendor.vendor_id
-                                                    }
+
+                                        <div className="business-search-container">
+                                            <input
+                                                type="text"
+                                                className="business-selector"
+                                                placeholder="Search businesses..."
+                                                value={
+                                                    businessDropdownOpen
+                                                        ? businessSearch
+                                                        : selectedVendorName
+                                                }
+                                                onFocus={() => {
+                                                    setBusinessSearch("");
+                                                    setDebouncedBusinessSearch("");
+                                                    setBusinessDropdownOpen(true);
+                                                }}
+                                                onChange={(event) => {
+                                                    setBusinessSearch(event.target.value);
+                                                    setBusinessDropdownOpen(true);
+                                                }}
+                                                disabled={loadingVendors}
+                                                aria-label="Search businesses"
+                                                aria-expanded={businessDropdownOpen}
+                                                aria-controls="business-search-results"
+                                                autoComplete="off"
+                                            />
+
+                                            {businessDropdownOpen && (
+                                                <div
+                                                    id="business-search-results"
+                                                    className="business-search-results"
+                                                    role="listbox"
                                                 >
-                                                    {vendor.name}
-                                                </option>
-                                            ))
-                                        )}
-                                    </select>
+                                                    {filteredVendors.length > 0 ? (
+                                                        filteredVendors.map((vendor) => (
+                                                            <button
+                                                                key={vendor.vendor_id}
+                                                                type="button"
+                                                                className="business-search-option"
+                                                                role="option"
+                                                                aria-selected={
+                                                                    String(vendor.vendor_id) ===
+                                                                    String(vendorId)
+                                                                }
+                                                                onMouseDown={(event) =>
+                                                                    event.preventDefault()
+                                                                }
+                                                                onClick={() => {
+                                                                    setVendorId(
+                                                                        String(vendor.vendor_id)
+                                                                    );
+                                                                    setBusinessSearch("");
+                                                                    setDebouncedBusinessSearch("");
+                                                                    setBusinessDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                {vendor.name}
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        <div className="business-search-empty">
+                                                            No businesses found
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+
 
                                 {forecastData.length > 0 && (
                                     <ReportButton
