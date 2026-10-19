@@ -1726,6 +1726,7 @@ body,
   font-size: 10px;
   line-height: 1.25;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 
