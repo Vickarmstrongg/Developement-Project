@@ -91,6 +91,9 @@ function DemandForecast({
 
     const [forecastPeriod, setForecastPeriod] = useState("");
 
+    const [contextEvents, setContextEvents] = useState([]);
+    const [contextEventError, setContextEventError] = useState("");
+
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -182,7 +185,41 @@ function DemandForecast({
         loadVendors();
     }, []);
 
+    useEffect(() => {
+        const controller = new AbortController();
 
+        async function loadContextEvents() {
+            setContextEventError("");
+
+            try {
+                const response = await apiFetch("/context-events", {
+                    signal: controller.signal,
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error("Could not load contextual events.");
+                }
+
+                setContextEvents(
+                    Array.isArray(data.events) ? data.events : []
+                );
+            } catch (err) {
+                if (err.name !== "AbortError") {
+                    setContextEventError(
+                        "Contextual events could not be loaded."
+                    );
+                }
+            }
+        }
+
+        loadContextEvents();
+
+        return () => {
+            controller.abort();
+        };
+    }, []);
 
     useEffect(() => {
         async function loadForecast() {
@@ -227,6 +264,7 @@ function DemandForecast({
 
                 const formattedData = data.points.map(
                     (point) => ({
+                        date: point.date,
                         day: point.day_of_week.substring(0, 3),
                         orders: point.expected_orders,
                         customers: point.expected_customers,
@@ -647,7 +685,7 @@ function DemandForecast({
                                                             stroke="#e0e0e0"
                                                             strokeWidth={1}
                                                             horizontal={true}
-                                                            vertical={true}                                                                                                               
+                                                            vertical={true}
                                                         />
 
                                                         <XAxis
@@ -766,20 +804,40 @@ function DemandForecast({
                                                                 <th>Transactions</th>
                                                                 <th>Customers</th>
                                                                 {!isStaff && <th>Revenue</th>}
+                                                                <th>Event</th>
                                                             </tr>
                                                         </thead>
 
                                                         <tbody>
-                                                            {forecastData.map((item) => (
-                                                                <tr key={item.day}>
-                                                                    <td>{item.day}</td>
-                                                                    <td>{item.orders}</td>
-                                                                    <td>{item.customers}</td>
-                                                                    {!isStaff && (
-                                                                        <td>{formatRand(item.revenue)}</td>
-                                                                    )}
-                                                                </tr>
-                                                            ))}
+                                                            {forecastData.map((item) => {
+                                                                const matchingEvents = contextEvents.filter(
+                                                                    (event) =>
+                                                                        event.start_date <= item.date &&
+                                                                        event.end_date >= item.date
+                                                                );
+
+                                                                return (
+                                                                    <tr key={item.date}>
+                                                                        <td>{item.day}</td>
+                                                                        <td>{item.orders}</td>
+                                                                        <td>{item.customers}</td>
+
+                                                                        {!isStaff && (
+                                                                            <td>{formatRand(item.revenue)}</td>
+                                                                        )}
+
+                                                                        <td>
+                                                                            {contextEventError
+                                                                                ? "Unavailable"
+                                                                                : matchingEvents.length > 0
+                                                                                    ? matchingEvents
+                                                                                        .map((event) => event.name)
+                                                                                        .join(", ")
+                                                                                    : "-"}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
 
                                                     </table>
