@@ -405,6 +405,12 @@ function DemandForecast({
                                 </div>
 
                                 <div className="business-selector-row">
+                                    <div className="business-selector-field">
+                                        <label className="business-selector-label">
+                                            Business
+                                        </label>
+                                    
+                                    <div className="business-selector-wrap">
                                     <select
                                         className="business-selector"
                                         value={vendorId}
@@ -433,6 +439,8 @@ function DemandForecast({
                                         )}
                                     </select>
                                 </div>
+                            </div>
+                        </div>
 
                                 {forecastData.length > 0 && (
                                     <ReportButton
