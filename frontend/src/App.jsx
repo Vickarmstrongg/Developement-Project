@@ -778,16 +778,20 @@ useEffect(() => {
               Shown only when a recurring pattern crosses the threshold
             </p>
 
-            {vendors.filter(
-              (v) => v.recommendation
-            ).length === 0 && (
+            {vendors.filter((v) => v.recommendation).length === 0 && (
                 <p className="loading-text">
                   No recommendations for this day/hour.
                 </p>
               )}
 
-            {vendors
+            {[...vendors]
               .filter((v) => v.recommendation)
+              .sort((a, b) => {
+                const priority = (v) =>
+                  v.level === "quiet" ? 1 : 2;
+
+                return priority(a) - priority(b);
+              })
               .map((v) => (
                 <div
                   className={`rec-row ${v.level}`}
@@ -802,16 +806,15 @@ useEffect(() => {
                   </div>
 
                   <div className="rec-actions">
-
-                    <button className="btn-primary">
+                    <span className="recommendation-label">
                       {v.level === "quiet"
                         ? "Run promotion"
                         : "Hold pricing"}
-                    </button>
+                    </span>
 
-                    <button className="btn-ghost">
+                    <span className="recommendation-label dismiss-label">
                       Dismiss
-                    </button>
+                    </span>
 
                   </div>
                 </div>

@@ -677,7 +677,22 @@ select {
 
 .rec-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
+}
+
+.recommendation-label {
+  display: inline-block;
+  padding: 5px 0;
+  color: #39715c;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.dismiss-label {
+  color: #777f7b;
+  font-weight: 500;
 }
 
 .btn-primary {
