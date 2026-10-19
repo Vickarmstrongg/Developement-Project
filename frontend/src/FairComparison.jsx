@@ -145,8 +145,23 @@ function FairComparison({
             setContextEvents([]);
             setContextEventError("");
 
-            if (periodMode !== "day" || !filterDate) {
-                return;
+            let periodStart;
+            let periodEnd;
+
+            if (periodMode === "day") {
+                if (!filterDate) {
+                    return;
+                }
+
+                periodStart = filterDate;
+                periodEnd = filterDate;
+            } else {
+                periodStart = result?.period?.start_date;
+                periodEnd = result?.period?.end_date;
+
+                if (!periodStart || !periodEnd) {
+                    return;
+                }
             }
 
             try {
@@ -165,8 +180,8 @@ function FairComparison({
                 const events = Array.isArray(data.events) ? data.events : [];
 
                 const matchingEvents = events.filter((event) =>
-                    event.start_date <= filterDate &&
-                    event.end_date >= filterDate
+                    event.start_date <= periodEnd &&
+                    event.end_date >= periodStart
                 );
 
                 if (!controller.signal.aborted) {
@@ -186,8 +201,12 @@ function FairComparison({
         return () => {
             controller.abort();
         };
-    }, [periodMode, filterDate]);
-
+    }, [
+        periodMode,
+        filterDate,
+        result?.period?.start_date,
+        result?.period?.end_date,
+    ]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -1083,11 +1102,16 @@ function FairComparison({
                                             </div>
                                         )}
 
-                                        {periodMode === "day" && (
+
+                                        {(periodMode === "day" || periodMode === "week") && (
                                             <div className="fair-context-events">
                                                 <div className="fair-context-heading">
                                                     <CalendarDays size={18} />
-                                                    <strong>Context recorded for this date</strong>
+                                                    <strong>
+                                                        {periodMode === "day"
+                                                            ? "Context recorded for this date"
+                                                            : "Context recorded for the last 7 days"}
+                                                    </strong>
                                                 </div>
 
                                                 {contextEventError ? (
@@ -1095,40 +1119,33 @@ function FairComparison({
                                                         {contextEventError}
                                                     </p>
                                                 ) : contextEvents.length > 0 ? (
-                                                    <>
-                                                        {contextEvents.map((event) => (
-                                                            <article
-                                                                className="fair-context-event"
-                                                                key={event.event_id}
-                                                            >
-                                                                <strong>{event.name}</strong>
-                                                                <span>{event.event_type}</span>
-
-                                                                {event.notes && (
-                                                                    <p>{event.notes}</p>
-                                                                )}
-
-                                                                <small>
-                                                                    {formatDate(event.start_date)}
-                                                                    {event.start_date !== event.end_date &&
-                                                                        ` – ${formatDate(event.end_date)}`}
-                                                                </small>
-                                                            </article>
-                                                        ))}
-
-                                                        <p className="fair-context-disclaimer">
-                                                            These events provide background context only. Their
-                                                            presence does not establish that they caused the
-                                                            transaction pattern.
-                                                        </p>
-                                                    </>
+                                                    contextEvents.map((event) => (
+                                                        <article
+                                                            className="fair-context-event"
+                                                            key={event.event_id}
+                                                        >
+                                                            <strong>{event.name}</strong>
+                                                            <span>{event.event_type}</span>
+                                                            <small>
+                                                                {formatDate(event.start_date)}
+                                                                {event.start_date !== event.end_date &&
+                                                                    ` – ${formatDate(event.end_date)}`}
+                                                            </small>
+                                                        </article>
+                                                    ))
                                                 ) : (
                                                     <p>
-                                                        No contextual events have been recorded for this date.
+                                                        No contextual events have been recorded for this period.
                                                     </p>
                                                 )}
+
+                                                <p className="fair-context-disclaimer">
+                                                    These events provide background context only. Their presence
+                                                    does not establish that they caused the transaction pattern.
+                                                </p>
                                             </div>
                                         )}
+
                                     </section>
 
                                     <div className="fair-comparison-side">

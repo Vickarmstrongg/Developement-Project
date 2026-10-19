@@ -2692,29 +2692,35 @@ body,
 }
 
 .fair-context-events {
-    margin: 16px 0;
-    padding: 14px 16px;
+    margin: 10px 0 0;
+    padding: 8px 12px;
     border: 1px solid #d9e5e3;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #f6f9f8;
 }
 
 .fair-context-heading {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 4px;
+    color: #183d3a;
 }
 
 .fair-context-event {
     display: grid;
-    gap: 5px;
-    padding: 10px 0;
+    gap: 2px;
+    padding: 5px 0;
     border-top: 1px solid #e0e8e6;
 }
 
+.fair-context-event > strong {
+    color: #183d3a;
+    font-size: 0.82rem;
+}
+
 .fair-context-event > span {
-    font-size: 0.875rem;
+    font-size: 0.76rem;
     color: #526966;
 }
 
@@ -2724,13 +2730,14 @@ body,
 
 .fair-context-event small {
     color: #647572;
+    font-size: 0.72rem;
 }
 
 .fair-context-disclaimer,
 .fair-context-error {
-    margin: 12px 0 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    margin: 6px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
     color: #526966;
 }
 
@@ -3128,3 +3135,27 @@ body[data-role="Manager"] a[href="#context-events"] {
   font-size: 12px;
   color: #52645e;
 }
+
+
+
+
+/* Make the Fair Comparison graphs larger */
+.fair-comparison-layout {
+    grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.7fr);
+    gap: 20px;
+}
+
+.fair-trend-panel {
+    min-width: 0;
+}
+
+.fair-trend-chart {
+    width: 100%;
+}
+
+.fair-trend-chart svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
