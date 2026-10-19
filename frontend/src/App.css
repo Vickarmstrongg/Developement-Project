@@ -355,7 +355,7 @@ select {
 .forecast-card-header h2 {
   margin: 0 0 4px;
   color: #172f32;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .forecast-card-header p {
@@ -444,13 +444,13 @@ select {
 }
 
 .forecast-details {
-  margin-top: 12px;
+  margin-top: 24px;
 }
 
-.forecast-details summary {
-  cursor: pointer;
-  color: #2d9088;
-  font-size: 10px;
+.daily-figures-heading {
+  margin: 0 0 14px;
+  color: #172f32;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -475,11 +475,13 @@ select {
 
 .forecast-table th {
   color: #71817e;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .forecast-table td {
   color: #304846;
+  font-size: 14px;
 }
 
 .forecast-note {
@@ -488,7 +490,7 @@ select {
   border-radius: 7px;
   background: #f4f8f6;
   color: #71817e;
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
