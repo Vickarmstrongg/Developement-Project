@@ -18,6 +18,7 @@ import {
     Info,
 } from "lucide-react";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import UsersLink from "./UsersLink";
 
 
 const RESULT_LABELS = {
@@ -452,6 +453,7 @@ function FairComparison({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
+                                    <UsersLink />  
                                     <button className="logout-option" onClick={handleLogout}>
                                         <LogOut size={15} />
                                         Log Out

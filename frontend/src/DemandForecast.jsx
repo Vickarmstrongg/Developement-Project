@@ -20,6 +20,7 @@ import {
 import ReportButton from "./ReportButton";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import HonestResultsChecker from "./HonestResultsChecker";
+import UsersLink from "./UsersLink";
 
 function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
@@ -357,6 +358,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
+                                    <UsersLink />  
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}

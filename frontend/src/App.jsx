@@ -15,6 +15,8 @@ import Dashboard from "./DashboardPage";
 import SetPassword from "./SetPassword";
 import { apiFetch, clearSession, getStoredUser, getToken } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
+import Users from "./Users";
+import UsersLink from "./UsersLink";
 
 const HASH_TO_VIEW = {
   "#dashboard": "dashboard",
@@ -22,6 +24,7 @@ const HASH_TO_VIEW = {
   "#demand-forecast": "demand",
   "#fair-comparison": "fair",
   "#context-events": "context",
+  "#users": "users",
 };
 
 const VIEW_TO_HASH = Object.fromEntries(
@@ -194,6 +197,25 @@ useEffect(() => {
     );
   }
 
+  
+if (view === "users") {
+    if (sessionUser?.role !== "Admin") {
+        return <div>Access denied</div>;
+    }
+
+    return (
+        <Users
+            currentUser={currentUser}
+            onDashboard={() => navigateTo("dashboard")}
+            onRushHourRadar={() => navigateTo("rush")}
+            onDemandForecast={() => navigateTo("demand")}
+            onFairComparison={() => navigateTo("fair")}
+            onContextEvents={() => navigateTo("context")}
+            onLogout={handleLogout}
+        />
+    );
+}
+
 
   if (view === "demand") {
     return (
@@ -282,6 +304,7 @@ useEffect(() => {
 
                 {profileOpen && (
                   <div className="profile-dropdown">
+                    <UsersLink />  
                     <button
                       className="logout-option"
                       onClick={handleLogout}
@@ -369,6 +392,7 @@ useEffect(() => {
 
               {profileOpen && (
                 <div className="profile-dropdown">
+                  <UsersLink />  
                   <button
                     className="logout-option"
                     onClick={handleLogout}
