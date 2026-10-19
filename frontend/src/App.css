@@ -321,7 +321,7 @@ select {
 .summary-card span {
   display: block;
   color: #71817e;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 0.7px;
   font-weight: 700;
 }
@@ -375,7 +375,7 @@ select {
   align-items: center;
   gap: 5px;
   color: #697976;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .forecast-legend i {
