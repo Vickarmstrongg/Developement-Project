@@ -5,6 +5,8 @@ import {
     Bell,
     LogOut,
     ChevronDown,
+    CalendarDays,
+    ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -25,14 +27,29 @@ function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
 }
 
-function ChartTooltip({ active, payload, isStaff }) {
+
+function ChartTooltip({ active, payload, isStaff, contextEvents, contextEventError }) {
     if (!active || !payload || payload.length === 0) return null;
 
     const row = payload[0].payload;
 
+    const matchingEvents = contextEvents.filter(
+        (event) =>
+            event.start_date <= row.date &&
+            event.end_date >= row.date
+    );
+
+    const formattedDate = new Date(
+        `${row.date}T12:00:00`
+    ).toLocaleDateString("en-ZA", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+
     return (
         <div className="chart-tooltip">
-            <strong>{row.day}</strong>
+            <strong>{formattedDate}</strong>
 
             <div className="tooltip-row">
                 <span>
@@ -59,6 +76,24 @@ function ChartTooltip({ active, payload, isStaff }) {
                     <b>{formatRand(row.revenue)}</b>
                 </div>
             )}
+
+            <div className="tooltip-events">
+                <strong>Contextual events</strong>
+
+                {contextEventError ? (
+                    <p>Events unavailable.</p>
+                ) : matchingEvents.length > 0 ? (
+                    <ul>
+                        {matchingEvents.map((event) => (
+                            <li key={event.event_id}>
+                                {event.name}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>No recorded events for this date.</p>
+                )}
+            </div>
         </div>
     );
 }
@@ -73,6 +108,20 @@ function DemandForecast({
     const [profileOpen, setProfileOpen] = useState(false);
     const [activeFeature, setActiveFeature] = useState("forecast");
 
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const [notificationsError, setNotificationsError] = useState("");
+
+
+    const [showNotificationHistory, setShowNotificationHistory] = useState(false);
+    const [historyNotifications, setHistoryNotifications] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState("");
+    const [historyFilter, setHistoryFilter] = useState("all");
+
+
+
     const profileRef = useRef(null);
 
     const [vendors, setVendors] = useState([]);
@@ -83,6 +132,7 @@ function DemandForecast({
     const [businessDropdownOpen, setBusinessDropdownOpen] = useState(false);
 
     const [forecastData, setForecastData] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
     const [forecastSummary, setForecastSummary] = useState({
         expectedOrders: 0,
         expectedCustomers: 0,
@@ -247,6 +297,7 @@ function DemandForecast({
                         "No transaction history for this vendor"
                     ) {
                         setForecastData([]);
+                        setRecommendations([]);
 
                         setForecastSummary({
                             expectedOrders: 0,
@@ -271,13 +322,12 @@ function DemandForecast({
                         revenue: point.expected_revenue,
                     })
                 );
-
                 const firstDate = new Date(
-                    data.points[0].date
+                    `${data.points[0].date}T12:00:00`
                 );
 
                 const lastDate = new Date(
-                    data.points[data.points.length - 1].date
+                    `${data.points[data.points.length - 1].date}T12:00:00`
                 );
 
                 const formatDate = (date) =>
@@ -294,6 +344,12 @@ function DemandForecast({
                 );
 
                 setForecastData(formattedData);
+
+                setRecommendations(
+                    Array.isArray(data.recommendations)
+                        ? data.recommendations
+                        : []
+                );
 
                 const expectedOrders =
                     formattedData.reduce(
@@ -323,6 +379,7 @@ function DemandForecast({
                 });
             } catch (err) {
                 setForecastData([]);
+                setRecommendations([]);
 
                 setForecastSummary({
                     expectedOrders: 0,
@@ -338,6 +395,94 @@ function DemandForecast({
 
         loadForecast();
     }, [vendorId]);
+
+
+    async function loadNotifications() {
+        if (!vendorId) return;
+
+        try {
+            setNotificationsLoading(true);
+            setNotificationsError("");
+
+            const response = await apiFetch(
+                `/notifications?vendor_id=${vendorId}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Could not load notifications.");
+            }
+
+            const data = await response.json();
+            setNotifications(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setNotificationsError(err.message);
+        } finally {
+            setNotificationsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        loadNotifications();
+    }, [vendorId]);
+
+    async function loadNotificationHistory() {
+        if (!vendorId) return;
+
+        try {
+            setHistoryLoading(true);
+            setHistoryError("");
+
+            const response = await apiFetch(
+                `/notifications?vendor_id=${vendorId}&include_cleared=true`
+            );
+
+            if (!response.ok) {
+                throw new Error("Could not load notification history.");
+            }
+
+            const data = await response.json();
+            setHistoryNotifications(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setHistoryError(err.message);
+        } finally {
+            setHistoryLoading(false);
+        }
+    }
+
+    async function openNotificationHistory() {
+        setNotificationsOpen(false);
+        setHistoryFilter("all");
+        setShowNotificationHistory(true);
+
+        await loadNotificationHistory();
+    }
+
+
+    async function updateNotification(notificationId, action) {
+        try {
+            const response = await apiFetch(
+                `/notifications/${notificationId}/${action}`,
+                { method: "PATCH" }
+            );
+
+            if (!response.ok) {
+                throw new Error("Could not update notification.");
+            }
+
+            await loadNotifications();
+        } catch (err) {
+            setNotificationsError(err.message);
+        }
+    }
+
+    async function openNotifications() {
+        const willOpen = !notificationsOpen;
+        setNotificationsOpen(willOpen);
+
+        if (willOpen) {
+            await loadNotifications();
+        }
+    }
 
     function handleLogout() {
         setProfileOpen(false);
@@ -368,17 +513,211 @@ function DemandForecast({
 
                     <div className="topbar-right">
 
-                        <button
-                            className="notification-button"
-                            onClick={() =>
-                            (window.location.href =
-                                "/notifications")
-                            }
-                            aria-label="Notifications"
-                            title="Notifications"
-                        >
-                            <Bell size={18} />
-                        </button>
+
+                        <div className="notification-container">
+                            <button
+                                type="button"
+                                className="notification-button"
+                                onClick={openNotifications}
+                                aria-label="Notifications"
+                                title="Notifications"
+                                aria-expanded={notificationsOpen}
+                            >
+                                <Bell size={18} />
+
+                                {notifications.some((item) => !item.is_read && !item.is_cleared) && (
+                                    <span className="notification-dot" />
+                                )}
+                            </button>
+
+                            {notificationsOpen && (
+                                <div className="notification-panel">
+                                    <div className="notification-panel-header">
+                                        <h3>Notifications</h3>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setNotificationsOpen(false)}
+                                            aria-label="Close notifications"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+
+                                    {notificationsLoading && (
+                                        <p>Loading notifications...</p>
+                                    )}
+
+                                    {notificationsError && (
+                                        <p className="notification-error">
+                                            {notificationsError}
+                                        </p>
+                                    )}
+
+                                    {!notificationsLoading &&
+                                        !notificationsError &&
+                                        notifications.length === 0 && (
+                                            <p>No notifications yet.</p>
+                                        )}
+
+                                    {!notificationsLoading &&
+                                        !notificationsError &&
+                                        notifications.map((item) => (
+
+                                            <div
+                                                key={item.notification_id}
+                                                className={`notification-history-card ${item.is_read ? "read" : "unread"} ${item.is_cleared ? "cleared" : ""}`}
+                                            >
+                                                <div className="notification-detail-heading">
+                                                    <div>
+                                                        <h3>
+                                                            {item.direction === "increased"
+                                                                ? "Unusual increase in transactions"
+                                                                : item.direction === "decreased"
+                                                                    ? "Unusual decrease in transactions"
+                                                                    : "Transaction alert"}
+                                                        </h3>
+                                                        <p className="notification-type">
+                                                            Historical transaction alert
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="history-statuses">
+                                                        {item.is_pinned && (
+                                                            <span className="history-status pinned-status">
+                                                                Pinned
+                                                            </span>
+                                                        )}
+                                                        <span className={`history-status ${item.is_read ? "" : "unread-status"}`}>
+                                                            {item.is_read ? "Read" : "Unread"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <p className="notification-analysis-date">
+                                                    Date analysed:{" "}
+                                                    {item.transaction_date
+                                                        ? new Date(`${item.transaction_date}T12:00:00`).toLocaleDateString("en-ZA", {
+                                                            weekday: "long",
+                                                            day: "numeric",
+                                                            month: "long",
+                                                            year: "numeric",
+                                                        })
+                                                        : "Date unavailable"}
+                                                </p>
+
+                                                <div className="notification-percentage">
+                                                    {item.percentage_change != null
+                                                        ? `${item.direction === "decreased" ? "−" : "+"}${Math.round(item.percentage_change)}%`
+                                                        : "—"}
+                                                </div>
+
+                                                <p className="notification-summary">
+                                                    Transaction volume was{" "}
+                                                    {item.direction === "decreased" ? "lower" : "higher"}{" "}
+                                                    than the usual level for{" "}
+                                                    {item.transaction_date
+                                                        ? new Date(`${item.transaction_date}T12:00:00`).toLocaleDateString("en-ZA", {
+                                                            weekday: "long",
+                                                        })
+                                                        : "this weekday"}.
+                                                </p>
+
+                                                <div className="notification-stats">
+                                                    <div className="notification-stat">
+                                                        <span>Actual count</span>
+                                                        <strong>{item.actual_count ?? "—"}</strong>
+                                                    </div>
+
+                                                    <div className="notification-stat">
+                                                        <span>Usual count</span>
+                                                        <strong>
+                                                            {item.baseline_count != null
+                                                                ? item.baseline_count.toFixed(1)
+                                                                : "—"}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+
+                                                <p className="notification-baseline">
+                                                    Baseline: average across the four previous occurrences of the same weekday.
+                                                </p>
+
+                                                <div className="notification-context-events">
+                                                    <strong>Contextual events</strong>
+
+                                                    {Array.isArray(item.contextual_events) &&
+                                                        item.contextual_events.length > 0 ? (
+                                                        <>
+                                                            <p>
+                                                                The following events coincided with this transaction change:
+                                                            </p>
+                                                            <ul>
+                                                                {item.contextual_events.map((event) => (
+                                                                    <li key={event.event_id}>{event.name}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </>
+                                                    ) : (
+                                                        <p>No contextual events recorded for this date.</p>
+                                                    )}
+                                                </div>
+
+                                                <p className="notification-created-date">
+                                                    Notification created:{" "}
+                                                    {item.created_at
+                                                        ? new Date(item.created_at).toLocaleString("en-ZA", {
+                                                            day: "numeric",
+                                                            month: "long",
+                                                            year: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })
+                                                        : "Unavailable"}
+                                                </p>
+
+                                                <div className="history-card-actions">
+                                                    {!item.is_read && (
+                                                        <button
+                                                            type="button"
+                                                            className="history-action-button"
+                                                            onClick={() => updateNotification(item.notification_id, "read")}
+                                                        >
+                                                            Mark read
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        type="button"
+                                                        className="history-action-button"
+                                                        onClick={() => updateNotification(item.notification_id, "pin")}
+                                                    >
+                                                        {item.is_pinned ? "Unpin" : "Pin"}
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="history-action-button clear-action"
+                                                        onClick={() => updateNotification(item.notification_id, "clear")}
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                    <button
+                                        type="button"
+                                        className="view-all-notifications"
+                                        onClick={openNotificationHistory}
+                                    >
+                                        View all notifications
+                                    </button>
+
+                                </div>
+                            )}
+                        </div>
+
 
                         <div
                             className="profile-container"
@@ -431,444 +770,762 @@ function DemandForecast({
                     </div>
                 </header>
 
+
                 <div className="page-content">
 
-                    <nav className="demand-feature-tabs" aria-label="Demand Forecast tools">
-                        <button
-                            type="button"
-                            className={activeFeature === "forecast" ? "active" : ""}
-                            aria-current={activeFeature === "forecast" ? "page" : undefined}
-                            onClick={() => setActiveFeature("forecast")}
-                        >
-                            Demand Forecast
-                        </button>
-                        <button
-                            type="button"
-                            className={activeFeature === "honest" ? "active" : ""}
-                            aria-current={activeFeature === "honest" ? "page" : undefined}
-                            onClick={() => setActiveFeature("honest")}
-                        >
-                            Honest Results Checker
-                        </button>
-                    </nav>
+                    {showNotificationHistory ? (
+                        <section className="notification-history-page">
 
-                    {activeFeature === "forecast" ? (
-                        <>
-                            <div className="demand-page-header report-heading">
-                                <div className="page-heading">
-                                    <h1>Demand Forecast</h1>
+                            <button
+                                type="button"
+                                className="back-to-forecast"
+                                onClick={() => setShowNotificationHistory(false)}
+                            >
 
-                                    <p>
-                                        View expected demand based on
-                                        historical transaction patterns.
-                                    </p>
-                                </div>
+                                <ArrowLeft size={22} />
+                                Back
+                            </button>
+
+                            <h1>Notification History</h1>
+
+                            <p>
+                                View previous notifications for the selected business,
+                                including notifications that you have cleared.
+                            </p>
+
+                            <label htmlFor="notification-history-filter">
+                                Filter notifications
+                            </label>
+
+                            <select
+                                id="notification-history-filter"
+                                value={historyFilter}
+                                onChange={(event) => setHistoryFilter(event.target.value)}
+                            >
+                                <option value="all">All notifications</option>
+                                <option value="unread">Unread</option>
+                                <option value="pinned">Pinned</option>
+                                <option value="cleared">Cleared</option>
+                            </select>
+
+                            {historyLoading && (
+                                <p>Loading notification history...</p>
+                            )}
+
+                            {historyError && (
+                                <p className="notification-error">{historyError}</p>
+                            )}
+
+                            {!historyLoading && !historyError && (
+                                <>
+                                    {historyNotifications
+                                        .filter((item) => {
+                                            if (historyFilter === "unread") {
+                                                return !item.is_read && !item.is_cleared;
+                                            }
+
+                                            if (historyFilter === "pinned") {
+                                                return item.is_pinned;
+                                            }
+
+                                            if (historyFilter === "cleared") {
+                                                return item.is_cleared;
+                                            }
+
+                                            return true;
+                                        })
+
+                                        .map((item) => (
+                                            <div
+                                                key={item.notification_id}
+                                                className={`notification-history-card ${item.is_read ? "read" : "unread"} ${item.is_cleared ? "cleared" : ""}`}
+                                            >
+                                                <div className="history-card-top">
+                                                    <div className="history-card-heading">
+                                                        <span className={`history-type-icon ${item.trigger_type === "transaction_increase" ? "increase" : "decrease"}`}>
+                                                            {item.trigger_type === "transaction_increase" ? "↑" : "↓"}
+                                                        </span>
+
+                                                        <div>
+                                                            <h3>
+                                                                {item.trigger_type === "transaction_increase"
+                                                                    ? "Transaction increase"
+                                                                    : item.trigger_type === "transaction_decrease"
+                                                                        ? "Transaction decrease"
+                                                                        : "Notification"}
+                                                            </h3>
 
 
-                                <div className="business-selector-row">
-                                    <div className="business-selector-field">
-                                        <label className="business-selector-label">
-                                            Business
-                                        </label>
+                                                            <small>
+                                                                Transaction date:{" "}
+                                                                {item.transaction_date
+                                                                    ? new Date(
+                                                                        `${item.transaction_date}T12:00:00`
+                                                                    ).toLocaleDateString("en-ZA", {
+                                                                        day: "numeric",
+                                                                        month: "long",
+                                                                        year: "numeric",
+                                                                    })
+                                                                    : "Date unavailable"}
+                                                            </small>
 
-                                        <div className="business-search-container">
-                                            <input
-                                                type="text"
-                                                className="business-selector"
-                                                placeholder="Search businesses..."
-                                                value={
-                                                    businessDropdownOpen
-                                                        ? businessSearch
-                                                        : selectedVendorName
-                                                }
-                                                onFocus={() => {
-                                                    setBusinessSearch("");
-                                                    setDebouncedBusinessSearch("");
-                                                    setBusinessDropdownOpen(true);
-                                                }}
-                                                onChange={(event) => {
-                                                    setBusinessSearch(event.target.value);
-                                                    setBusinessDropdownOpen(true);
-                                                }}
-                                                disabled={loadingVendors}
-                                                aria-label="Search businesses"
-                                                aria-expanded={businessDropdownOpen}
-                                                aria-controls="business-search-results"
-                                                autoComplete="off"
-                                            />
+                                                            <small className="notification-created-date">
+                                                                Notification created:{" "}
+                                                                {item.created_at
+                                                                    ? new Date(item.created_at).toLocaleString("en-ZA", {
+                                                                        day: "numeric",
+                                                                        month: "short",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    })
+                                                                    : ""}
+                                                            </small>
+                                                        </div>
+                                                    </div>
 
-                                            {businessDropdownOpen && (
-                                                <div
-                                                    id="business-search-results"
-                                                    className="business-search-results"
-                                                    role="listbox"
-                                                >
-                                                    {filteredVendors.length > 0 ? (
-                                                        filteredVendors.map((vendor) => (
-                                                            <button
-                                                                key={vendor.vendor_id}
-                                                                type="button"
-                                                                className="business-search-option"
-                                                                role="option"
-                                                                aria-selected={
-                                                                    String(vendor.vendor_id) ===
-                                                                    String(vendorId)
-                                                                }
-                                                                onMouseDown={(event) =>
-                                                                    event.preventDefault()
-                                                                }
-                                                                onClick={() => {
-                                                                    setVendorId(
-                                                                        String(vendor.vendor_id)
-                                                                    );
-                                                                    setBusinessSearch("");
-                                                                    setDebouncedBusinessSearch("");
-                                                                    setBusinessDropdownOpen(false);
-                                                                }}
-                                                            >
-                                                                {vendor.name}
-                                                            </button>
-                                                        ))
+                                                    <div className="history-statuses">
+                                                        {item.is_pinned && (
+                                                            <span className="history-status pinned-status">
+                                                                Pinned
+                                                            </span>
+                                                        )}
+
+                                                        {item.is_cleared && (
+                                                            <span className="history-status cleared-status">
+                                                                Cleared
+                                                            </span>
+                                                        )}
+
+                                                        {!item.is_read && !item.is_cleared && (
+                                                            <span className="history-status unread-status">
+                                                                Unread
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <p className="history-card-message">
+                                                    {(item.message || "").replace(/^\[[^\]]+\]\s*/, "")}
+                                                </p>
+
+                                                <div className="notification-context-events">
+                                                    <strong>Contextual events</strong>
+
+                                                    {Array.isArray(item.contextual_events) &&
+                                                        item.contextual_events.length > 0 ? (
+                                                        <ul>
+                                                            {item.contextual_events.map((event) => (
+                                                                <li key={event.event_id}>
+                                                                    {event.name}
+                                                                    <small>
+                                                                        {" "}({event.start_date} to {event.end_date})
+                                                                    </small>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
                                                     ) : (
-                                                        <div className="business-search-empty">
-                                                            No businesses found
+                                                        <p>No contextual events recorded for this date.</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="history-card-actions">
+                                                    {!item.is_read && (
+                                                        <button
+                                                            type="button"
+                                                            className="history-action-button"
+                                                            onClick={async () => {
+                                                                await updateNotification(
+                                                                    item.notification_id,
+                                                                    "read"
+                                                                );
+                                                                await loadNotificationHistory();
+                                                            }}
+                                                        >
+                                                            Mark read
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        type="button"
+                                                        className="history-action-button"
+                                                        onClick={async () => {
+                                                            await updateNotification(
+                                                                item.notification_id,
+                                                                "pin"
+                                                            );
+                                                            await loadNotificationHistory();
+                                                        }}
+                                                    >
+                                                        {item.is_pinned ? "Unpin" : "Pin"}
+                                                    </button>
+
+                                                    {!item.is_cleared && (
+                                                        <button
+                                                            type="button"
+                                                            className="history-action-button clear-action"
+                                                            onClick={async () => {
+                                                                await updateNotification(
+                                                                    item.notification_id,
+                                                                    "clear"
+                                                                );
+                                                                await loadNotificationHistory();
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+
+
+                                    {historyNotifications.filter((item) => {
+                                        if (historyFilter === "unread") {
+                                            return !item.is_read && !item.is_cleared;
+                                        }
+
+                                        if (historyFilter === "pinned") {
+                                            return item.is_pinned;
+                                        }
+
+                                        if (historyFilter === "cleared") {
+                                            return item.is_cleared;
+                                        }
+
+                                        return true;
+                                    }).length === 0 && (
+                                            <p>No notifications in this category.</p>
+                                        )}
+                                </>
+                            )}
+                        </section>
+                    ) : (
+                        <>
+                            <nav className="demand-feature-tabs" aria-label="Demand Forecast tools">
+
+                                <button
+                                    type="button"
+                                    className={activeFeature === "forecast" ? "active" : ""}
+                                    aria-current={activeFeature === "forecast" ? "page" : undefined}
+                                    onClick={() => setActiveFeature("forecast")}
+                                >
+                                    Demand Forecast
+                                </button>
+                                <button
+                                    type="button"
+                                    className={activeFeature === "honest" ? "active" : ""}
+                                    aria-current={activeFeature === "honest" ? "page" : undefined}
+                                    onClick={() => setActiveFeature("honest")}
+                                >
+                                    Honest Results Checker
+                                </button>
+                            </nav>
+
+                            {activeFeature === "forecast" ? (
+                                <>
+                                    <div className="demand-page-header report-heading">
+                                        <div className="page-heading">
+                                            <h1>Demand Forecast</h1>
+
+                                            <p>
+                                                View expected demand based on
+                                                historical transaction patterns.
+                                            </p>
+                                        </div>
+
+
+                                        <div className="business-selector-row">
+                                            <div className="business-selector-field">
+                                                <label className="business-selector-label">
+                                                    Business
+                                                </label>
+
+                                                <div className="business-search-container">
+                                                    <input
+                                                        type="text"
+                                                        className="business-selector"
+                                                        placeholder="Search businesses..."
+                                                        value={
+                                                            businessDropdownOpen
+                                                                ? businessSearch
+                                                                : selectedVendorName
+                                                        }
+                                                        onFocus={() => {
+                                                            setBusinessSearch("");
+                                                            setDebouncedBusinessSearch("");
+                                                            setBusinessDropdownOpen(true);
+                                                        }}
+                                                        onChange={(event) => {
+                                                            setBusinessSearch(event.target.value);
+                                                            setBusinessDropdownOpen(true);
+                                                        }}
+                                                        disabled={loadingVendors}
+                                                        aria-label="Search businesses"
+                                                        aria-expanded={businessDropdownOpen}
+                                                        aria-controls="business-search-results"
+                                                        autoComplete="off"
+                                                    />
+
+                                                    {businessDropdownOpen && (
+                                                        <div
+                                                            id="business-search-results"
+                                                            className="business-search-results"
+                                                            role="listbox"
+                                                        >
+                                                            {filteredVendors.length > 0 ? (
+                                                                filteredVendors.map((vendor) => (
+                                                                    <button
+                                                                        key={vendor.vendor_id}
+                                                                        type="button"
+                                                                        className="business-search-option"
+                                                                        role="option"
+                                                                        aria-selected={
+                                                                            String(vendor.vendor_id) ===
+                                                                            String(vendorId)
+                                                                        }
+                                                                        onMouseDown={(event) =>
+                                                                            event.preventDefault()
+                                                                        }
+                                                                        onClick={() => {
+                                                                            setVendorId(
+                                                                                String(vendor.vendor_id)
+                                                                            );
+                                                                            setBusinessSearch("");
+                                                                            setDebouncedBusinessSearch("");
+                                                                            setBusinessDropdownOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        {vendor.name}
+                                                                    </button>
+                                                                ))
+                                                            ) : (
+                                                                <div className="business-search-empty">
+                                                                    No businesses found
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
+
+                                        {forecastData.length > 0 && (
+                                            <ReportButton
+                                                title="Demand Forecast"
+                                                subtitle={`${selectedVendorName} · ${forecastPeriod}`}
+                                                onPrintStart={() => setPrinting(true)}
+                                                onPrintEnd={() => setPrinting(false)}
+                                            />
+                                        )}
                                     </div>
-                                </div>
 
+                                    {loading && (
+                                        <p>
+                                            Loading demand forecast...
+                                        </p>
+                                    )}
 
-                                {forecastData.length > 0 && (
-                                    <ReportButton
-                                        title="Demand Forecast"
-                                        subtitle={`${selectedVendorName} · ${forecastPeriod}`}
-                                        onPrintStart={() => setPrinting(true)}
-                                        onPrintEnd={() => setPrinting(false)}
-                                    />
-                                )}
-                            </div>
+                                    {error === "NO_DATA" && (
+                                        <p>
+                                            No forecast is available for this
+                                            business because there is no
+                                            transaction history available.
+                                        </p>
+                                    )}
 
-                            {loading && (
-                                <p>
-                                    Loading demand forecast...
-                                </p>
-                            )}
+                                    {error && error !== "NO_DATA" && (
+                                        <p style={{ color: "#b34c57" }}>
+                                            Unable to load demand forecast:{" "}
+                                            {error}
+                                        </p>
+                                    )}
 
-                            {error === "NO_DATA" && (
-                                <p>
-                                    No forecast is available for this
-                                    business because there is no
-                                    transaction history available.
-                                </p>
-                            )}
+                                    {!loading &&
+                                        !error &&
+                                        forecastData.length > 0 && (
+                                            <>
+                                                <section className="summary-grid">
 
-                            {error && error !== "NO_DATA" && (
-                                <p style={{ color: "#b34c57" }}>
-                                    Unable to load demand forecast:{" "}
-                                    {error}
-                                </p>
-                            )}
+                                                    <div className="summary-card">
+                                                        <span>
+                                                            EXPECTED TRANSACTIONS
+                                                        </span>
 
-                            {!loading &&
-                                !error &&
-                                forecastData.length > 0 && (
-                                    <>
-                                        <section className="summary-grid">
+                                                        <strong>
+                                                            {
+                                                                forecastSummary.expectedOrders
+                                                            }
+                                                        </strong>
 
-                                            <div className="summary-card">
-                                                <span>
-                                                    EXPECTED TRANSACTIONS
-                                                </span>
+                                                        <small>
+                                                            {forecastPeriod}
+                                                        </small>
+                                                    </div>
 
-                                                <strong>
-                                                    {
-                                                        forecastSummary.expectedOrders
-                                                    }
-                                                </strong>
+                                                    <div className="summary-card">
+                                                        <span>
+                                                            EXPECTED CUSTOMERS
+                                                        </span>
 
-                                                <small>
-                                                    {forecastPeriod}
-                                                </small>
-                                            </div>
+                                                        <strong>
+                                                            {
+                                                                forecastSummary.expectedCustomers
+                                                            }
+                                                        </strong>
 
-                                            <div className="summary-card">
-                                                <span>
-                                                    EXPECTED CUSTOMERS
-                                                </span>
-
-                                                <strong>
-                                                    {
-                                                        forecastSummary.expectedCustomers
-                                                    }
-                                                </strong>
-
-                                                <small>
-                                                    {forecastPeriod}
-                                                </small>
-                                            </div>
-
-                                            {!isStaff && (
-                                                <div className="summary-card">
-                                                    <span>EXPECTED REVENUE</span>
-                                                    <strong>
-                                                        {formatRand(forecastSummary.expectedRevenue)}
-                                                    </strong>
-                                                    <small>{forecastPeriod}</small>
-                                                </div>
-                                            )}
-
-                                        </section>
-
-                                        <section className="forecast-card">
-
-                                            <div className="forecast-card-header">
-
-                                                <div>
-                                                    <h2>
-                                                        Weekly Demand Forecast
-                                                    </h2>
-
-                                                    <p>
-                                                        Expected
-                                                        transactions,
-                                                        customers and
-                                                        revenue for the
-                                                        forecast period.
-                                                    </p>
-                                                </div>
-
-                                                <div className="forecast-legend">
-
-                                                    <span>
-                                                        <i className="legend-orders"></i>
-                                                        Transactions
-                                                    </span>
-
-                                                    <span>
-                                                        <i className="legend-customers"></i>
-                                                        Customers
-                                                    </span>
+                                                        <small>
+                                                            {forecastPeriod}
+                                                        </small>
+                                                    </div>
 
                                                     {!isStaff && (
-                                                        <span>
-                                                            <i className="legend-revenue"></i>
-                                                            Revenue
-                                                        </span>
+                                                        <div className="summary-card">
+                                                            <span>EXPECTED REVENUE</span>
+                                                            <strong>
+                                                                {formatRand(forecastSummary.expectedRevenue)}
+                                                            </strong>
+                                                            <small>{forecastPeriod}</small>
+                                                        </div>
                                                     )}
 
-                                                </div>
+                                                </section>
 
-                                            </div>
+                                                <section className="forecast-card">
 
-                                            <div className="forecast-chart">
+                                                    <div className="forecast-card-header">
 
-                                                <ResponsiveContainer
-                                                    width={printing ? 640 : "100%"}
-                                                    height="100%"
-                                                >
-                                                    <LineChart
-                                                        data={
-                                                            forecastData
-                                                        }
-                                                        margin={{
-                                                            top: 10,
-                                                            right: 10,
-                                                            left: 0,
-                                                            bottom: 0,
-                                                        }}
-                                                    >
+                                                        <div>
+                                                            <h2>
+                                                                Weekly Demand Forecast
+                                                            </h2>
 
-                                                        <CartesianGrid
-                                                            stroke="#e0e0e0"
-                                                            strokeWidth={1}
-                                                            horizontal={true}
-                                                            vertical={true}
-                                                        />
+                                                            <p>
+                                                                Expected
+                                                                transactions,
+                                                                customers and
+                                                                revenue for the
+                                                                forecast period.
+                                                            </p>
+                                                        </div>
 
-                                                        <XAxis
-                                                            dataKey="day"
-                                                            tick={{
-                                                                fontSize: 11,
-                                                                fill: "#7c8987",
-                                                            }}
-                                                            tickLine={false}
-                                                            axisLine={{
-                                                                stroke:
-                                                                    "#dfe7e4",
-                                                            }}
-                                                            interval={0}
-                                                        />
+                                                        <div className="forecast-legend">
 
-                                                        <YAxis
-                                                            yAxisId="left"
-                                                            tick={{
-                                                                fontSize: 11,
-                                                                fill: "#7c8987",
-                                                            }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            width={40}
-                                                            tickCount={6}
-                                                        />
+                                                            <span>
+                                                                <i className="legend-orders"></i>
+                                                                Transactions
+                                                            </span>
 
-                                                        <YAxis
-                                                            yAxisId="right"
-                                                            orientation="right"
-                                                            tick={{
-                                                                fontSize: 11,
-                                                                fill: "#7c8987",
-                                                            }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            width={48}
-                                                            tickFormatter={(
-                                                                v
-                                                            ) =>
-                                                                `R${v / 1000
-                                                                }k`
-                                                            }
-                                                        />
+                                                            <span>
+                                                                <i className="legend-customers"></i>
+                                                                Customers
+                                                            </span>
 
-                                                        <Tooltip
-                                                            content={
-                                                                <ChartTooltip isStaff={isStaff} />
-                                                            }
-                                                            cursor={{
-                                                                stroke:
-                                                                    "#c9d6d2",
-                                                            }}
-                                                        />
+                                                            {!isStaff && (
+                                                                <span>
+                                                                    <i className="legend-revenue"></i>
+                                                                    Revenue
+                                                                </span>
+                                                            )}
 
-                                                        <Line
-                                                            yAxisId="left"
-                                                            type="monotone"
-                                                            dataKey="orders"
-                                                            stroke="#b34c57"
-                                                            strokeWidth={3}
-                                                            dot={{ r: 3 }}
-                                                            isAnimationActive={!printing}
-                                                            activeDot={{
-                                                                r: 6,
-                                                            }}
-                                                        />
+                                                        </div>
 
-                                                        <Line
-                                                            yAxisId="left"
-                                                            type="monotone"
-                                                            dataKey="customers"
-                                                            stroke="#2e8f87"
-                                                            strokeWidth={3}
-                                                            dot={{ r: 3 }}
-                                                            isAnimationActive={!printing}
-                                                            activeDot={{
-                                                                r: 6,
-                                                            }}
-                                                        />
+                                                    </div>
 
-                                                        {!isStaff && (
-                                                            <Line
-                                                                yAxisId="right"
-                                                                type="monotone"
-                                                                dataKey="revenue"
-                                                                stroke="#7faaa4"
-                                                                strokeWidth={3}
-                                                                strokeDasharray="7 5"
-                                                                dot={{ r: 3 }}
-                                                                isAnimationActive={!printing}
-                                                                activeDot={{ r: 6 }}
-                                                            />
-                                                        )}
+                                                    <div className="forecast-chart">
 
-                                                    </LineChart>
-                                                </ResponsiveContainer>
+                                                        <ResponsiveContainer
+                                                            width={printing ? 640 : "100%"}
+                                                            height="100%"
+                                                        >
+                                                            <LineChart
+                                                                data={
+                                                                    forecastData
+                                                                }
+                                                                margin={{
+                                                                    top: 10,
+                                                                    right: 10,
+                                                                    left: 0,
+                                                                    bottom: 0,
+                                                                }}
+                                                            >
 
-                                            </div>
+                                                                <CartesianGrid
+                                                                    stroke="#e0e0e0"
+                                                                    strokeWidth={1}
+                                                                    horizontal={true}
+                                                                    vertical={true}
+                                                                />
 
+                                                                <XAxis
+                                                                    dataKey="day"
+                                                                    tick={{
+                                                                        fontSize: 11,
+                                                                        fill: "#7c8987",
+                                                                    }}
+                                                                    tickLine={false}
+                                                                    axisLine={{
+                                                                        stroke:
+                                                                            "#dfe7e4",
+                                                                    }}
+                                                                    interval={0}
+                                                                />
 
-                                            <div className="forecast-details">
+                                                                <YAxis
+                                                                    yAxisId="left"
+                                                                    tick={{
+                                                                        fontSize: 11,
+                                                                        fill: "#7c8987",
+                                                                    }}
+                                                                    tickLine={false}
+                                                                    axisLine={false}
+                                                                    width={40}
+                                                                    tickCount={6}
+                                                                />
 
-                                                <h2 className="daily-figures-heading">
-                                                    View daily figures
-                                                </h2>
+                                                                <YAxis
+                                                                    yAxisId="right"
+                                                                    orientation="right"
+                                                                    tick={{
+                                                                        fontSize: 11,
+                                                                        fill: "#7c8987",
+                                                                    }}
+                                                                    tickLine={false}
+                                                                    axisLine={false}
+                                                                    width={48}
+                                                                    tickFormatter={(
+                                                                        v
+                                                                    ) =>
+                                                                        `R${v / 1000
+                                                                        }k`
+                                                                    }
+                                                                />
 
-                                                <div className="table-scroll">
+                                                                <Tooltip
+                                                                    content={
+                                                                        <ChartTooltip
+                                                                            isStaff={isStaff}
+                                                                            contextEvents={contextEvents}
+                                                                            contextEventError={contextEventError}
+                                                                        />
+                                                                    }
+                                                                    cursor={{
+                                                                        stroke: "#c9d6d2",
+                                                                    }}
+                                                                />
 
-                                                    <table className="forecast-table">
+                                                                <Line
+                                                                    yAxisId="left"
+                                                                    type="monotone"
+                                                                    dataKey="orders"
+                                                                    stroke="#b34c57"
+                                                                    strokeWidth={3}
+                                                                    dot={{ r: 3 }}
+                                                                    isAnimationActive={!printing}
+                                                                    activeDot={{
+                                                                        r: 6,
+                                                                    }}
+                                                                />
 
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Day</th>
-                                                                <th>Transactions</th>
-                                                                <th>Customers</th>
-                                                                {!isStaff && <th>Revenue</th>}
-                                                                <th>Event</th>
-                                                            </tr>
-                                                        </thead>
+                                                                <Line
+                                                                    yAxisId="left"
+                                                                    type="monotone"
+                                                                    dataKey="customers"
+                                                                    stroke="#2e8f87"
+                                                                    strokeWidth={3}
+                                                                    dot={{ r: 3 }}
+                                                                    isAnimationActive={!printing}
+                                                                    activeDot={{
+                                                                        r: 6,
+                                                                    }}
+                                                                />
 
-                                                        <tbody>
-                                                            {forecastData.map((item) => {
-                                                                const matchingEvents = contextEvents.filter(
-                                                                    (event) =>
-                                                                        event.start_date <= item.date &&
-                                                                        event.end_date >= item.date
-                                                                );
+                                                                {!isStaff && (
+                                                                    <Line
+                                                                        yAxisId="right"
+                                                                        type="monotone"
+                                                                        dataKey="revenue"
+                                                                        stroke="#7faaa4"
+                                                                        strokeWidth={3}
+                                                                        strokeDasharray="7 5"
+                                                                        dot={{ r: 3 }}
+                                                                        isAnimationActive={!printing}
+                                                                        activeDot={{ r: 6 }}
+                                                                    />
+                                                                )}
 
-                                                                return (
-                                                                    <tr key={item.date}>
-                                                                        <td>{item.day}</td>
-                                                                        <td>{item.orders}</td>
-                                                                        <td>{item.customers}</td>
+                                                            </LineChart>
+                                                        </ResponsiveContainer>
 
-                                                                        {!isStaff && (
-                                                                            <td>{formatRand(item.revenue)}</td>
-                                                                        )}
+                                                    </div>
 
-                                                                        <td>
-                                                                            {contextEventError
-                                                                                ? "Unavailable"
-                                                                                : matchingEvents.length > 0
-                                                                                    ? matchingEvents
-                                                                                        .map((event) => event.name)
-                                                                                        .join(", ")
-                                                                                    : "-"}
-                                                                        </td>
+                                                    <div className="forecast-details">
+
+                                                        <h2 className="daily-figures-heading">
+                                                            View daily figures
+                                                        </h2>
+
+                                                        <div className="table-scroll">
+
+                                                            <table className="forecast-table">
+
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Day</th>
+                                                                        <th>Transactions</th>
+                                                                        <th>Customers</th>
+                                                                        {!isStaff && <th>Revenue</th>}
+                                                                        <th>Event</th>
                                                                     </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
+                                                                </thead>
 
-                                                    </table>
+                                                                <tbody>
+                                                                    {forecastData.map((item) => {
+                                                                        const matchingEvents = contextEvents.filter(
+                                                                            (event) =>
+                                                                                event.start_date <= item.date &&
+                                                                                event.end_date >= item.date
+                                                                        );
 
-                                                </div>
+                                                                        return (
+                                                                            <tr key={item.date}>
+                                                                                <td>{item.day}</td>
+                                                                                <td>{item.orders}</td>
+                                                                                <td>{item.customers}</td>
 
-                                            </div>
+                                                                                {!isStaff && (
+                                                                                    <td>{formatRand(item.revenue)}</td>
+                                                                                )}
 
-                                            <div className="forecast-note">
-                                                Forecasts are estimates
-                                                based on historical
-                                                transaction patterns and
-                                                may be affected by
-                                                contextual factors such
-                                                as holidays, exams and
-                                                events.
-                                            </div>
+                                                                                <td>
+                                                                                    {contextEventError
+                                                                                        ? "Unavailable"
+                                                                                        : matchingEvents.length > 0
+                                                                                            ? matchingEvents
+                                                                                                .map((event) => event.name)
+                                                                                                .join(", ")
+                                                                                            : "-"}
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
 
-                                        </section>
-                                    </>
-                                )}
+                                                    <div className="forecast-note">
+                                                        Forecasts are estimates
+                                                        based on historical
+                                                        transaction patterns and
+                                                        may be affected by
+                                                        contextual factors such
+                                                        as holidays, exams and
+                                                        events.
+                                                    </div>
+
+                                                </section>
+
+                                                <section className="recommendations-card">
+                                                    <div className="forecast-card-header">
+                                                        <div>
+                                                            <h2>Demand recommendations</h2>
+                                                            <p className="recommendations-subtitle">
+                                                                {recommendations.length} days flagged · Based on historical transaction data
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {recommendations.length > 0 ? (
+                                                        <div className="recommendations-list">
+                                                            {recommendations.map((item) => (
+                                                                <div
+                                                                    className="recommendation-item"
+                                                                    key={`${item.forecast_date}-${item.historical_date}`}
+                                                                >
+                                                                    <div className="recommendation-top">
+                                                                        <div className="recommendation-date">
+                                                                            <h3>
+                                                                                {item.day_of_week},{" "}
+                                                                                {new Date(
+                                                                                    `${item.forecast_date}T12:00:00`
+                                                                                ).toLocaleDateString("en-ZA", {
+                                                                                    day: "numeric",
+                                                                                    month: "long",
+                                                                                })}
+                                                                            </h3>
+
+                                                                            <p>
+                                                                                Compared with{" "}
+                                                                                {new Date(
+                                                                                    `${item.historical_date}T12:00:00`
+                                                                                ).toLocaleDateString("en-ZA", {
+                                                                                    day: "numeric",
+                                                                                    month: "long",
+                                                                                })}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="recommendation-status">
+                                                                            <strong className="recommendation-percentage">
+                                                                                {item.demand_comparison?.match(/^\d+/)?.[0] ?? "—"}%
+                                                                            </strong>
+
+                                                                            <span
+                                                                                className={`recommendation-badge ${item.demand_level === "high"
+                                                                                    ? "high-demand"
+                                                                                    : "above-average"
+                                                                                    }`}
+                                                                            >
+                                                                                {item.demand_level === "high"
+                                                                                    ? "High demand"
+                                                                                    : "Above-average"}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <p className="recommendation-evidence">
+                                                                        {item.demand_comparison ||
+                                                                            "Demand was above the usual weekday average"}
+                                                                    </p>
+
+                                                                    <p className="recommendation-actions">
+                                                                        <strong>Possible actions:</strong>{" "}
+                                                                        Offer a discount, run a special, host an event
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="recommendations-empty">
+                                                            No recommendations are available based on the most recent
+                                                            complete week of transaction data.
+                                                        </p>
+                                                    )}
+
+                                                    {recommendations.length > 0 && (
+                                                        <p className="recommendation-footnote">
+                                                            Based on historical transaction data. Future demand may differ.
+                                                        </p>
+                                                    )}
+                                                </section>
+                                            </>
+                                        )}
+                                </>
+
+                            ) : (
+                                <HonestResultsChecker
+                                    key={vendorId}
+                                    currentUser={currentUser}
+                                    defaultVendorId={vendorId}
+                                />
+                            )}
+
                         </>
-                    ) : (
-                        <HonestResultsChecker
-                            key={vendorId}
-                            currentUser={currentUser}
-                            defaultVendorId={vendorId}
-                        />
                     )}
 
                 </div>
+
             </main>
         </div>
     );

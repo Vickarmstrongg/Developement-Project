@@ -11,6 +11,7 @@ import context_events
 import dashboard
 import honest_results
 from fair_comparison import calculate_fair_comparison
+import notifications
 
 from access import routes as auth_routes, users as user_routes
 from access.settings import CORS_ORIGINS
@@ -38,6 +39,7 @@ app = FastAPI(title="Byte & Bite API")
 app.include_router(context_events.router)
 app.include_router(dashboard.router)
 app.include_router(honest_results.router)
+app.include_router(notifications.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -138,14 +140,22 @@ def vendor_summary(
     })
 
 
+
 @app.get("/vendors/{vendor_id}/demand-forecast")
 def get_demand_forecast(
     vendor_id: int,
     db: Session = Depends(database.get_db),
     user: models.User = Depends(require_vendor_access)
 ):
+    notifications.check_transaction_change(
+        db=db,
+        vendor_id=vendor_id,
+        user_id=user.user_id,
+    )
+
     result = calculate_demand_forecast(db, vendor_id)
     return shape_for_role(user, result)
+
 
 
 @app.get("/vendors/{vendor_id}/fair-comparison",

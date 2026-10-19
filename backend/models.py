@@ -132,3 +132,16 @@ class ContextualEvent(Base):
         Integer, ForeignKey("users.user_id")
     )
     updated_at = Column(DateTime(timezone=True), nullable=False)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    notification_id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    vendor_id = Column(Integer, nullable=False)
+    message = Column(String)
+    trigger_type = Column(String)
+    is_read = Column(Boolean, nullable=False, default=False)
+    is_pinned = Column(Boolean, nullable=False, default=False)
+    is_cleared = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
