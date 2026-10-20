@@ -144,7 +144,7 @@ function DemandForecast({
 
     const [contextEvents, setContextEvents] = useState([]);
     const [contextEventError, setContextEventError] = useState("");
-
+    const [forecastDates, setForecastDates] = useState({ start: "", end: "" });
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -343,6 +343,11 @@ function DemandForecast({
                         lastDate
                     )}`
                 );
+
+                setForecastDates({
+                    start: data.points[0].date,
+                    end: data.points[data.points.length - 1].date,
+                });
 
                 setForecastData(formattedData);
 
@@ -1116,6 +1121,10 @@ function DemandForecast({
                                             <ReportButton
                                                 title="Demand Forecast"
                                                 subtitle={`${selectedVendorName} · ${forecastPeriod}`}
+                                                reportType="demand_forecast"
+                                                vendorId={vendorId}
+                                                periodStart={forecastDates.start}
+                                                periodEnd={forecastDates.end}
                                                 onPrintStart={() => setPrinting(true)}
                                                 onPrintEnd={() => setPrinting(false)}
                                             />

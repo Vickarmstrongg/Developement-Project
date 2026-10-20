@@ -13,10 +13,12 @@ import FairComparison from "./FairComparison";
 import ContextEvents from "./ContextEvents";
 import Dashboard from "./DashboardPage";
 import SetPassword from "./SetPassword";
+import Reports from "./Reports";
 import { apiFetch, clearSession, getStoredUser, getToken } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import Users from "./Users";
 import UsersLink from "./UsersLink";
+import ReportButton from "./ReportButton";
 
 const HASH_TO_VIEW = {
   "#dashboard": "dashboard",
@@ -25,6 +27,7 @@ const HASH_TO_VIEW = {
   "#fair-comparison": "fair",
   "#context-events": "context",
   "#users": "users",
+  "#reports": "reports",
 };
 
 const VIEW_TO_HASH = Object.fromEntries(
@@ -262,24 +265,33 @@ function App() {
     );
   }
 
-  
-if (view === "users") {
+  if (view === "users") {
     if (sessionUser?.role !== "Admin") {
-        return <div>Access denied</div>;
+      return <div>Access denied</div>;
     }
 
     return (
-        <Users
-            currentUser={currentUser}
-            onDashboard={() => navigateTo("dashboard")}
-            onRushHourRadar={() => navigateTo("rush")}
-            onDemandForecast={() => navigateTo("demand")}
-            onFairComparison={() => navigateTo("fair")}
-            onContextEvents={() => navigateTo("context")}
-            onLogout={handleLogout}
-        />
+      <Users
+        currentUser={currentUser}
+        onDashboard={() => navigateTo("dashboard")}
+        onRushHourRadar={() => navigateTo("rush")}
+        onDemandForecast={() => navigateTo("demand")}
+        onFairComparison={() => navigateTo("fair")}
+        onContextEvents={() => navigateTo("context")}
+        onLogout={handleLogout}
+      />
     );
-}
+  }
+
+  if (view === "reports") {
+    return (
+      <Reports
+        currentUser={currentUser}
+        onNavigate={navigateTo}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
 
   if (view === "demand") {
@@ -386,6 +398,7 @@ if (view === "users") {
           <Dashboard
             onContextEvents={() => navigateTo("context")}
             onRushHourRadar={() => navigateTo("rush")}
+            onDemandForecast={() => navigateTo("demand")}
           />
 
         </main>
@@ -503,6 +516,7 @@ const visibleRecommendations = sortedRecommendations.slice(
               <p className="rush-subtitle">
                 Find the busy and quiet moments across Stellenbosch before they happen.
               </p>
+
             </div>
 
             <div className="filters">
@@ -553,6 +567,13 @@ const visibleRecommendations = sortedRecommendations.slice(
                   </option>
                 ))}
               </select>
+              {!loading && vendors.length > 0 && (
+              <ReportButton
+                title="Rush Hour Radar"
+                subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
+                reportType="rush_hour_radar"
+              />
+              )}
             </div>
           </div>
 

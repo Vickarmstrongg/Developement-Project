@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
-
+import ReportButton from "./ReportButton";
 
 const RESULT_LABELS = {
     above_average: "Above average",
@@ -564,7 +564,7 @@ function FairComparison({
 
                 <div className="page-content">
                     <div className="fair-content">
-                        <section className="fair-page-heading">
+                        <section className="fair-page-heading report-heading">
                             <div className="fair-heading-copy">
                                 <h1>Fair Comparison Score</h1>
                                 <p>
@@ -653,6 +653,16 @@ function FairComparison({
 
 
                             </div>
+                            {hasScore && (
+                                <ReportButton
+                                    title="Fair Comparison"
+                                    subtitle={`${result?.vendor_name || ""} · ${periodText}`}
+                                    reportType="fair_comparison"
+                                    vendorId={vendorId}
+                                    periodStart={period.start_date}
+                                    periodEnd={period.end_date}
+                                />
+                            )}
                         </section>
 
                         <div className="fair-period-summary">

@@ -15,6 +15,7 @@ import {
 import { apiFetch } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
+import ReportButton from "./ReportButton";
 
 const API = "/context-events";
 const CALENDAR_MODES = ["month", "week", "day"];
@@ -351,9 +352,21 @@ return (
     </header>
 
     <div className="page-content">
-      <div className="page-heading">
-        <h1>Calendar &amp; Context Events</h1>
-        <p>Manage academic dates and other events that influence student demand.</p>
+      <div className="demand-page-header report-heading">
+        <div className="page-heading">
+          <h1>Calendar &amp; Context Events</h1>
+          <p>Manage academic dates and other events that influence student demand.</p>
+        </div>
+
+        {!loading && events.length > 0 && (
+          <ReportButton
+            title="Calendar / Context Events"
+            subtitle={`${displayYear} · ${filterType || "All event types"}`}
+            reportType="calendar_events"
+            periodStart={`${displayYear}-01-01`}
+            periodEnd={`${displayYear}-12-31`}
+          />
+        )}
       </div>
 
   {error && (
@@ -375,7 +388,7 @@ return (
   )}
 
   <section
-    className="panel"
+    className="panel no-print"
     style={{ padding: "24px", marginBottom: "24px" }}
   >
     <h2>{editingId ? "Edit event" : "Add a context event"}</h2>
