@@ -76,6 +76,86 @@ def calculate_demand_forecast(db: Session, vendor_id: int):
             "expected_customers": round(baseline["customers"] * trend_factor),
         })
 
+
+
+    # 6. Generate recommendations from the most recent complete week
+
+    days_since_sunday = (last_date.weekday() + 1) % 7
+    week_end = last_date - timedelta(days=days_since_sunday)
+    week_start = week_end - timedelta(days=6)
+
+    recommendations = []
+
+    previous_rows = [
+        row for row in daily_stats
+        if row.txn_date < week_start
+    ]
+
+    previous_dow_totals = defaultdict(
+        lambda: {"orders": 0, "days": 0}
+    )
+
+    for row in previous_rows:
+        dow = row.txn_date.weekday()
+        previous_dow_totals[dow]["orders"] += row.order_count
+        previous_dow_totals[dow]["days"] += 1
+
+    previous_dow_avg = {
+        dow: totals["orders"] / totals["days"]
+        for dow, totals in previous_dow_totals.items()
+        if totals["days"] > 0
+    }
+
+
+    for row in daily_stats:
+        if not (week_start <= row.txn_date <= week_end):
+            continue
+
+        dow = row.txn_date.weekday()
+        average_orders = previous_dow_avg.get(dow)
+
+        if average_orders is None or average_orders <= 0:
+            continue
+
+        if row.order_count <= average_orders:
+            continue
+
+        percentage_above = (
+            (row.order_count - average_orders) / average_orders
+        ) * 100
+
+        percentage_above = round(percentage_above)
+
+        forecast_point = next(
+            (
+                point for point in points
+                if point["day_of_week"] == DAY_NAMES[dow]
+            ),
+            None
+        )
+
+        if forecast_point is None:
+            continue
+
+        if percentage_above >= 50:
+            demand_level = "high"
+            action = "Consider hosting an event or running a special."
+        else:
+            demand_level = "above_average"
+            action = "Consider offering a discount or running a special."
+
+        recommendations.append({
+            "forecast_date": forecast_point["date"],
+            "day_of_week": forecast_point["day_of_week"],
+            "historical_date": row.txn_date.isoformat(),
+            "recommendation": action,
+            "demand_level": demand_level,
+            "demand_comparison": (
+                f"{percentage_above}% above the usual "
+                f"{DAY_NAMES[dow]} average"
+            ),
+        })
+   
     return {
         "vendor_id": vendor.vendor_id,
         "vendor_name": vendor.name,
@@ -83,4 +163,6 @@ def calculate_demand_forecast(db: Session, vendor_id: int):
         "history_to": last_date.isoformat(),
         "horizon_days": 7,
         "points": points,
+        "recommendations": recommendations,
     }
+

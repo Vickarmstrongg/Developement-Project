@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
-Bell,
-LogOut,
-ChevronDown,
+  Bell,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Login from "./Login";
@@ -73,8 +73,67 @@ const LEVEL_LABELS = {
   busy: "Busy",
 };
 
+function TrackpadMapPan() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    const handleWheel = (event) => {
+      if (event.ctrlKey) {
+        event.preventDefault();
+
+        const point = map.mouseEventToContainerPoint(event);
+        const zoomChange = -event.deltaY * 0.07;
+
+        map.setZoomAround(
+          point,
+          map.getZoom() + zoomChange
+        );
+      } else {
+        event.preventDefault();
+
+        map.panBy(
+          [-event.deltaX, -event.deltaY],
+          { animate: false }
+        );
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, {
+      passive: false,
+    });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function ResetMapButton() {
+  const map = useMap();
+
+  const resetMap = () => {
+    map.setView([-33.9346, 18.8617], 13, {
+      animate: true,
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      className="reset-map-button"
+      onClick={resetMap}
+    >
+      Reset map
+    </button>
+  );
+}
+
 function App() {
-    const [sessionUser, setSessionUser] = useState(() =>
+  const [sessionUser, setSessionUser] = useState(() =>
     getToken() ? getStoredUser() : null
   );
   const loggedIn = sessionUser !== null;
@@ -86,6 +145,8 @@ function App() {
   const [typeId, setTypeId] = useState("");
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recommendationPage, setRecommendationPage] = useState(1);
+  const recommendationsPerPage = 15;
 
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -125,7 +186,7 @@ function App() {
     };
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     const onExpired = () => {
       setSessionUser(null);
       setView("dashboard");
@@ -135,7 +196,7 @@ function App() {
     return () => window.removeEventListener("bb-logout", onExpired);
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     document.body.dataset.role = sessionUser?.role || "";
   }, [sessionUser]);
 
@@ -158,7 +219,7 @@ useEffect(() => {
 
     setLoading(true);
 
-        let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
+    let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
 
     if (typeId) {
       url += `&type_id=${typeId}`;
@@ -172,6 +233,10 @@ useEffect(() => {
       )
       .finally(() => setLoading(false));
   }, [day, hour, typeId, loggedIn, view]);
+
+  useEffect(() => {
+    setRecommendationPage(1);
+  }, [day, hour, typeId]);
 
 
   function handleLogout() {
@@ -242,14 +307,14 @@ if (view === "users") {
   }
 
   if (view === "context") {
-  return (
-    <ContextEvents
-      currentUser={currentUser}
-      onNavigate={navigateTo}
-      onLogout={handleLogout}
-    />
-  );
-}
+    return (
+      <ContextEvents
+        currentUser={currentUser}
+        onNavigate={navigateTo}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   if (view === "dashboard") {
     return (
@@ -327,6 +392,29 @@ if (view === "users") {
       </div>
     );
   }
+
+  const recommendations = vendors.filter(
+    (v) => v.recommendation
+  );
+
+  const totalRecommendationPages = Math.ceil(
+    recommendations.length / recommendationsPerPage
+  );
+
+  const startIndex =
+    (recommendationPage - 1) * recommendationsPerPage;
+
+const sortedRecommendations = [...recommendations].sort(
+  (a, b) => {
+    const priority = (v) => v.level === "quiet" ? 1 : 2;
+    return priority(a) - priority(b);
+  }
+);
+
+const visibleRecommendations = sortedRecommendations.slice(
+  startIndex,
+  startIndex + recommendationsPerPage
+);
 
   const busyCount = vendors.filter(
     (v) => v.level === "busy"
@@ -535,13 +623,19 @@ if (view === "users") {
               )}
 
               <MapContainer
+                className="rush-map"
                 center={[-33.9346, 18.8617]}
                 zoom={14}
-                style={{
-                  height: "420px",
-                  width: "100%",
-                }}
+                minZoom={12}
+                maxZoom={16}
+                scrollWheelZoom={false}
+                touchZoom={true}
+                zoomSnap={0.25}
               >
+
+                <TrackpadMapPan />
+                <ResetMapButton />
+
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -702,7 +796,7 @@ if (view === "users") {
                               "suppressed"
                               ? "suppressed"
                               : v.level
-                            ]
+                          ]
                             }22`,
 
                           color:
@@ -730,23 +824,19 @@ if (view === "users") {
           </div>
 
           <div className="panel recs-panel">
-
             <h3>Auto-generated recommendations</h3>
 
             <p className="panel-sub">
               Shown only when a recurring pattern crosses the threshold
             </p>
 
-            {vendors.filter(
-              (v) => v.recommendation
-            ).length === 0 && (
-                <p className="loading-text">
-                  No recommendations for this day/hour.
-                </p>
-              )}
+            {recommendations.length === 0 && (
+              <p className="loading-text">
+                No recommendations for this day/hour.
+              </p>
+            )}
 
-            {vendors
-              .filter((v) => v.recommendation)
+            {visibleRecommendations
               .map((v) => (
                 <div
                   className={`rec-row ${v.level}`}
@@ -761,21 +851,48 @@ if (view === "users") {
                   </div>
 
                   <div className="rec-actions">
-
-                    <button className="btn-primary">
+                    <span className="recommendation-label">
                       {v.level === "quiet"
                         ? "Run promotion"
                         : "Hold pricing"}
-                    </button>
+                    </span>
 
-                    <button className="btn-ghost">
+                    <span className="recommendation-label dismiss-label">
                       Dismiss
-                    </button>
-
+                    </span>
                   </div>
                 </div>
               ))}
 
+            {totalRecommendationPages > 1 && (
+              <div className="recommendation-pagination">
+                <button
+                  type="button"
+                  disabled={recommendationPage === 1}
+                  onClick={() =>
+                    setRecommendationPage((page) => page - 1)
+                  }
+                >
+                  Previous
+                </button>
+
+                <span>
+                  Page {recommendationPage} of {totalRecommendationPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={
+                    recommendationPage === totalRecommendationPages
+                  }
+                  onClick={() =>
+                    setRecommendationPage((page) => page + 1)
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
 
         </div>
