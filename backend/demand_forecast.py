@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -6,7 +6,12 @@ import models
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-def calculate_demand_forecast(db: Session, vendor_id: int):
+def calculate_demand_forecast(
+    db: Session, 
+    vendor_id: int, 
+    selected_date: str = None,
+):
+
     # 1. Fetch vendor to verify it exists
     vendor = db.query(models.Vendor).filter(models.Vendor.vendor_id == vendor_id).first()
     if not vendor:
@@ -75,87 +80,79 @@ def calculate_demand_forecast(db: Session, vendor_id: int):
             "expected_revenue": round(baseline["revenue"] * trend_factor, 2),
             "expected_customers": round(baseline["customers"] * trend_factor),
         })
+   
 
+    # 6. Prepare the Historical Activity Comparison
 
-
-    # 6. Generate recommendations from the most recent complete week
-
-    days_since_sunday = (last_date.weekday() + 1) % 7
-    week_end = last_date - timedelta(days=days_since_sunday)
-    week_start = week_end - timedelta(days=6)
-
-    recommendations = []
-
-    previous_rows = [
-        row for row in daily_stats
-        if row.txn_date < week_start
-    ]
-
-    previous_dow_totals = defaultdict(
-        lambda: {"orders": 0, "days": 0}
-    )
-
-    for row in previous_rows:
-        dow = row.txn_date.weekday()
-        previous_dow_totals[dow]["orders"] += row.order_count
-        previous_dow_totals[dow]["days"] += 1
-
-    previous_dow_avg = {
-        dow: totals["orders"] / totals["days"]
-        for dow, totals in previous_dow_totals.items()
-        if totals["days"] > 0
+    daily_orders = {
+        row.txn_date: row.order_count
+        for row in daily_stats
     }
 
+    if selected_date:
+        try:
+            if isinstance(selected_date, str):
+                selected_date = date.fromisoformat(selected_date)
+        except ValueError:
+            return {
+                "error": "selected_date must use YYYY-MM-DD format"
+            }
 
-    for row in daily_stats:
-        if not (week_start <= row.txn_date <= week_end):
-            continue
-
-        dow = row.txn_date.weekday()
-        average_orders = previous_dow_avg.get(dow)
-
-        if average_orders is None or average_orders <= 0:
-            continue
-
-        if row.order_count <= average_orders:
-            continue
-
-        percentage_above = (
-            (row.order_count - average_orders) / average_orders
-        ) * 100
-
-        percentage_above = round(percentage_above)
-
-        forecast_point = next(
-            (
-                point for point in points
-                if point["day_of_week"] == DAY_NAMES[dow]
-            ),
-            None
+        selected_week_start = (
+            selected_date - timedelta(days=selected_date.weekday())
         )
+    else:
+        days_since_sunday = (last_date.weekday() + 1) % 7
+        latest_sunday = last_date - timedelta(days=days_since_sunday)
+        selected_week_start = latest_sunday - timedelta(days=6)
 
-        if forecast_point is None:
-            continue
+    selected_week_end = selected_week_start + timedelta(days=6)
 
-        if percentage_above >= 50:
-            demand_level = "high"
-            action = "Consider hosting an event or running a special."
+    # The comparison week is the Monday-Sunday week immediately before.
+    previous_week_start = selected_week_start - timedelta(days=7)
+    previous_week_end = selected_week_start - timedelta(days=1)
+
+    comparison_days = []
+
+
+    for i in range(7):
+        current_date = selected_week_start + timedelta(days=i)
+        previous_date = previous_week_start + timedelta(days=i)
+
+        # Missing dates are unknown, not automatically zero.
+        current_orders = daily_orders.get(current_date)
+        previous_orders = daily_orders.get(previous_date)
+
+        # Calculate percentage change only when both counts are available.
+        if (
+            current_orders is not None
+            and previous_orders is not None
+            and previous_orders > 0
+        ):
+            percentage_change = round(
+                ((current_orders - previous_orders) / previous_orders) * 100,
+                2,
+            )
         else:
-            demand_level = "above_average"
-            action = "Consider offering a discount or running a special."
+            percentage_change = None
 
-        recommendations.append({
-            "forecast_date": forecast_point["date"],
-            "day_of_week": forecast_point["day_of_week"],
-            "historical_date": row.txn_date.isoformat(),
-            "recommendation": action,
-            "demand_level": demand_level,
-            "demand_comparison": (
-                f"{percentage_above}% above the usual "
-                f"{DAY_NAMES[dow]} average"
-            ),
+        # Calculate the difference only when both counts are available.
+        if current_orders is not None and previous_orders is not None:
+            change = current_orders - previous_orders
+        else:
+            change = None
+
+        comparison_days.append({
+            "date": current_date.isoformat(),
+            "day_of_week": DAY_NAMES[current_date.weekday()],
+            "this_week_orders": current_orders,
+            "previous_week_date": previous_date.isoformat(),
+            "previous_week_orders": previous_orders,
+            "change": change,
+            "percentage_change": percentage_change,
         })
-   
+
+
     return {
         "vendor_id": vendor.vendor_id,
         "vendor_name": vendor.name,
@@ -163,6 +160,13 @@ def calculate_demand_forecast(db: Session, vendor_id: int):
         "history_to": last_date.isoformat(),
         "horizon_days": 7,
         "points": points,
-        "recommendations": recommendations,
+        "historical_comparison": {
+            "selected_week_start": selected_week_start.isoformat(),
+            "selected_week_end": selected_week_end.isoformat(),
+            "previous_week_start": previous_week_start.isoformat(),
+            "previous_week_end": previous_week_end.isoformat(),
+            "days": comparison_days,
+        },
     }
+
 

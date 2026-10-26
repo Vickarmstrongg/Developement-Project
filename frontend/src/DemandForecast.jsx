@@ -7,6 +7,8 @@ import {
     ChevronDown,
     CalendarDays,
     ArrowLeft,
+    ArrowUp,
+    ArrowDown,
 } from "lucide-react";
 
 import {
@@ -26,6 +28,35 @@ import HonestResultsChecker from "./HonestResultsChecker";
 function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
 }
+
+
+function formatComparisonPeriod(startDate, endDate) {
+    if (!startDate || !endDate) return "Dates unavailable";
+
+    const start = new Date(`${startDate}T12:00:00`);
+    const end = new Date(`${endDate}T12:00:00`);
+
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+
+    const startMonth = start.toLocaleDateString("en-ZA", {
+        month: "short",
+    });
+
+    const endMonth = end.toLocaleDateString("en-ZA", {
+        month: "short",
+    });
+
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+
+    if (startMonth === endMonth && startYear === endYear) {
+        return `${startDay} – ${endDay} ${endMonth} ${endYear}`;
+    }
+
+    return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
+}
+
 
 
 function ChartTooltip({ active, payload, isStaff, contextEvents, contextEventError }) {
@@ -104,14 +135,23 @@ function DemandForecast({
     onDashboard,
     onFairComparison,
     onContextEvents,
+    onOpenWeeklyEvidence,
 }) {
     const [profileOpen, setProfileOpen] = useState(false);
     const [activeFeature, setActiveFeature] = useState("forecast");
+
+    const [selectedComparisonDate, setSelectedComparisonDate] = useState("");
+    const [historicalComparison, setHistoricalComparison] = useState(null);
+    const [comparisonLoading, setComparisonLoading] = useState(false);
+    const [comparisonError, setComparisonError] = useState("");
+
+    const [comparisonSort, setComparisonSort] = useState("newest");
 
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
     const [notificationsError, setNotificationsError] = useState("");
+    const [expandedNotifications, setExpandedNotifications] = useState([]);
 
 
     const [showNotificationHistory, setShowNotificationHistory] = useState(false);
@@ -132,7 +172,6 @@ function DemandForecast({
     const [businessDropdownOpen, setBusinessDropdownOpen] = useState(false);
 
     const [forecastData, setForecastData] = useState([]);
-    const [recommendations, setRecommendations] = useState([]);
     const [forecastSummary, setForecastSummary] = useState({
         expectedOrders: 0,
         expectedCustomers: 0,
@@ -279,9 +318,15 @@ function DemandForecast({
                 setLoading(true);
                 setError("");
 
+
+                const query = selectedComparisonDate
+                    ? `?selected_date=${selectedComparisonDate}`
+                    : "";
+
                 const response = await apiFetch(
-                    `/vendors/${vendorId}/demand-forecast`
+                    `/vendors/${vendorId}/demand-forecast${query}`
                 );
+
 
                 if (!response.ok) {
                     throw new Error(
@@ -291,13 +336,28 @@ function DemandForecast({
 
                 const data = await response.json();
 
+                setHistoricalComparison(data.historical_comparison ?? null);
+                setComparisonError("");
+
+                if (
+                    !selectedComparisonDate &&
+                    data.historical_comparison?.selected_week_start
+                ) {
+                    setSelectedComparisonDate(
+                        data.historical_comparison.selected_week_start
+                    );
+                }
+
                 if (data.error) {
                     if (
                         data.error ===
                         "No transaction history for this vendor"
                     ) {
                         setForecastData([]);
-                        setRecommendations([]);
+                        setHistoricalComparison(null);
+                        setComparisonError(
+                            "No transaction history available for comparison."
+                        );
 
                         setForecastSummary({
                             expectedOrders: 0,
@@ -345,12 +405,6 @@ function DemandForecast({
 
                 setForecastData(formattedData);
 
-                setRecommendations(
-                    Array.isArray(data.recommendations)
-                        ? data.recommendations
-                        : []
-                );
-
                 const expectedOrders =
                     formattedData.reduce(
                         (total, item) =>
@@ -378,15 +432,18 @@ function DemandForecast({
                     expectedRevenue,
                 });
             } catch (err) {
+                console.error("Error loading forecast:", err);
+
+                setHistoricalComparison(null);
+                setComparisonError(err.message);
+
                 setForecastData([]);
-                setRecommendations([]);
 
                 setForecastSummary({
                     expectedOrders: 0,
                     expectedCustomers: 0,
                     expectedRevenue: 0,
                 });
-
                 setError(err.message);
             } finally {
                 setLoading(false);
@@ -394,7 +451,7 @@ function DemandForecast({
         }
 
         loadForecast();
-    }, [vendorId]);
+    }, [vendorId, selectedComparisonDate]);
 
 
     async function loadNotifications() {
@@ -568,8 +625,9 @@ function DemandForecast({
                                                 key={item.notification_id}
                                                 className={`notification-history-card ${item.is_read ? "read" : "unread"} ${item.is_cleared ? "cleared" : ""}`}
                                             >
+
                                                 <div className="notification-detail-heading">
-                                                    <div>
+                                                    <div className="notification-heading-text">
                                                         <h3>
                                                             {item.direction === "increased"
                                                                 ? "Unusual increase in transactions"
@@ -577,22 +635,65 @@ function DemandForecast({
                                                                     ? "Unusual decrease in transactions"
                                                                     : "Transaction alert"}
                                                         </h3>
+
                                                         <p className="notification-type">
                                                             Historical transaction alert
                                                         </p>
                                                     </div>
 
-                                                    <div className="history-statuses">
-                                                        {item.is_pinned && (
-                                                            <span className="history-status pinned-status">
-                                                                Pinned
+                                                    <div className="notification-heading-controls">
+                                                        <div className="history-statuses">
+                                                            {item.is_pinned && (
+                                                                <span className="history-status pinned-status">
+                                                                    Pinned
+                                                                </span>
+                                                            )}
+
+                                                            <span
+                                                                className={`history-status ${item.is_read ? "" : "unread-status"
+                                                                    }`}
+                                                            >
+                                                                {item.is_read ? "Read" : "Unread"}
                                                             </span>
-                                                        )}
-                                                        <span className={`history-status ${item.is_read ? "" : "unread-status"}`}>
-                                                            {item.is_read ? "Read" : "Unread"}
-                                                        </span>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            className="notification-expand-button"
+                                                            onClick={() => {
+                                                                setExpandedNotifications((current) =>
+                                                                    current.includes(item.notification_id)
+                                                                        ? current.filter(
+                                                                            (id) => id !== item.notification_id
+                                                                        )
+                                                                        : [...current, item.notification_id]
+                                                                );
+                                                            }}
+                                                            aria-label={
+                                                                expandedNotifications.includes(item.notification_id)
+                                                                    ? "Hide details"
+                                                                    : "View details"
+                                                            }
+                                                            aria-expanded={expandedNotifications.includes(
+                                                                item.notification_id
+                                                            )}
+                                                        >
+                                                            <ChevronDown
+                                                                size={18}
+                                                                style={{
+                                                                    transform: expandedNotifications.includes(
+                                                                        item.notification_id
+                                                                    )
+                                                                        ? "rotate(180deg)"
+                                                                        : "rotate(0deg)",
+                                                                    transition: "transform 0.2s ease",
+                                                                }}
+                                                            />
+                                                        </button>
                                                     </div>
                                                 </div>
+
+
 
                                                 <p className="notification-analysis-date">
                                                     Date analysed:{" "}
@@ -623,86 +724,91 @@ function DemandForecast({
                                                         : "this weekday"}.
                                                 </p>
 
-                                                <div className="notification-stats">
-                                                    <div className="notification-stat">
-                                                        <span>Actual count</span>
-                                                        <strong>{item.actual_count ?? "—"}</strong>
-                                                    </div>
+                                                {expandedNotifications.includes(item.notification_id) && (
+                                                    <>
 
-                                                    <div className="notification-stat">
-                                                        <span>Usual count</span>
-                                                        <strong>
-                                                            {item.baseline_count != null
-                                                                ? item.baseline_count.toFixed(1)
-                                                                : "—"}
-                                                        </strong>
-                                                    </div>
-                                                </div>
+                                                        <div className="notification-stats">
+                                                            <div className="notification-stat">
+                                                                <span>Actual count</span>
+                                                                <strong>{item.actual_count ?? "—"}</strong>
+                                                            </div>
 
-                                                <p className="notification-baseline">
-                                                    Baseline: average across the four previous occurrences of the same weekday.
-                                                </p>
+                                                            <div className="notification-stat">
+                                                                <span>Usual count</span>
+                                                                <strong>
+                                                                    {item.baseline_count != null
+                                                                        ? item.baseline_count.toFixed(1)
+                                                                        : "—"}
+                                                                </strong>
+                                                            </div>
+                                                        </div>
 
-                                                <div className="notification-context-events">
-                                                    <strong>Contextual events</strong>
+                                                        <p className="notification-baseline">
+                                                            Baseline: average across the four previous occurrences of the same weekday.
+                                                        </p>
 
-                                                    {Array.isArray(item.contextual_events) &&
-                                                        item.contextual_events.length > 0 ? (
-                                                        <>
-                                                            <p>
-                                                                The following events coincided with this transaction change:
-                                                            </p>
-                                                            <ul>
-                                                                {item.contextual_events.map((event) => (
-                                                                    <li key={event.event_id}>{event.name}</li>
-                                                                ))}
-                                                            </ul>
-                                                        </>
-                                                    ) : (
-                                                        <p>No contextual events recorded for this date.</p>
-                                                    )}
-                                                </div>
+                                                        <div className="notification-context-events">
+                                                            <strong>Contextual events</strong>
 
-                                                <p className="notification-created-date">
-                                                    Notification created:{" "}
-                                                    {item.created_at
-                                                        ? new Date(item.created_at).toLocaleString("en-ZA", {
-                                                            day: "numeric",
-                                                            month: "long",
-                                                            year: "numeric",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        })
-                                                        : "Unavailable"}
-                                                </p>
+                                                            {Array.isArray(item.contextual_events) &&
+                                                                item.contextual_events.length > 0 ? (
+                                                                <>
+                                                                    <p>
+                                                                        The following events coincided with this transaction change:
+                                                                    </p>
+                                                                    <ul>
+                                                                        {item.contextual_events.map((event) => (
+                                                                            <li key={event.event_id}>{event.name}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </>
+                                                            ) : (
+                                                                <p>No contextual events recorded for this date.</p>
+                                                            )}
+                                                        </div>
 
-                                                <div className="history-card-actions">
-                                                    {!item.is_read && (
-                                                        <button
-                                                            type="button"
-                                                            className="history-action-button"
-                                                            onClick={() => updateNotification(item.notification_id, "read")}
-                                                        >
-                                                            Mark read
-                                                        </button>
-                                                    )}
+                                                        <p className="notification-created-date">
+                                                            Notification created:{" "}
+                                                            {item.created_at
+                                                                ? new Date(item.created_at).toLocaleString("en-ZA", {
+                                                                    day: "numeric",
+                                                                    month: "long",
+                                                                    year: "numeric",
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                })
+                                                                : "Unavailable"}
+                                                        </p>
 
-                                                    <button
-                                                        type="button"
-                                                        className="history-action-button"
-                                                        onClick={() => updateNotification(item.notification_id, "pin")}
-                                                    >
-                                                        {item.is_pinned ? "Unpin" : "Pin"}
-                                                    </button>
+                                                        <div className="history-card-actions">
+                                                            {!item.is_read && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="history-action-button"
+                                                                    onClick={() => updateNotification(item.notification_id, "read")}
+                                                                >
+                                                                    Mark read
+                                                                </button>
+                                                            )}
 
-                                                    <button
-                                                        type="button"
-                                                        className="history-action-button clear-action"
-                                                        onClick={() => updateNotification(item.notification_id, "clear")}
-                                                    >
-                                                        Clear
-                                                    </button>
-                                                </div>
+                                                            <button
+                                                                type="button"
+                                                                className="history-action-button"
+                                                                onClick={() => updateNotification(item.notification_id, "pin")}
+                                                            >
+                                                                {item.is_pinned ? "Unpin" : "Pin"}
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                className="history-action-button clear-action"
+                                                                onClick={() => updateNotification(item.notification_id, "clear")}
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         ))}
 
@@ -843,7 +949,11 @@ function DemandForecast({
                                                 <div className="history-card-top">
                                                     <div className="history-card-heading">
                                                         <span className={`history-type-icon ${item.trigger_type === "transaction_increase" ? "increase" : "decrease"}`}>
-                                                            {item.trigger_type === "transaction_increase" ? "↑" : "↓"}
+                                                            {item.trigger_type === "transaction_increase" ? (
+                                                                <ArrowUp size={16} />
+                                                            ) : (
+                                                                <ArrowDown size={16} />
+                                                            )}
                                                         </span>
 
                                                         <div>
@@ -1087,14 +1197,17 @@ function DemandForecast({
                                                                         onMouseDown={(event) =>
                                                                             event.preventDefault()
                                                                         }
+
                                                                         onClick={() => {
-                                                                            setVendorId(
-                                                                                String(vendor.vendor_id)
-                                                                            );
+                                                                            setVendorId(String(vendor.vendor_id));
+                                                                            setSelectedComparisonDate("");
+                                                                            setHistoricalComparison(null);
+                                                                            setComparisonError("");
                                                                             setBusinessSearch("");
                                                                             setDebouncedBusinessSearch("");
                                                                             setBusinessDropdownOpen(false);
                                                                         }}
+
                                                                     >
                                                                         {vendor.name}
                                                                     </button>
@@ -1415,102 +1528,207 @@ function DemandForecast({
                                                     </div>
 
                                                     <div className="forecast-note">
-                                                        Forecasts are estimates
-                                                        based on historical
-                                                        transaction patterns and
-                                                        may be affected by
-                                                        contextual factors such
-                                                        as holidays, exams and
-                                                        events.
+                                                        Forecasts are estimates based on historical transaction patterns and may be affected by contextual factors such as holidays, exams and events.
                                                     </div>
-
                                                 </section>
 
-                                                <section className="recommendations-card">
-                                                    <div className="forecast-card-header">
+
+                                                <section className="historical-comparison-card">
+                                                    <div className="historical-comparison-header">
                                                         <div>
-                                                            <h2>Demand recommendations</h2>
-                                                            <p className="recommendations-subtitle">
-                                                                {recommendations.length} days flagged · Based on historical transaction data
-                                                            </p>
+                                                            <h2>Historical Activity Comparison</h2>
+                                                            <p>Compare recorded transaction activity across weeks.</p>
                                                         </div>
+
+                                                        <button
+                                                            type="button"
+                                                            className="view-evidence-button"
+                                                            onClick={() =>
+                                                                onOpenWeeklyEvidence?.({
+                                                                    vendorId,
+                                                                    vendorName: selectedVendorName,
+                                                                    selectedDate:
+                                                                        historicalComparison?.selected_week_start ||
+                                                                        selectedComparisonDate,
+                                                                })
+                                                            }
+                                                            disabled={!historicalComparison}
+                                                        >
+                                                            View
+                                                        </button>
                                                     </div>
 
-                                                    {recommendations.length > 0 ? (
-                                                        <div className="recommendations-list">
-                                                            {recommendations.map((item) => (
-                                                                <div
-                                                                    className="recommendation-item"
-                                                                    key={`${item.forecast_date}-${item.historical_date}`}
-                                                                >
-                                                                    <div className="recommendation-top">
-                                                                        <div className="recommendation-date">
-                                                                            <h3>
-                                                                                {item.day_of_week},{" "}
-                                                                                {new Date(
-                                                                                    `${item.forecast_date}T12:00:00`
-                                                                                ).toLocaleDateString("en-ZA", {
-                                                                                    day: "numeric",
-                                                                                    month: "long",
-                                                                                })}
-                                                                            </h3>
+                                                    <div className="comparison-week-selector">
+                                                        <label htmlFor="comparison-week-date">
+                                                            Choose a date in the week
+                                                        </label>
 
-                                                                            <p>
-                                                                                Compared with{" "}
-                                                                                {new Date(
-                                                                                    `${item.historical_date}T12:00:00`
-                                                                                ).toLocaleDateString("en-ZA", {
-                                                                                    day: "numeric",
-                                                                                    month: "long",
-                                                                                })}
-                                                                            </p>
-                                                                        </div>
+                                                        <input
+                                                            id="comparison-week-date"
+                                                            type="date"
+                                                            value={selectedComparisonDate}
+                                                            onChange={(event) =>
+                                                                setSelectedComparisonDate(event.target.value)
+                                                            }
+                                                        />
 
-                                                                        <div className="recommendation-status">
-                                                                            <strong className="recommendation-percentage">
-                                                                                {item.demand_comparison?.match(/^\d+/)?.[0] ?? "—"}%
-                                                                            </strong>
+                                                        <p>
+                                                            The selected date determines the Monday-Sunday week.
+                                                            The preceding week is compared automatically.
+                                                        </p>
+                                                    </div>
 
-                                                                            <span
-                                                                                className={`recommendation-badge ${item.demand_level === "high"
-                                                                                    ? "high-demand"
-                                                                                    : "above-average"
-                                                                                    }`}
-                                                                            >
-                                                                                {item.demand_level === "high"
-                                                                                    ? "High demand"
-                                                                                    : "Above-average"}
-                                                                            </span>
-                                                                        </div>
+                                                    {comparisonLoading && (
+                                                        <p>Loading historical activity...</p>
+                                                    )}
+
+                                                    {comparisonError && (
+                                                        <p className="comparison-error">{comparisonError}</p>
+                                                    )}
+
+                                                    {!comparisonLoading &&
+                                                        !comparisonError &&
+                                                        historicalComparison && (
+                                                            <>
+                                                                <div className="comparison-period-cards">
+                                                                    <div className="comparison-period-item">
+                                                                        <span>Selected week</span>
+                                                                        <strong>
+                                                                            {formatComparisonPeriod(
+                                                                                historicalComparison.selected_week_start,
+                                                                                historicalComparison.selected_week_end
+                                                                            )}
+                                                                        </strong>
                                                                     </div>
 
-                                                                    <p className="recommendation-evidence">
-                                                                        {item.demand_comparison ||
-                                                                            "Demand was above the usual weekday average"}
-                                                                    </p>
-
-                                                                    <p className="recommendation-actions">
-                                                                        <strong>Possible actions:</strong>{" "}
-                                                                        Offer a discount, run a special, host an event
-                                                                    </p>
+                                                                    <div className="comparison-period-item">
+                                                                        <span>Previous week</span>
+                                                                        <strong>
+                                                                            {formatComparisonPeriod(
+                                                                                historicalComparison.previous_week_start,
+                                                                                historicalComparison.previous_week_end
+                                                                            )}
+                                                                        </strong>
+                                                                    </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <p className="recommendations-empty">
-                                                            No recommendations are available based on the most recent
-                                                            complete week of transaction data.
-                                                        </p>
-                                                    )}
 
-                                                    {recommendations.length > 0 && (
-                                                        <p className="recommendation-footnote">
-                                                            Based on historical transaction data. Future demand may differ.
-                                                        </p>
-                                                    )}
+                                                                <div className="table-scroll">
+                                                                    <table className="historical-comparison-table">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Day &amp; Date</th>
+                                                                                <th>
+                                                                                    This week
+                                                                                    <span>(Transactions)</span>
+                                                                                </th>
+                                                                                <th>
+                                                                                    Previous week
+                                                                                    <span>(Transactions)</span>
+                                                                                </th>
+                                                                                <th>% Change</th>
+                                                                                <th>Activity category</th>
+                                                                            </tr>
+                                                                        </thead>
+
+                                                                        <tbody>
+                                                                            {historicalComparison.days.map((day) => {
+                                                                                const change = day.percentage_change;
+
+                                                                                let category = "Usual";
+                                                                                let categoryClass = "usual";
+
+                                                                                if (change != null && change >= 10) {
+                                                                                    category = "High activity";
+                                                                                    categoryClass = "high";
+                                                                                } else if (change != null && change > 0) {
+                                                                                    category = "Above average";
+                                                                                    categoryClass = "above";
+                                                                                } else if (change != null && change < 0) {
+                                                                                    category = "Below average";
+                                                                                    categoryClass = "below";
+                                                                                }
+
+                                                                                const formattedDate = new Date(
+                                                                                    `${day.date}T12:00:00`
+                                                                                ).toLocaleDateString("en-ZA", {
+                                                                                    weekday: "long",
+                                                                                    day: "numeric",
+                                                                                    month: "short",
+                                                                                });
+
+                                                                                const hasBothCounts =
+                                                                                    day.this_week_orders != null &&
+                                                                                    day.previous_week_orders != null;
+
+                                                                                return (
+                                                                                    <tr key={day.date}>
+                                                                                        <td>{formattedDate}</td>
+
+                                                                                        <td>
+                                                                                            {day.this_week_orders ?? "N/A"}
+                                                                                        </td>
+
+                                                                                        <td>
+                                                                                            {day.previous_week_orders ?? "N/A"}
+                                                                                        </td>
+
+                                                                                        <td>
+                                                                                            {change == null ? (
+                                                                                                <span className="comparison-change unavailable">
+                                                                                                    —
+                                                                                                </span>
+                                                                                            ) : (
+                                                                                                <span
+                                                                                                    className={`comparison-change ${change > 0
+                                                                                                        ? "positive"
+                                                                                                        : change < 0
+                                                                                                            ? "negative"
+                                                                                                            : "neutral"
+                                                                                                        }`}
+                                                                                                >
+
+                                                                                                    {change > 0 && <ArrowUp size={14} />}
+                                                                                                    {change < 0 && <ArrowDown size={14} />}
+                                                                                                    {change > 0 ? "+" : ""}
+                                                                                                    {change}%
+
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </td>
+
+                                                                                        <td>
+                                                                                            <span
+                                                                                                className={`activity-category ${hasBothCounts
+                                                                                                    ? categoryClass
+                                                                                                    : "usual"
+                                                                                                    }`}
+                                                                                            >
+                                                                                                {hasBothCounts
+                                                                                                    ? category
+                                                                                                    : "Insufficient data"}
+                                                                                            </span>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                );
+                                                                            })}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+
+                                                                <p className="historical-comparison-note">
+                                                                    Figures are based on recorded loyalty transactions
+                                                                    and may not reflect total business activity.
+                                                                </p>
+                                                            </>
+                                                        )}
                                                 </section>
+
+
+
                                             </>
                                         )}
+
+
                                 </>
 
                             ) : (

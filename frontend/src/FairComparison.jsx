@@ -928,7 +928,7 @@ function FairComparison({
                                     <section className="fair-panel fair-trend-panel">
                                         <div className="fair-panel-heading">
                                             <div>
-                                                <h2>Your venue &amp; shared pattern</h2>
+                                                <h2>Your business &amp; shared pattern</h2>
                                                 <p>
                                                     {periodMode === "day"
                                                         ? "Compare transaction counts for the selected date."
@@ -943,17 +943,7 @@ function FairComparison({
 
                                         {dailyTrend.length > 0 ? (
                                             <>
-                                                <div className="fair-trend-legend">
-                                                    <span>
-                                                        <span className="fair-legend-line fair-legend-venue" />
-                                                        Your venue
-                                                    </span>
 
-                                                    <span>
-                                                        <span className="fair-legend-line fair-legend-peer" />
-                                                        {groupName} average
-                                                    </span>
-                                                </div>
 
                                                 <div className="fair-trend-chart">
                                                     {periodMode === "day" ? (

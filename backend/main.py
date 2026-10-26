@@ -141,9 +141,11 @@ def vendor_summary(
 
 
 
+
 @app.get("/vendors/{vendor_id}/demand-forecast")
 def get_demand_forecast(
     vendor_id: int,
+    selected_date: Optional[date] = None,
     db: Session = Depends(database.get_db),
     user: models.User = Depends(require_vendor_access)
 ):
@@ -153,8 +155,14 @@ def get_demand_forecast(
         user_id=user.user_id,
     )
 
-    result = calculate_demand_forecast(db, vendor_id)
+    result = calculate_demand_forecast(
+        db,
+        vendor_id,
+        selected_date=selected_date,
+    )
+
     return shape_for_role(user, result)
+
 
 
 

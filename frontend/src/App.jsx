@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 import "./App.css";
 import Login from "./Login";
 import DemandForecast from "./DemandForecast";
+import WeeklyActivityEvidence from "./WeeklyActivity";
 import FairComparison from "./FairComparison";
 import ContextEvents from "./ContextEvents";
 import Dashboard from "./DashboardPage";
@@ -22,6 +23,7 @@ const HASH_TO_VIEW = {
   "#demand-forecast": "demand",
   "#fair-comparison": "fair",
   "#context-events": "context",
+  "#weekly-activity-evidence": "evidence",
 };
 
 const VIEW_TO_HASH = Object.fromEntries(
@@ -136,6 +138,7 @@ function App() {
   const loggedIn = sessionUser !== null;
 
   const [view, setView] = useState(() => viewFromHash());
+  const [evidenceDetails, setEvidenceDetails] = useState(null);
 
   const [day, setDay] = useState(4);
   const [hour, setHour] = useState(12);
@@ -162,6 +165,10 @@ function App() {
     }
   }
 
+  function openWeeklyEvidence(details) {
+    setEvidenceDetails(details);
+    navigateTo("evidence");
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -259,6 +266,20 @@ function App() {
     );
   }
 
+  if (view === "evidence" && evidenceDetails) {
+    return (
+      <WeeklyActivityEvidence
+        vendorId={evidenceDetails.vendorId}
+        vendorName={evidenceDetails.vendorName}
+        selectedDate={evidenceDetails.selectedDate}
+        onBack={() => navigateTo("demand")}
+        onLogout={handleLogout}
+        onDashboard={() => navigateTo("dashboard")}
+        onFairComparison={() => navigateTo("fair")}
+        onContextEvents={() => navigateTo("context")}
+      />
+    );
+  }
 
   if (view === "demand") {
     return (
@@ -268,6 +289,7 @@ function App() {
         onDashboard={() => navigateTo("dashboard")}
         onFairComparison={() => navigateTo("fair")}
         onContextEvents={() => navigateTo("context")}
+        onOpenWeeklyEvidence={openWeeklyEvidence}
       />
     );
   }
@@ -381,17 +403,17 @@ function App() {
   const startIndex =
     (recommendationPage - 1) * recommendationsPerPage;
 
-const sortedRecommendations = [...recommendations].sort(
-  (a, b) => {
-    const priority = (v) => v.level === "quiet" ? 1 : 2;
-    return priority(a) - priority(b);
-  }
-);
+  const sortedRecommendations = [...recommendations].sort(
+    (a, b) => {
+      const priority = (v) => v.level === "quiet" ? 1 : 2;
+      return priority(a) - priority(b);
+    }
+  );
 
-const visibleRecommendations = sortedRecommendations.slice(
-  startIndex,
-  startIndex + recommendationsPerPage
-);
+  const visibleRecommendations = sortedRecommendations.slice(
+    startIndex,
+    startIndex + recommendationsPerPage
+  );
 
   const busyCount = vendors.filter(
     (v) => v.level === "busy"
