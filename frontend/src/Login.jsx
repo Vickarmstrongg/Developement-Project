@@ -218,6 +218,12 @@ function Login({ onLogin }) {
                             Forgot password?
                         </a>
                     </div>
+                    
+                    <div className="login-options">
+                        <a href="/set-password">
+                             Create Account : with invite
+                        </a>
+                    </div>
 
                     <button
                         type="submit"

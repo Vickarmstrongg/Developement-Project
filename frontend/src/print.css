@@ -33,6 +33,15 @@
     background: #2d9088;
 }
 
+
+
+.fair-page-heading .report-button {
+  align-self: flex-start;
+  margin-top: 20px;
+  height: 40px;
+  padding: 0 16px;
+}
+
 .report-header {
     display: none;
 }
@@ -136,4 +145,258 @@
     .forecast-details td {
         padding: 4px 6px;
     }
+
+  /* ---------- Demand Forecast ---------- */
+  .summary-card,
+  .forecast-card,
+  .forecast-chart {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  /* ---------- Fair Comparison ---------- */
+  .fair-filter-panel {
+    display: none !important;
+  }
+
+  .fair-content {
+    padding: 0;
+    max-width: none;
+  }
+
+  .fair-page-heading {
+    margin-bottom: 8px;
+  }
+
+  .fair-score-card,
+  .fair-panel,
+  .fair-privacy-note,
+  .fair-message {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .fair-comparison-layout,
+  .fair-comparison-side {
+    display: block;
+  }
+
+  .fair-comparison-layout > *,
+  .fair-comparison-side > * {
+    margin-bottom: 16px;
+  }
+
+  /* ---------- Rush Hour Radar ---------- */
+  .rush-page-header .filters {
+    display: contents;
+  }
+
+  .rush-page-header .filters select {
+    display: none !important;
+  }
+
+  .rush-content {
+    padding: 0;
+  }
+
+  .rush-page-header {
+    margin-bottom: 10px;
+  }
+
+  .main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel {
+    box-shadow: none;
+  }
+
+  .map-panel,
+  .stat-card,
+  .pulse-item,
+  .rec-row {
+    break-inside: avoid;
+  }
+
+  .pulse-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .rec-actions,
+  .leaflet-control-zoom {
+    display: none !important;
+  }
+
+  .pulse-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 0;
+  }
+
+  .pulse-item {
+    margin-bottom: 8px;
+  }
+
+  .recs-panel {
+    display: none !important;
+  }
+
+  /* ---------- Calendar / Context Events ---------- */
+  .no-print,
+  .context-events-controls,
+  .context-calendar-navigation button,
+  .context-calendar-mode {
+    display: none !important;
+  }
+
+  .context-events-panel > .page-heading,
+  .demand-page-header .page-heading {
+    display: none;
+  }
+
+  .context-events-panel {
+    box-shadow: none;
+  }
+
+  /* List view */
+  .context-events-table-wrap {
+    overflow: visible;
+  }
+
+  .context-events-table th:last-child,
+  .context-events-table td:last-child {
+    display: none;
+  }
+
+  .context-events-table th,
+  .context-events-table td {
+    white-space: normal;
+    padding: 6px;
+  }
+
+  .context-events-table td:nth-child(3),
+  .context-events-table td:nth-child(4) {
+    white-space: nowrap;
+  }
+
+  .context-events-table tr {
+    break-inside: avoid;
+  }
+
+  /* Calendar view */
+  .context-calendar {
+    overflow: visible;
+    border: 1px solid #dfe8e4;
+    break-inside: avoid;
+  }
+
+  .context-calendar-weekdays,
+  .context-calendar-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    min-width: 0;
+  }
+
+  .context-calendar-day,
+  .context-calendar-month .context-calendar-day {
+    min-height: 40px;
+    height: auto;
+    padding: 3px 3px 40px;
+    overflow: visible;
+    break-inside: avoid;
+  }
+
+  .context-calendar-grid {
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+  }
+
+  .context-calendar-day-heading {
+    margin-bottom: 4px;
+  }
+
+  .context-calendar-day-events {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .context-calendar-event {
+    padding: 3px 4px;
+  }
+
+  .context-calendar-event strong {
+    display: block;
+    overflow: visible;
+    line-clamp: unset;
+    -webkit-line-clamp: unset;
+    font-size: 8px;
+    word-break: break-word;
+  }
+
+  .context-calendar-event span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    font-size: 7px;
+  }
+
+  /* ---------- Dashboard ---------- */
+  .dashboard-heading-row,
+  .dashboard-heading-actions {
+    display: contents;
+  }
+
+  .dashboard-heading-row .page-heading,
+  .dashboard-refresh,
+  .dashboard-filters,
+  .dashboard-refreshing,
+  .dashboard-text-link {
+    display: none !important;
+  }
+
+  .dashboard-page {
+    max-width: none;
+  }
+
+  /* stack everything so cards never split across pages */
+  .dashboard-kpi-grid,
+  .dashboard-main-grid,
+  .dashboard-lower-grid {
+    display: block;
+  }
+
+  .dashboard-kpi-grid > .dashboard-kpi,
+  .dashboard-main-grid > .dashboard-panel,
+  .dashboard-lower-grid > .dashboard-panel {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-kpi-group,
+  .dashboard-lower-group {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-panel,
+  .dashboard-kpi {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .dashboard-kpi-copy > strong {
+    white-space: normal;
+  }
+
+  .dashboard-heatmap-scroll {
+    overflow: visible;
+  }
+
+  .dashboard-heatmap {
+    min-width: 0;
+  }
+
+  .dashboard-clickable::after {
+    display: none;
+  }
+
 }

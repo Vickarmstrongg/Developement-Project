@@ -24,6 +24,7 @@ import {
 import ReportButton from "./ReportButton";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import HonestResultsChecker from "./HonestResultsChecker";
+import UsersLink from "./UsersLink";
 
 function formatRand(value) {
     return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
@@ -182,7 +183,7 @@ function DemandForecast({
 
     const [contextEvents, setContextEvents] = useState([]);
     const [contextEventError, setContextEventError] = useState("");
-
+    const [forecastDates, setForecastDates] = useState({ start: "", end: "" });
     const [loadingVendors, setLoadingVendors] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -402,6 +403,11 @@ function DemandForecast({
                         lastDate
                     )}`
                 );
+
+                setForecastDates({
+                    start: data.points[0].date,
+                    end: data.points[data.points.length - 1].date,
+                });
 
                 setForecastData(formattedData);
 
@@ -862,6 +868,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
+                                    <UsersLink />  
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}
@@ -1227,6 +1234,10 @@ function DemandForecast({
                                             <ReportButton
                                                 title="Demand Forecast"
                                                 subtitle={`${selectedVendorName} · ${forecastPeriod}`}
+                                                reportType="demand_forecast"
+                                                vendorId={vendorId}
+                                                periodStart={forecastDates.start}
+                                                periodEnd={forecastDates.end}
                                                 onPrintStart={() => setPrinting(true)}
                                                 onPrintEnd={() => setPrinting(false)}
                                             />

@@ -1,0 +1,67 @@
+.users-banner {
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+.users-banner.error { border: 1px solid #AC3E49; color: #AC3E49; background: #fbeeee; }
+.users-banner.success { border: 1px solid #39715C; color: #39715C; background: #eef6f2; }
+
+.users-locked {
+    border: 1px solid #AC3E49;
+    background: #fbeeee;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+}
+.users-locked h2 {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 4px; font-size: 1rem; color: #AC3E49;
+}
+.users-locked p { margin: 0 0 12px; font-size: 0.875rem; }
+.users-locked-row {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px; padding: 10px 0;
+    border-top: 1px solid #f0d4d7;
+}
+.users-locked-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.users-panel { padding: 24px; margin-bottom: 24px; }
+.users-panel h2 { margin: 0 0 4px; }
+.users-help { margin: 0 0 18px; font-size: 0.875rem; color: #6b7774; }
+
+.users-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+.users-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem; }
+.users-field input, .users-field select { padding: 9px 10px; }
+.users-field-wide { grid-column: 1 / -1; }
+
+.users-picker { border: 1px solid #dfe7e4; border-radius: 8px; padding: 10px; }
+.users-picker-search { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.users-picker-search input { flex: 1; padding: 7px 8px; }
+.users-picker-list { max-height: 170px; overflow-y: auto; display: grid; gap: 4px; }
+.users-picker-item { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; }
+.users-picker-count { margin-top: 8px; font-size: 0.8rem; color: #6b7774; }
+
+.users-form-actions { display: flex; gap: 8px; margin-top: 18px; }
+
+.users-table-wrap { overflow-x: auto; }
+.users-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.users-table th { text-align: left; padding: 8px 10px; color: #6b7774; font-weight: 600; }
+.users-table td { padding: 12px 10px; border-top: 1px solid #edf1ef; vertical-align: top; }
+.users-name { font-weight: 600; }
+.users-email { color: #6b7774; font-size: 0.8rem; }
+.users-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.users-badge {
+    display: inline-block; padding: 2px 9px; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600; margin-right: 4px;
+}
+.users-badge.active { background: #39715C22; color: #39715C; }
+.users-badge.invited { background: #A7763222; color: #A77632; }
+.users-badge.revoked { background: #BFC5C255; color: #5d6865; }
+.users-badge.locked { background: #AC3E4922; color: #AC3E49; }

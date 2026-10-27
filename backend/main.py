@@ -10,6 +10,7 @@ import models
 import context_events
 import dashboard
 import honest_results
+import reports
 from fair_comparison import calculate_fair_comparison
 import notifications
 
@@ -40,6 +41,7 @@ app.include_router(context_events.router)
 app.include_router(dashboard.router)
 app.include_router(honest_results.router)
 app.include_router(notifications.router)
+app.include_router(reports.router)
 
 app.add_middleware(
     CORSMiddleware,
