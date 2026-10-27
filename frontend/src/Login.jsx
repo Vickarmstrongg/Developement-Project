@@ -214,7 +214,7 @@ function Login({ onLogin }) {
                     )}
 
                     <div className="login-options">
-                        <a href="forgot-password">
+                        <a href="/forgot-password">
                             Forgot password?
                         </a>
                     </div>

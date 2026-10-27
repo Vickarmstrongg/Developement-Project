@@ -5,8 +5,10 @@ import {
   LayoutDashboard,
   Scale,
   TrendingUp,
+  Users
 } from "lucide-react";
 import logo from "./assets/Logo.png";
+import { getStoredUser } from "./api";
 
 const NAV_ITEMS = [
   { id: "dashboard", hash: "#dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -14,9 +16,11 @@ const NAV_ITEMS = [
   { id: "demand", hash: "#demand-forecast", label: "Demand Forecast", icon: TrendingUp },
   { id: "fair", hash: "#fair-comparison", label: "Fair Comparison", icon: Scale },
   { id: "context", hash: "#context-events", label: "Calendar / Context Events", icon: CalendarDays },
+  { id: "users", hash: "#users", label: "Users", icon: Users, adminOnly: true },
 ];
 
 function WorkspaceSidebar({ activeView, onNavigate }) {
+    const isAdmin = getStoredUser()?.role === "Admin";
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -28,7 +32,7 @@ function WorkspaceSidebar({ activeView, onNavigate }) {
         <div className="sidebar-section">
           <span className="sidebar-title">WORKSPACE</span>
           <nav aria-label="Workspace">
-            {NAV_ITEMS.map(({ id, hash, label, icon: Icon }) => (
+            {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(({ id, hash, label, icon: Icon }) => (
               <a
                 key={id}
                 href={hash}

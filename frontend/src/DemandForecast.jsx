@@ -762,7 +762,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
-                                    <UsersLink />  
+                                     
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}

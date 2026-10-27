@@ -83,6 +83,14 @@ def set_password(body: SetPasswordRequest, db: Session = Depends(database.get_db
     db.commit()
     return Message(message="Password set. You can now log in.")
 
+RESET_COOLDOWN = timedelta(seconds=60)
+
+def _recently_issued(user) -> bool:
+    """True if a reset link was emailed less than a minute ago (stops inbox spam)."""
+    if user.token_expires_at is None:
+        return False
+    issued_at = as_utc(user.token_expires_at) - timedelta(minutes=settings.RESET_EXPIRE_MINUTES)
+    return utcnow() - issued_at < RESET_COOLDOWN
 
 @router.post("/forgot-password", response_model=Message)
 def forgot_password(
@@ -90,10 +98,16 @@ def forgot_password(
     background: BackgroundTasks,
     db: Session = Depends(database.get_db),
 ):
-    """Email-link mechanism (BRD marks it TBC). Same answer for every email so
-    nobody can discover which addresses have accounts."""
+    """The user asks for their own reset link. Same answer for every email so
+    nobody can discover which addresses have accounts. Locked accounts get no
+    link: the Admin decides what happens to them (UC-06)."""
     user = db.scalar(select(models.User).where(models.User.email == body.email.lower()))
-    if user and user.status == UserStatus.ACTIVE.value:
+    if (
+        user
+        and user.status == UserStatus.ACTIVE.value
+        and not user.locked
+        and not _recently_issued(user)
+    ):
         raw = issue_token(user, timedelta(minutes=settings.RESET_EXPIRE_MINUTES))
         db.commit()
         background.add_task(send_reset_email, user.email, user.full_name or "", raw)

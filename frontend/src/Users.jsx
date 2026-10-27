@@ -11,7 +11,7 @@ import {
     Scale,
     Search,
     TrendingUp,
-    UserPlus,
+    UserPlus,   
     Users as UsersIcon,
 } from "lucide-react";
 import logo from "./assets/Logo.png";
