@@ -26,8 +26,12 @@ import WorkspaceSidebar from "./WorkspaceSidebar";
 import HonestResultsChecker from "./HonestResultsChecker";
 import UsersLink from "./UsersLink";
 
+function formatNumber(value) {
+    return Number(value ?? 0).toFixed(2);
+}
+
 function formatRand(value) {
-    return `R ${Number(value || 0).toLocaleString("en-ZA")}`;
+    return `R ${formatNumber(value)}`;
 }
 
 
@@ -868,7 +872,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
-                                    <UsersLink />  
+                                    <UsersLink />
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}
@@ -1277,9 +1281,7 @@ function DemandForecast({
                                                         </span>
 
                                                         <strong>
-                                                            {
-                                                                forecastSummary.expectedOrders
-                                                            }
+                                                            {forecastSummary.expectedOrders}
                                                         </strong>
 
                                                         <small>
@@ -1293,9 +1295,7 @@ function DemandForecast({
                                                         </span>
 
                                                         <strong>
-                                                            {
-                                                                forecastSummary.expectedCustomers
-                                                            }
+                                                            {forecastSummary.expectedCustomers}
                                                         </strong>
 
                                                         <small>
@@ -1417,12 +1417,7 @@ function DemandForecast({
                                                                     tickLine={false}
                                                                     axisLine={false}
                                                                     width={48}
-                                                                    tickFormatter={(
-                                                                        v
-                                                                    ) =>
-                                                                        `R${v / 1000
-                                                                        }k`
-                                                                    }
+                                                                    tickFormatter={(v) => `R${(v / 1000).toFixed(2)}k`}
                                                                 />
 
                                                                 <Tooltip
@@ -1701,7 +1696,7 @@ function DemandForecast({
                                                                                                     {change > 0 && <ArrowUp size={14} />}
                                                                                                     {change < 0 && <ArrowDown size={14} />}
                                                                                                     {change > 0 ? "+" : ""}
-                                                                                                    {change}%
+                                                                                                    {formatNumber(change)}%
 
                                                                                                 </span>
                                                                                             )}
