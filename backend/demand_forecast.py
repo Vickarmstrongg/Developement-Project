@@ -82,10 +82,15 @@ def calculate_demand_forecast(
         })
    
 
-    # 6. Prepare the Historical Activity Comparison
+    # 6. Historical Activity Comparison Part
 
     daily_orders = {
         row.txn_date: row.order_count
+        for row in daily_stats
+    }
+
+    daily_revenue = {
+        row.txn_date: float(row.revenue or 0.0)
         for row in daily_stats
     }
 
@@ -108,39 +113,63 @@ def calculate_demand_forecast(
 
     selected_week_end = selected_week_start + timedelta(days=6)
 
-    # The comparison week is the Monday-Sunday week immediately before.
     previous_week_start = selected_week_start - timedelta(days=7)
     previous_week_end = selected_week_start - timedelta(days=1)
 
     comparison_days = []
 
-
     for i in range(7):
         current_date = selected_week_start + timedelta(days=i)
         previous_date = previous_week_start + timedelta(days=i)
 
-        # Missing dates are unknown, not automatically zero.
         current_orders = daily_orders.get(current_date)
         previous_orders = daily_orders.get(previous_date)
 
-        # Calculate percentage change only when both counts are available.
+        current_revenue = daily_revenue.get(current_date)
+        previous_revenue = daily_revenue.get(previous_date)
+
         if (
             current_orders is not None
             and previous_orders is not None
             and previous_orders > 0
         ):
-            percentage_change = round(
+            orders_percentage_change = round(
                 ((current_orders - previous_orders) / previous_orders) * 100,
                 2,
             )
         else:
-            percentage_change = None
+            orders_percentage_change = None
 
-        # Calculate the difference only when both counts are available.
-        if current_orders is not None and previous_orders is not None:
-            change = current_orders - previous_orders
+        if (
+            current_revenue is not None
+            and previous_revenue is not None
+            and previous_revenue > 0
+        ):
+            revenue_percentage_change = round(
+                (
+                    (current_revenue - previous_revenue)
+                    / previous_revenue
+                ) * 100,
+                2,
+            )
         else:
-            change = None
+            revenue_percentage_change = None
+
+        if current_orders is not None and previous_orders is not None:
+            orders_change = current_orders - previous_orders
+        else:
+            orders_change = None
+
+        if (
+            current_revenue is not None
+            and previous_revenue is not None
+        ):
+            revenue_change = round(
+                current_revenue - previous_revenue,
+                2,
+            )
+        else:
+            revenue_change = None
 
         comparison_days.append({
             "date": current_date.isoformat(),
@@ -148,8 +177,14 @@ def calculate_demand_forecast(
             "this_week_orders": current_orders,
             "previous_week_date": previous_date.isoformat(),
             "previous_week_orders": previous_orders,
-            "change": change,
-            "percentage_change": percentage_change,
+            "orders_change": orders_change,
+            "orders_percentage_change": orders_percentage_change,
+            "this_week_revenue": current_revenue,
+            "previous_week_revenue": previous_revenue,
+            "revenue_change": revenue_change,
+            "revenue_percentage_change": revenue_percentage_change,
+            "change": orders_change,
+            "percentage_change": orders_percentage_change,
         })
 
 
@@ -168,5 +203,3 @@ def calculate_demand_forecast(
             "days": comparison_days,
         },
     }
-
-

@@ -260,9 +260,9 @@ function App() {
   if (window.location.pathname === "/set-password") {
     return <SetPassword />;
   }
-   if (window.location.pathname === "/forgot-password") {
-     return <ForgotPassword />;
-   }
+  if (window.location.pathname === "/forgot-password") {
+    return <ForgotPassword />;
+  }
   if (!loggedIn) {
     return (
       <Login
@@ -281,6 +281,7 @@ function App() {
         vendorId={evidenceDetails.vendorId}
         vendorName={evidenceDetails.vendorName}
         selectedDate={evidenceDetails.selectedDate}
+        metric={evidenceDetails.metric}
         onBack={() => navigateTo("demand")}
         onLogout={handleLogout}
         onDashboard={() => navigateTo("dashboard")}
@@ -405,9 +406,9 @@ function App() {
                 </button>
 
                 {profileOpen && (
-                    <div className="profile-dropdown">
-                      <UsersLink />
-                      <button
+                  <div className="profile-dropdown">
+                    <UsersLink />
+                    <button
                       className="logout-option"
                       onClick={handleLogout}
                     >
@@ -593,11 +594,11 @@ function App() {
                 ))}
               </select>
               {!loading && vendors.length > 0 && (
-              <ReportButton
-                title="Rush Hour Radar"
-                subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
-                reportType="rush_hour_radar"
-              />
+                <ReportButton
+                  title="Rush Hour Radar"
+                  subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
+                  reportType="rush_hour_radar"
+                />
               )}
             </div>
           </div>

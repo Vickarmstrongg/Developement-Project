@@ -27,6 +27,7 @@ function WeeklyActivityEvidence({
     vendorId,
     vendorName,
     selectedDate,
+    metric = "revenue",
     onBack,
     onLogout,
     onDashboard,
@@ -37,7 +38,6 @@ function WeeklyActivityEvidence({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Logged-in user details
     const storedUser = getStoredUser();
 
     const currentUser = {
@@ -45,7 +45,6 @@ function WeeklyActivityEvidence({
         role: storedUser?.role || "",
     };
 
-    // Profile dropdown
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef(null);
 
@@ -125,23 +124,59 @@ function WeeklyActivityEvidence({
 
     const days = evidence?.days || [];
 
+    const isRevenue = metric === "revenue";
+
+    const activityTitle = isRevenue
+        ? "Weekly Activity for Revenue"
+        : "Weekly Activity for Transactions";
+
+    const activityLabel = isRevenue
+        ? "revenue"
+        : "transactions";
+
+
+    function formatActivityValue(value) {
+        if (value == null || value === "") return "N/A";
+
+        if (isRevenue) {
+            const totalCents = Math.round(Number(value) * 100);
+            const whole = Math.floor(totalCents / 100);
+            const cents = totalCents % 100;
+
+            const formattedWhole = new Intl.NumberFormat("en-US", {
+                useGrouping: true,
+                maximumFractionDigits: 0,
+            }).format(whole).split(",").join(" ");
+
+            return `R ${formattedWhole}.${String(cents).padStart(2, "0")}`;
+        }
+
+        return Number(value).toLocaleString("en-ZA", {
+            maximumFractionDigits: 0,
+        });
+    }
+
     const chartData = days.map((day) => ({
         day: day.day_of_week?.substring(0, 3) || "",
         fullDay: day.day_of_week || "",
         date: day.date,
-        thisWeek: day.this_week_orders,
-        previousWeek: day.previous_week_orders,
+        thisWeek: isRevenue
+            ? day.this_week_revenue
+            : day.this_week_orders,
+        previousWeek: isRevenue
+            ? day.previous_week_revenue
+            : day.previous_week_orders,
     }));
 
-    const selectedWeekTotal = days.reduce(
+    const selectedWeekTotal = chartData.reduce(
         (total, day) =>
-            total + (Number(day.this_week_orders) || 0),
+            total + (Number(day.thisWeek) || 0),
         0
     );
 
-    const previousWeekTotal = days.reduce(
+    const previousWeekTotal = chartData.reduce(
         (total, day) =>
-            total + (Number(day.previous_week_orders) || 0),
+            total + (Number(day.previousWeek) || 0),
         0
     );
 
@@ -153,33 +188,29 @@ function WeeklyActivityEvidence({
             ) * 100
             : null;
 
-    const highestActivityDay = days
-        .filter((day) => day.this_week_orders != null)
+    const highestActivityDay = chartData
+        .filter((day) => day.thisWeek != null)
         .reduce(
             (highest, day) =>
                 !highest ||
-                    Number(day.this_week_orders) >
-                    Number(highest.this_week_orders)
+                    Number(day.thisWeek) > Number(highest.thisWeek)
                     ? day
                     : highest,
             null
         );
 
-    const largestDecreaseDay = days
+    const largestDecreaseDay = chartData
         .filter(
             (day) =>
-                day.this_week_orders != null &&
-                day.previous_week_orders != null &&
-                Number(day.this_week_orders) <
-                Number(day.previous_week_orders)
+                day.thisWeek != null &&
+                day.previousWeek != null &&
+                Number(day.thisWeek) < Number(day.previousWeek)
         )
         .reduce(
             (largest, day) =>
                 !largest ||
-                    Number(day.this_week_orders) -
-                    Number(day.previous_week_orders) <
-                    Number(largest.this_week_orders) -
-                    Number(largest.previous_week_orders)
+                    Number(day.thisWeek) - Number(day.previousWeek) <
+                    Number(largest.thisWeek) - Number(largest.previousWeek)
                     ? day
                     : largest,
             null
@@ -196,12 +227,6 @@ function WeeklyActivityEvidence({
                 ...(includeYear ? { year: "numeric" } : {}),
             }
         );
-    }
-
-    function formatCount(value) {
-        if (value == null) return "N/A";
-
-        return Number(value).toLocaleString("en-ZA");
     }
 
     function formatPercentage(value) {
@@ -311,7 +336,7 @@ function WeeklyActivityEvidence({
 
                     <div className="evidence-page-title">
                         <div>
-                            <h1>Weekly Activity</h1>
+                            <h1>{activityTitle}</h1>
 
                             {evidence && (
                                 <p>
@@ -335,9 +360,8 @@ function WeeklyActivityEvidence({
 
                             {!evidence && (
                                 <p>
-                                    Actual transaction activity for{" "}
-                                    {vendorName ||
-                                        "the selected business"}.
+                                    Actual recorded {activityLabel} for{" "}
+                                    {vendorName || "the selected business"}.
                                 </p>
                             )}
                         </div>
@@ -405,7 +429,7 @@ function WeeklyActivityEvidence({
                                                 />
 
                                                 <YAxis
-                                                    allowDecimals={false}
+                                                    allowDecimals={isRevenue}
                                                     tick={{
                                                         fontSize: 10,
                                                         fill: "#52718c",
@@ -430,13 +454,10 @@ function WeeklyActivityEvidence({
                                                             )}`
                                                             : label;
                                                     }}
-                                                    formatter={(
-                                                        value,
-                                                        name
-                                                    ) => [
-                                                            value ?? "N/A",
-                                                            name,
-                                                        ]}
+                                                    formatter={(value, name) => [
+                                                        formatActivityValue(value),
+                                                        name,
+                                                    ]}
                                                     contentStyle={{
                                                         borderRadius: 8,
                                                         border: "1px solid #dce8f1",
@@ -465,7 +486,7 @@ function WeeklyActivityEvidence({
                                                 <Bar
                                                     dataKey="previousWeek"
                                                     name="Previous week"
-                                                    fill="#b4ccd8"
+                                                    fill="#829eae"
                                                     radius={[
                                                         1,
                                                         1,
@@ -487,18 +508,14 @@ function WeeklyActivityEvidence({
                                         </div>
 
                                         <div>
-                                            <span>
-                                                Selected week total
-                                            </span>
+                                            <span>Selected week total</span>
 
                                             <strong>
-                                                {formatCount(
-                                                    selectedWeekTotal
-                                                )}
+                                                {formatActivityValue(selectedWeekTotal)}
                                             </strong>
 
                                             <small>
-                                                Recorded transactions
+                                                Recorded {activityLabel}
                                             </small>
                                         </div>
                                     </section>
@@ -509,14 +526,10 @@ function WeeklyActivityEvidence({
                                         </div>
 
                                         <div>
-                                            <span>
-                                                Previous week total
-                                            </span>
+                                            <span>Previous week total</span>
 
                                             <strong>
-                                                {formatCount(
-                                                    previousWeekTotal
-                                                )}
+                                                {formatActivityValue(previousWeekTotal)}
                                             </strong>
 
                                             <small
@@ -570,19 +583,10 @@ function WeeklyActivityEvidence({
                                                 Highest activity
                                             </span>
 
-                                            <strong>
-                                                {
-                                                    highestActivityDay.day_of_week
-                                                }
-                                            </strong>
+                                            <strong>{highestActivityDay.fullDay}</strong>
 
                                             <p>
-                                                {formatCount(
-                                                    highestActivityDay.this_week_orders
-                                                )}{" "}
-                                                recorded transactions
-                                                <br />
-                                                in the selected week.
+                                                {formatActivityValue(highestActivityDay.thisWeek)}{" "} recorded {activityLabel} <br /> in the selected week.
                                             </p>
                                         </div>
                                     </div>
@@ -599,23 +603,10 @@ function WeeklyActivityEvidence({
                                                 Largest decrease
                                             </span>
 
-                                            <strong>
-                                                {
-                                                    largestDecreaseDay.day_of_week
-                                                }
-                                            </strong>
+                                            <strong>{largestDecreaseDay.fullDay}</strong>
 
                                             <p>
-                                                {formatCount(
-                                                    largestDecreaseDay.this_week_orders
-                                                )}{" "}
-                                                transactions compared
-                                                <br />
-                                                to{" "}
-                                                {formatCount(
-                                                    largestDecreaseDay.previous_week_orders
-                                                )}{" "}
-                                                on the previous weekday.
+                                                {formatActivityValue(largestDecreaseDay.thisWeek)}{" "} compared with{" "} {formatActivityValue(largestDecreaseDay.previousWeek)}{" "} for the previous weekday.
                                             </p>
                                         </div>
                                     </div>
@@ -637,10 +628,7 @@ function WeeklyActivityEvidence({
                                             </strong>
 
                                             <p>
-                                                No day had fewer recorded
-                                                transactions than the
-                                                corresponding previous
-                                                weekday.
+                                                No day had lower {activityLabel} than the corresponding previous weekday.
                                             </p>
                                         </div>
                                     </div>
@@ -657,11 +645,7 @@ function WeeklyActivityEvidence({
                                         </span>
 
                                         <p>
-                                            This comparison shows a
-                                            difference in recorded loyalty
-                                            transactions. It does not
-                                            establish what caused the
-                                            change.
+                                            This comparison shows a difference in recorded loyalty {activityLabel}. It does not establish what caused the change.
                                         </p>
                                     </div>
                                 </div>

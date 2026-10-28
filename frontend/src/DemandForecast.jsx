@@ -9,6 +9,7 @@ import {
     ArrowLeft,
     ArrowUp,
     ArrowDown,
+    X,
 } from "lucide-react";
 
 import {
@@ -30,7 +31,21 @@ function formatNumber(value) {
 }
 
 function formatRand(value) {
-    return `R ${formatNumber(value)}`;
+    if (value == null || value === "") return "N/A";
+
+    const totalCents = Math.round(Number(value) * 100);
+    const whole = Math.floor(totalCents / 100);
+    const cents = totalCents % 100;
+
+    const formattedWhole = new Intl.NumberFormat("en-US", {
+        useGrouping: true,
+        maximumFractionDigits: 0,
+    })
+        .format(whole)
+        .split(",")
+        .join(" ");
+
+    return `R ${formattedWhole}.${String(cents).padStart(2, "0")}`;
 }
 
 
@@ -60,8 +75,6 @@ function formatComparisonPeriod(startDate, endDate) {
 
     return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
 }
-
-
 
 function ChartTooltip({ active, payload, isStaff, contextEvents, contextEventError }) {
     if (!active || !payload || payload.length === 0) return null;
@@ -144,6 +157,7 @@ function DemandForecast({
     const [profileOpen, setProfileOpen] = useState(false);
 
     const [selectedComparisonDate, setSelectedComparisonDate] = useState("");
+    const [comparisonMetric, setComparisonMetric] = useState("revenue");
     const [historicalComparison, setHistoricalComparison] = useState(null);
     const [comparisonLoading, setComparisonLoading] = useState(false);
     const [comparisonError, setComparisonError] = useState("");
@@ -162,8 +176,6 @@ function DemandForecast({
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState("");
     const [historyFilter, setHistoryFilter] = useState("all");
-
-
 
     const profileRef = useRef(null);
 
@@ -198,18 +210,19 @@ function DemandForecast({
     };
     const isStaff = currentUser.role === "Staff"; // Staff never see revenue
 
+    useEffect(() => {
+        setComparisonMetric(isStaff ? "transactions" : "revenue");
+    }, [isStaff]);
 
     const selectedVendorName =
         vendors.find((v) => String(v.vendor_id) === String(vendorId))?.name ||
         "";
-
 
     const filteredVendors = vendors.filter((vendor) =>
         (vendor.name || "")
             .toLowerCase()
             .includes(debouncedBusinessSearch.toLowerCase())
     );
-
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -234,7 +247,6 @@ function DemandForecast({
         };
     }, []);
 
-
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedBusinessSearch(businessSearch);
@@ -242,7 +254,6 @@ function DemandForecast({
 
         return () => clearTimeout(timer);
     }, [businessSearch]);
-
 
     useEffect(() => {
         async function loadVendors() {
@@ -320,7 +331,6 @@ function DemandForecast({
             try {
                 setLoading(true);
                 setError("");
-
 
                 const query = selectedComparisonDate
                     ? `?selected_date=${selectedComparisonDate}`
@@ -401,7 +411,7 @@ function DemandForecast({
                     });
 
                 setForecastPeriod(
-                    `${formatDate(firstDate)} – ${formatDate(
+                    `${formatDate(firstDate)} - ${formatDate(
                         lastDate
                     )}`
                 );
@@ -522,7 +532,6 @@ function DemandForecast({
         await loadNotificationHistory();
     }
 
-
     async function updateNotification(notificationId, action) {
         try {
             const response = await apiFetch(
@@ -605,7 +614,7 @@ function DemandForecast({
                                             onClick={() => setNotificationsOpen(false)}
                                             aria-label="Close notifications"
                                         >
-                                            ×
+                                            <X size={18} />
                                         </button>
                                     </div>
 
@@ -700,8 +709,6 @@ function DemandForecast({
                                                         </button>
                                                     </div>
                                                 </div>
-
-
 
                                                 <p className="notification-analysis-date">
                                                     Date analysed:{" "}
@@ -832,7 +839,6 @@ function DemandForecast({
                             )}
                         </div>
 
-
                         <div
                             className="profile-container"
                             ref={profileRef}
@@ -885,7 +891,6 @@ function DemandForecast({
                     </div>
                 </header>
 
-
                 <div className="page-content">
 
                     {showNotificationHistory ? (
@@ -904,8 +909,7 @@ function DemandForecast({
                             <h1>Notification History</h1>
 
                             <p>
-                                View previous notifications for the selected business,
-                                including notifications that you have cleared.
+                                View previous notifications for the selected business, including notifications that you have cleared.
                             </p>
 
                             <label htmlFor="notification-history-filter">
@@ -1098,7 +1102,6 @@ function DemandForecast({
                                             </div>
                                         ))}
 
-
                                     {historyNotifications.filter((item) => {
                                         if (historyFilter === "unread") {
                                             return !item.is_read && !item.is_cleared;
@@ -1121,426 +1124,421 @@ function DemandForecast({
                         </section>
                     ) : (
                         <>
-                                <>
-                                    <div className="demand-page-header report-heading">
-                                        <div className="page-heading">
-                                            <h1>Demand Forecast</h1>
+                            <>
+                                <div className="demand-page-header report-heading">
+                                    <div className="page-heading">
+                                        <h1>Demand Forecast</h1>
 
-                                            <p>
-                                                View expected demand based on
-                                                historical transaction patterns.
-                                            </p>
-                                        </div>
-
-
-                                        <div className="business-selector-row">
-                                            <div className="business-selector-field">
-                                                <label className="business-selector-label">
-                                                    Business
-                                                </label>
-
-                                                <div className="business-search-container">
-                                                    <input
-                                                        type="text"
-                                                        className="business-selector"
-                                                        placeholder="Search businesses..."
-                                                        value={
-                                                            businessDropdownOpen
-                                                                ? businessSearch
-                                                                : selectedVendorName
-                                                        }
-                                                        onFocus={() => {
-                                                            setBusinessSearch("");
-                                                            setDebouncedBusinessSearch("");
-                                                            setBusinessDropdownOpen(true);
-                                                        }}
-                                                        onChange={(event) => {
-                                                            setBusinessSearch(event.target.value);
-                                                            setBusinessDropdownOpen(true);
-                                                        }}
-                                                        disabled={loadingVendors}
-                                                        aria-label="Search businesses"
-                                                        aria-expanded={businessDropdownOpen}
-                                                        aria-controls="business-search-results"
-                                                        autoComplete="off"
-                                                    />
-
-                                                    {businessDropdownOpen && (
-                                                        <div
-                                                            id="business-search-results"
-                                                            className="business-search-results"
-                                                            role="listbox"
-                                                        >
-                                                            {filteredVendors.length > 0 ? (
-                                                                filteredVendors.map((vendor) => (
-                                                                    <button
-                                                                        key={vendor.vendor_id}
-                                                                        type="button"
-                                                                        className="business-search-option"
-                                                                        role="option"
-                                                                        aria-selected={
-                                                                            String(vendor.vendor_id) ===
-                                                                            String(vendorId)
-                                                                        }
-                                                                        onMouseDown={(event) =>
-                                                                            event.preventDefault()
-                                                                        }
-
-                                                                        onClick={() => {
-                                                                            setVendorId(String(vendor.vendor_id));
-                                                                            setSelectedComparisonDate("");
-                                                                            setHistoricalComparison(null);
-                                                                            setComparisonError("");
-                                                                            setBusinessSearch("");
-                                                                            setDebouncedBusinessSearch("");
-                                                                            setBusinessDropdownOpen(false);
-                                                                        }}
-
-                                                                    >
-                                                                        {vendor.name}
-                                                                    </button>
-                                                                ))
-                                                            ) : (
-                                                                <div className="business-search-empty">
-                                                                    No businesses found
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {forecastData.length > 0 && (
-                                            <ReportButton
-                                                title="Demand Forecast"
-                                                subtitle={`${selectedVendorName} · ${forecastPeriod}`}
-                                                reportType="demand_forecast"
-                                                vendorId={vendorId}
-                                                periodStart={forecastDates.start}
-                                                periodEnd={forecastDates.end}
-                                                onPrintStart={() => setPrinting(true)}
-                                                onPrintEnd={() => setPrinting(false)}
-                                            />
-                                        )}
+                                        <p>
+                                            View expected demand based on historical transaction patterns.
+                                        </p>
                                     </div>
 
-                                    {loading && (
-                                        <p>
-                                            Loading demand forecast...
-                                        </p>
-                                    )}
+                                    <div className="business-selector-row">
+                                        <div className="business-selector-field">
+                                            <label className="business-selector-label">
+                                                Business
+                                            </label>
 
-                                    {error === "NO_DATA" && (
-                                        <p>
-                                            No forecast is available for this
-                                            business because there is no
-                                            transaction history available.
-                                        </p>
-                                    )}
+                                            <div className="business-search-container">
+                                                <input
+                                                    type="text"
+                                                    className="business-selector"
+                                                    placeholder="Search businesses..."
+                                                    value={
+                                                        businessDropdownOpen
+                                                            ? businessSearch
+                                                            : selectedVendorName
+                                                    }
+                                                    onFocus={() => {
+                                                        setBusinessSearch("");
+                                                        setDebouncedBusinessSearch("");
+                                                        setBusinessDropdownOpen(true);
+                                                    }}
+                                                    onChange={(event) => {
+                                                        setBusinessSearch(event.target.value);
+                                                        setBusinessDropdownOpen(true);
+                                                    }}
+                                                    disabled={loadingVendors}
+                                                    aria-label="Search businesses"
+                                                    aria-expanded={businessDropdownOpen}
+                                                    aria-controls="business-search-results"
+                                                    autoComplete="off"
+                                                />
 
-                                    {error && error !== "NO_DATA" && (
-                                        <p style={{ color: "#b34c57" }}>
-                                            Unable to load demand forecast:{" "}
-                                            {error}
-                                        </p>
-                                    )}
-
-                                    {!loading &&
-                                        !error &&
-                                        forecastData.length > 0 && (
-                                            <>
-                                                <section className="summary-grid">
-
-                                                    <div className="summary-card">
-                                                        <span>
-                                                            EXPECTED TRANSACTIONS
-                                                        </span>
-
-                                                        <strong>
-                                                            {forecastSummary.expectedOrders}
-                                                        </strong>
-
-                                                        <small>
-                                                            {forecastPeriod}
-                                                        </small>
-                                                    </div>
-
-                                                    <div className="summary-card">
-                                                        <span>
-                                                            EXPECTED CUSTOMERS
-                                                        </span>
-
-                                                        <strong>
-                                                            {forecastSummary.expectedCustomers}
-                                                        </strong>
-
-                                                        <small>
-                                                            {forecastPeriod}
-                                                        </small>
-                                                    </div>
-
-                                                    {!isStaff && (
-                                                        <div className="summary-card">
-                                                            <span>EXPECTED REVENUE</span>
-                                                            <strong>
-                                                                {formatRand(forecastSummary.expectedRevenue)}
-                                                            </strong>
-                                                            <small>{forecastPeriod}</small>
-                                                        </div>
-                                                    )}
-
-                                                </section>
-
-                                                <section className="forecast-card">
-
-                                                    <div className="forecast-card-header">
-
-                                                        <div>
-                                                            <h2>
-                                                                Weekly Demand Forecast
-                                                            </h2>
-
-                                                            <p>
-                                                                Expected
-                                                                transactions,
-                                                                customers and
-                                                                revenue for the
-                                                                forecast period.
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="forecast-legend">
-
-                                                            <span>
-                                                                <i className="legend-orders"></i>
-                                                                Transactions
-                                                            </span>
-
-                                                            <span>
-                                                                <i className="legend-customers"></i>
-                                                                Customers
-                                                            </span>
-
-                                                            {!isStaff && (
-                                                                <span>
-                                                                    <i className="legend-revenue"></i>
-                                                                    Revenue
-                                                                </span>
-                                                            )}
-
-                                                        </div>
-
-                                                    </div>
-
-                                                    <div className="forecast-chart">
-
-                                                        <ResponsiveContainer
-                                                            width={printing ? 640 : "100%"}
-                                                            height="100%"
-                                                        >
-                                                            <LineChart
-                                                                data={
-                                                                    forecastData
-                                                                }
-                                                                margin={{
-                                                                    top: 10,
-                                                                    right: 10,
-                                                                    left: 0,
-                                                                    bottom: 0,
-                                                                }}
-                                                            >
-
-                                                                <CartesianGrid
-                                                                    stroke="#e0e0e0"
-                                                                    strokeWidth={1}
-                                                                    horizontal={true}
-                                                                    vertical={true}
-                                                                />
-
-                                                                <XAxis
-                                                                    dataKey="day"
-                                                                    tick={{
-                                                                        fontSize: 11,
-                                                                        fill: "#7c8987",
-                                                                    }}
-                                                                    tickLine={false}
-                                                                    axisLine={{
-                                                                        stroke:
-                                                                            "#dfe7e4",
-                                                                    }}
-                                                                    interval={0}
-                                                                />
-
-                                                                <YAxis
-                                                                    yAxisId="left"
-                                                                    tick={{
-                                                                        fontSize: 11,
-                                                                        fill: "#7c8987",
-                                                                    }}
-                                                                    tickLine={false}
-                                                                    axisLine={false}
-                                                                    width={40}
-                                                                    tickCount={6}
-                                                                />
-
-                                                                <YAxis
-                                                                    yAxisId="right"
-                                                                    orientation="right"
-                                                                    tick={{
-                                                                        fontSize: 11,
-                                                                        fill: "#7c8987",
-                                                                    }}
-                                                                    tickLine={false}
-                                                                    axisLine={false}
-                                                                    width={48}
-                                                                    tickFormatter={(v) => `R${(v / 1000).toFixed(2)}k`}
-                                                                />
-
-                                                                <Tooltip
-                                                                    content={
-                                                                        <ChartTooltip
-                                                                            isStaff={isStaff}
-                                                                            contextEvents={contextEvents}
-                                                                            contextEventError={contextEventError}
-                                                                        />
+                                                {businessDropdownOpen && (
+                                                    <div
+                                                        id="business-search-results"
+                                                        className="business-search-results"
+                                                        role="listbox"
+                                                    >
+                                                        {filteredVendors.length > 0 ? (
+                                                            filteredVendors.map((vendor) => (
+                                                                <button
+                                                                    key={vendor.vendor_id}
+                                                                    type="button"
+                                                                    className="business-search-option"
+                                                                    role="option"
+                                                                    aria-selected={
+                                                                        String(vendor.vendor_id) ===
+                                                                        String(vendorId)
                                                                     }
-                                                                    cursor={{
-                                                                        stroke: "#c9d6d2",
+                                                                    onMouseDown={(event) =>
+                                                                        event.preventDefault()
+                                                                    }
+
+                                                                    onClick={() => {
+                                                                        setVendorId(String(vendor.vendor_id));
+                                                                        setSelectedComparisonDate("");
+                                                                        setHistoricalComparison(null);
+                                                                        setComparisonError("");
+                                                                        setBusinessSearch("");
+                                                                        setDebouncedBusinessSearch("");
+                                                                        setBusinessDropdownOpen(false);
                                                                     }}
-                                                                />
 
-                                                                <Line
-                                                                    yAxisId="left"
-                                                                    type="monotone"
-                                                                    dataKey="orders"
-                                                                    stroke="#b34c57"
-                                                                    strokeWidth={3}
-                                                                    dot={{ r: 3 }}
-                                                                    isAnimationActive={!printing}
-                                                                    activeDot={{
-                                                                        r: 6,
-                                                                    }}
-                                                                />
-
-                                                                <Line
-                                                                    yAxisId="left"
-                                                                    type="monotone"
-                                                                    dataKey="customers"
-                                                                    stroke="#2e8f87"
-                                                                    strokeWidth={3}
-                                                                    dot={{ r: 3 }}
-                                                                    isAnimationActive={!printing}
-                                                                    activeDot={{
-                                                                        r: 6,
-                                                                    }}
-                                                                />
-
-                                                                {!isStaff && (
-                                                                    <Line
-                                                                        yAxisId="right"
-                                                                        type="monotone"
-                                                                        dataKey="revenue"
-                                                                        stroke="#7faaa4"
-                                                                        strokeWidth={3}
-                                                                        strokeDasharray="7 5"
-                                                                        dot={{ r: 3 }}
-                                                                        isAnimationActive={!printing}
-                                                                        activeDot={{ r: 6 }}
-                                                                    />
-                                                                )}
-
-                                                            </LineChart>
-                                                        </ResponsiveContainer>
-
+                                                                >
+                                                                    {vendor.name}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="business-search-empty">
+                                                                No businesses found
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                                    <div className="forecast-details">
+                                    {forecastData.length > 0 && (
+                                        <ReportButton
+                                            title="Demand Forecast"
+                                            subtitle={`${selectedVendorName} · ${forecastPeriod}`}
+                                            reportType="demand_forecast"
+                                            vendorId={vendorId}
+                                            periodStart={forecastDates.start}
+                                            periodEnd={forecastDates.end}
+                                            onPrintStart={() => setPrinting(true)}
+                                            onPrintEnd={() => setPrinting(false)}
+                                        />
+                                    )}
+                                </div>
 
-                                                        <h2 className="daily-figures-heading">
-                                                            View daily figures
+                                {loading && (
+                                    <p>
+                                        Loading demand forecast...
+                                    </p>
+                                )}
+
+                                {error === "NO_DATA" && (
+                                    <p>
+                                        No forecast is available for this business because there is no transaction history available.
+                                    </p>
+                                )}
+
+                                {error && error !== "NO_DATA" && (
+                                    <p style={{ color: "#b34c57" }}>
+                                        Unable to load demand forecast:{" "}
+                                        {error}
+                                    </p>
+                                )}
+
+                                {!loading &&
+                                    !error &&
+                                    forecastData.length > 0 && (
+                                        <>
+                                            <section className="summary-grid">
+
+                                                <div className="summary-card">
+                                                    <span>
+                                                        EXPECTED TRANSACTIONS
+                                                    </span>
+
+                                                    <strong>
+                                                        {forecastSummary.expectedOrders}
+                                                    </strong>
+
+                                                    <small>
+                                                        {forecastPeriod}
+                                                    </small>
+                                                </div>
+
+                                                <div className="summary-card">
+                                                    <span>
+                                                        EXPECTED CUSTOMERS
+                                                    </span>
+
+                                                    <strong>
+                                                        {forecastSummary.expectedCustomers}
+                                                    </strong>
+
+                                                    <small>
+                                                        {forecastPeriod}
+                                                    </small>
+                                                </div>
+
+                                                {!isStaff && (
+                                                    <div className="summary-card">
+                                                        <span>EXPECTED REVENUE</span>
+                                                        <strong>
+                                                            {formatRand(forecastSummary.expectedRevenue)}
+                                                        </strong>
+                                                        <small>{forecastPeriod}</small>
+                                                    </div>
+                                                )}
+
+                                            </section>
+
+                                            <section className="forecast-card">
+
+                                                <div className="forecast-card-header">
+
+                                                    <div>
+                                                        <h2>
+                                                            Weekly Demand Forecast
                                                         </h2>
 
-                                                        <div className="table-scroll">
-
-                                                            <table className="forecast-table">
-
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Day</th>
-                                                                        <th>Transactions</th>
-                                                                        <th>Customers</th>
-                                                                        {!isStaff && <th>Revenue</th>}
-                                                                        <th>Event</th>
-                                                                    </tr>
-                                                                </thead>
-
-                                                                <tbody>
-                                                                    {forecastData.map((item) => {
-                                                                        const matchingEvents = contextEvents.filter(
-                                                                            (event) =>
-                                                                                event.start_date <= item.date &&
-                                                                                event.end_date >= item.date
-                                                                        );
-
-                                                                        return (
-                                                                            <tr key={item.date}>
-                                                                                <td>{item.day}</td>
-                                                                                <td>{item.orders}</td>
-                                                                                <td>{item.customers}</td>
-
-                                                                                {!isStaff && (
-                                                                                    <td>{formatRand(item.revenue)}</td>
-                                                                                )}
-
-                                                                                <td>
-                                                                                    {contextEventError
-                                                                                        ? "Unavailable"
-                                                                                        : matchingEvents.length > 0
-                                                                                            ? matchingEvents
-                                                                                                .map((event) => event.name)
-                                                                                                .join(", ")
-                                                                                            : "-"}
-                                                                                </td>
-                                                                            </tr>
-                                                                        );
-                                                                    })}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                        <p>
+                                                            Expected transactions, customers and revenue for the forecast period.
+                                                        </p>
                                                     </div>
 
-                                                    <div className="forecast-note">
-                                                        Forecasts are estimates based on historical transaction patterns and may be affected by contextual factors such as holidays, exams and events.
+                                                    <div className="forecast-legend">
+
+                                                        <span>
+                                                            <i className="legend-orders"></i>
+                                                            Transactions
+                                                        </span>
+
+                                                        <span>
+                                                            <i className="legend-customers"></i>
+                                                            Customers
+                                                        </span>
+
+                                                        {!isStaff && (
+                                                            <span>
+                                                                <i className="legend-revenue"></i>
+                                                                Revenue
+                                                            </span>
+                                                        )}
+
                                                     </div>
-                                                </section>
 
+                                                </div>
 
-                                                <section className="historical-comparison-card">
-                                                    <div className="historical-comparison-header">
-                                                        <div>
-                                                            <h2>Historical Activity Comparison</h2>
-                                                            <p>Compare recorded transaction activity across weeks.</p>
-                                                        </div>
+                                                <div className="forecast-chart">
 
-                                                        <button
-                                                            type="button"
-                                                            className="view-evidence-button"
-                                                            onClick={() =>
-                                                                onOpenWeeklyEvidence?.({
-                                                                    vendorId,
-                                                                    vendorName: selectedVendorName,
-                                                                    selectedDate:
-                                                                        historicalComparison?.selected_week_start ||
-                                                                        selectedComparisonDate,
-                                                                })
+                                                    <ResponsiveContainer
+                                                        width={printing ? 640 : "100%"}
+                                                        height="100%"
+                                                    >
+                                                        <LineChart
+                                                            data={
+                                                                forecastData
                                                             }
-                                                            disabled={!historicalComparison}
+                                                            margin={{
+                                                                top: 10,
+                                                                right: 10,
+                                                                left: 0,
+                                                                bottom: 0,
+                                                            }}
                                                         >
-                                                            View
-                                                        </button>
+
+                                                            <CartesianGrid
+                                                                stroke="#e0e0e0"
+                                                                strokeWidth={1}
+                                                                horizontal={true}
+                                                                vertical={true}
+                                                            />
+
+                                                            <XAxis
+                                                                dataKey="day"
+                                                                tick={{
+                                                                    fontSize: 11,
+                                                                    fill: "#7c8987",
+                                                                }}
+                                                                tickLine={false}
+                                                                axisLine={{
+                                                                    stroke:
+                                                                        "#dfe7e4",
+                                                                }}
+                                                                interval={0}
+                                                            />
+
+                                                            <YAxis
+                                                                yAxisId="left"
+                                                                tick={{
+                                                                    fontSize: 11,
+                                                                    fill: "#7c8987",
+                                                                }}
+                                                                tickLine={false}
+                                                                axisLine={false}
+                                                                width={40}
+                                                                tickCount={6}
+                                                            />
+
+                                                            <YAxis
+                                                                yAxisId="right"
+                                                                orientation="right"
+                                                                tick={{
+                                                                    fontSize: 11,
+                                                                    fill: "#7c8987",
+                                                                }}
+                                                                tickLine={false}
+                                                                axisLine={false}
+                                                                width={48}
+                                                                tickFormatter={(v) => `R${(v / 1000).toFixed(2)}k`}
+                                                            />
+
+                                                            <Tooltip
+                                                                content={
+                                                                    <ChartTooltip
+                                                                        isStaff={isStaff}
+                                                                        contextEvents={contextEvents}
+                                                                        contextEventError={contextEventError}
+                                                                    />
+                                                                }
+                                                                cursor={{
+                                                                    stroke: "#c9d6d2",
+                                                                }}
+                                                            />
+
+                                                            <Line
+                                                                yAxisId="left"
+                                                                type="monotone"
+                                                                dataKey="orders"
+                                                                stroke="#b34c57"
+                                                                strokeWidth={3}
+                                                                dot={{ r: 3 }}
+                                                                isAnimationActive={!printing}
+                                                                activeDot={{
+                                                                    r: 6,
+                                                                }}
+                                                            />
+
+                                                            <Line
+                                                                yAxisId="left"
+                                                                type="monotone"
+                                                                dataKey="customers"
+                                                                stroke="#2e8f87"
+                                                                strokeWidth={3}
+                                                                dot={{ r: 3 }}
+                                                                isAnimationActive={!printing}
+                                                                activeDot={{
+                                                                    r: 6,
+                                                                }}
+                                                            />
+
+                                                            {!isStaff && (
+                                                                <Line
+                                                                    yAxisId="right"
+                                                                    type="monotone"
+                                                                    dataKey="revenue"
+                                                                    stroke="#7faaa4"
+                                                                    strokeWidth={3}
+                                                                    strokeDasharray="7 5"
+                                                                    dot={{ r: 3 }}
+                                                                    isAnimationActive={!printing}
+                                                                    activeDot={{ r: 6 }}
+                                                                />
+                                                            )}
+
+                                                        </LineChart>
+                                                    </ResponsiveContainer>
+
+                                                </div>
+
+                                                <div className="forecast-details">
+
+                                                    <h2 className="daily-figures-heading">
+                                                        View daily figures
+                                                    </h2>
+
+                                                    <div className="table-scroll">
+
+                                                        <table className="forecast-table">
+
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Day</th>
+                                                                    <th>Transactions</th>
+                                                                    <th>Customers</th>
+                                                                    {!isStaff && <th>Revenue</th>}
+                                                                    <th>Event</th>
+                                                                </tr>
+                                                            </thead>
+
+                                                            <tbody>
+                                                                {forecastData.map((item) => {
+                                                                    const matchingEvents = contextEvents.filter(
+                                                                        (event) =>
+                                                                            event.start_date <= item.date &&
+                                                                            event.end_date >= item.date
+                                                                    );
+
+                                                                    return (
+                                                                        <tr key={item.date}>
+                                                                            <td>{item.day}</td>
+                                                                            <td>{item.orders}</td>
+                                                                            <td>{item.customers}</td>
+
+                                                                            {!isStaff && (
+                                                                                <td>{formatRand(item.revenue)}</td>
+                                                                            )}
+
+                                                                            <td>
+                                                                                {contextEventError
+                                                                                    ? "Unavailable"
+                                                                                    : matchingEvents.length > 0
+                                                                                        ? matchingEvents
+                                                                                            .map((event) => event.name)
+                                                                                            .join(", ")
+                                                                                        : "-"}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <div className="forecast-note">
+                                                    Forecasts are estimates based on historical transaction patterns and may be affected by contextual factors such as holidays, exams and events.
+                                                </div>
+                                            </section>
+
+
+                                            <section className="historical-comparison-card">
+                                                <div className="historical-comparison-header">
+                                                    <div>
+                                                        <h2>Historical Activity Comparison</h2>
+                                                        <p>Compare recorded transaction activity across weeks.</p>
                                                     </div>
 
+                                                    <button
+                                                        type="button"
+                                                        className="view-evidence-button"
+                                                        onClick={() =>
+                                                            onOpenWeeklyEvidence?.({
+                                                                vendorId,
+                                                                vendorName: selectedVendorName,
+                                                                selectedDate:
+                                                                    historicalComparison?.selected_week_start ||
+                                                                    selectedComparisonDate,
+                                                                metric: comparisonMetric,
+                                                            })
+                                                        }
+                                                        disabled={!historicalComparison}
+                                                    >
+                                                        View
+                                                    </button>
+                                                </div>
+
+
+                                                <div className="comparison-controls">
                                                     <div className="comparison-week-selector">
                                                         <label htmlFor="comparison-week-date">
                                                             Choose a date in the week
@@ -1556,163 +1554,211 @@ function DemandForecast({
                                                         />
 
                                                         <p>
-                                                            The selected date determines the Monday-Sunday week.
-                                                            The preceding week is compared automatically.
+                                                            The selected date determines the Monday-Sunday week. The preceding week is compared automatically.
                                                         </p>
                                                     </div>
 
-                                                    {comparisonLoading && (
-                                                        <p>Loading historical activity...</p>
-                                                    )}
+                                                    <div className="comparison-metric-selector">
+                                                        <label htmlFor="comparison-metric">
+                                                            Compare by
+                                                        </label>
 
-                                                    {comparisonError && (
-                                                        <p className="comparison-error">{comparisonError}</p>
-                                                    )}
+                                                        <select
+                                                            id="comparison-metric"
+                                                            value={comparisonMetric}
+                                                            onChange={(event) =>
+                                                                setComparisonMetric(event.target.value)
+                                                            }
+                                                        >
+                                                            {!isStaff && (
+                                                                <option value="revenue">Revenue</option>
+                                                            )}
 
-                                                    {!comparisonLoading &&
-                                                        !comparisonError &&
-                                                        historicalComparison && (
-                                                            <>
-                                                                <div className="comparison-period-cards">
-                                                                    <div className="comparison-period-item">
-                                                                        <span>Selected week</span>
-                                                                        <strong>
-                                                                            {formatComparisonPeriod(
-                                                                                historicalComparison.selected_week_start,
-                                                                                historicalComparison.selected_week_end
-                                                                            )}
-                                                                        </strong>
-                                                                    </div>
+                                                            <option value="transactions">Transactions</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
 
-                                                                    <div className="comparison-period-item">
-                                                                        <span>Previous week</span>
-                                                                        <strong>
-                                                                            {formatComparisonPeriod(
-                                                                                historicalComparison.previous_week_start,
-                                                                                historicalComparison.previous_week_end
-                                                                            )}
-                                                                        </strong>
-                                                                    </div>
+
+                                                {comparisonLoading && (
+                                                    <p>Loading historical activity...</p>
+                                                )}
+
+                                                {comparisonError && (
+                                                    <p className="comparison-error">{comparisonError}</p>
+                                                )}
+
+                                                {!comparisonLoading &&
+                                                    !comparisonError &&
+                                                    historicalComparison && (
+                                                        <>
+                                                            <div className="comparison-period-cards">
+                                                                <div className="comparison-period-item">
+                                                                    <span>Selected week</span>
+                                                                    <strong>
+                                                                        {formatComparisonPeriod(
+                                                                            historicalComparison.selected_week_start,
+                                                                            historicalComparison.selected_week_end
+                                                                        )}
+                                                                    </strong>
                                                                 </div>
 
-                                                                <div className="table-scroll">
-                                                                    <table className="historical-comparison-table">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>Day &amp; Date</th>
-                                                                                <th>
-                                                                                    This week
-                                                                                    <span>(Transactions)</span>
-                                                                                </th>
-                                                                                <th>
-                                                                                    Previous week
-                                                                                    <span>(Transactions)</span>
-                                                                                </th>
-                                                                                <th>% Change</th>
-                                                                                <th>Activity category</th>
-                                                                            </tr>
-                                                                        </thead>
+                                                                <div className="comparison-period-item">
+                                                                    <span>Previous week</span>
+                                                                    <strong>
+                                                                        {formatComparisonPeriod(
+                                                                            historicalComparison.previous_week_start,
+                                                                            historicalComparison.previous_week_end
+                                                                        )}
+                                                                    </strong>
+                                                                </div>
+                                                            </div>
 
-                                                                        <tbody>
-                                                                            {historicalComparison.days.map((day) => {
-                                                                                const change = day.percentage_change;
+                                                            <div className="table-scroll">
+                                                                <table className="historical-comparison-table">
 
-                                                                                let category = "Usual";
-                                                                                let categoryClass = "usual";
 
-                                                                                if (change != null && change >= 10) {
-                                                                                    category = "High activity";
-                                                                                    categoryClass = "high";
-                                                                                } else if (change != null && change > 0) {
-                                                                                    category = "Above average";
-                                                                                    categoryClass = "above";
-                                                                                } else if (change != null && change < 0) {
-                                                                                    category = "Below average";
-                                                                                    categoryClass = "below";
-                                                                                }
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Day</th>
+                                                                            <th>Date</th>
 
-                                                                                const formattedDate = new Date(
-                                                                                    `${day.date}T12:00:00`
-                                                                                ).toLocaleDateString("en-ZA", {
-                                                                                    weekday: "long",
-                                                                                    day: "numeric",
-                                                                                    month: "short",
-                                                                                });
+                                                                            <th>
+                                                                                {comparisonMetric === "revenue"
+                                                                                    ? "This week's Revenue (R)"
+                                                                                    : "This week's Transactions"}
+                                                                            </th>
 
-                                                                                const hasBothCounts =
-                                                                                    day.this_week_orders != null &&
-                                                                                    day.previous_week_orders != null;
+                                                                            <th>
+                                                                                {comparisonMetric === "revenue"
+                                                                                    ? "Previous week's Revenue (R)"
+                                                                                    : "Previous week's Transactions"}
+                                                                            </th>
 
-                                                                                return (
-                                                                                    <tr key={day.date}>
-                                                                                        <td>{formattedDate}</td>
+                                                                            <th>% Change</th>
+                                                                            <th>Activity category</th>
+                                                                        </tr>
+                                                                    </thead>
 
-                                                                                        <td>
-                                                                                            {day.this_week_orders ?? "N/A"}
-                                                                                        </td>
 
-                                                                                        <td>
-                                                                                            {day.previous_week_orders ?? "N/A"}
-                                                                                        </td>
+                                                                    <tbody>
+                                                                        {historicalComparison.days.map((day) => {
 
-                                                                                        <td>
-                                                                                            {change == null ? (
-                                                                                                <span className="comparison-change unavailable">
-                                                                                                    —
-                                                                                                </span>
-                                                                                            ) : (
-                                                                                                <span
-                                                                                                    className={`comparison-change ${change > 0
-                                                                                                        ? "positive"
-                                                                                                        : change < 0
-                                                                                                            ? "negative"
-                                                                                                            : "neutral"
-                                                                                                        }`}
-                                                                                                >
+                                                                            const isRevenue = comparisonMetric === "revenue";
 
-                                                                                                    {change > 0 && <ArrowUp size={14} />}
-                                                                                                    {change < 0 && <ArrowDown size={14} />}
-                                                                                                    {change > 0 ? "+" : ""}
-                                                                                                    {formatNumber(change)}%
+                                                                            const currentValue = isRevenue
+                                                                                ? day.this_week_revenue
+                                                                                : day.this_week_orders;
 
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </td>
+                                                                            const previousValue = isRevenue
+                                                                                ? day.previous_week_revenue
+                                                                                : day.previous_week_orders;
 
-                                                                                        <td>
-                                                                                            <span
-                                                                                                className={`activity-category ${hasBothCounts
-                                                                                                    ? categoryClass
-                                                                                                    : "usual"
-                                                                                                    }`}
-                                                                                            >
-                                                                                                {hasBothCounts
-                                                                                                    ? category
-                                                                                                    : "Insufficient data"}
+                                                                            const change = isRevenue
+                                                                                ? day.revenue_percentage_change
+                                                                                : day.orders_percentage_change;
+
+                                                                            const hasBothCounts =
+                                                                                currentValue != null &&
+                                                                                previousValue != null;
+
+                                                                            const hasComparisonData =
+                                                                                hasBothCounts && change != null;
+
+                                                                            let category = "Usual";
+                                                                            let categoryClass = "usual";
+
+                                                                            if (!hasComparisonData) {
+                                                                                category = "Insufficient data";
+                                                                                categoryClass = "insufficient";
+                                                                            } else if (change >= 10) {
+                                                                                category = "High activity";
+                                                                                categoryClass = "high";
+                                                                            } else if (change > 0) {
+                                                                                category = "Above average";
+                                                                                categoryClass = "above";
+                                                                            } else if (change < 0) {
+                                                                                category = "Below average";
+                                                                                categoryClass = "below";
+                                                                            }
+
+                                                                            const dateObject = new Date(`${day.date}T12:00:00`);
+
+                                                                            const formattedDay = dateObject.toLocaleDateString("en-ZA", {
+                                                                                weekday: "long",
+                                                                            });
+
+                                                                            const formattedDate = dateObject.toLocaleDateString("en-ZA", {
+                                                                                day: "numeric",
+                                                                                month: "short",
+                                                                                year: "numeric",
+                                                                            });
+
+
+                                                                            return (
+
+                                                                                <tr key={day.date}>
+                                                                                    <td>{formattedDay}</td>
+                                                                                    <td>{formattedDate}</td>
+
+
+                                                                                    <td>
+                                                                                        {currentValue == null
+                                                                                            ? "N/A"
+                                                                                            : isRevenue
+                                                                                                ? Number(currentValue).toLocaleString("en-US", {
+                                                                                                    minimumFractionDigits: 2,
+                                                                                                    maximumFractionDigits: 2,
+                                                                                                }).replace(/,/g, " ")
+                                                                                                : Number(currentValue).toLocaleString("en-ZA")}
+                                                                                    </td>
+
+                                                                                    <td>
+                                                                                        {previousValue == null
+                                                                                            ? "N/A"
+                                                                                            : isRevenue
+                                                                                                ? Number(previousValue).toLocaleString("en-US", {
+                                                                                                    minimumFractionDigits: 2,
+                                                                                                    maximumFractionDigits: 2,
+                                                                                                }).replace(/,/g, " ")
+                                                                                                : Number(previousValue).toLocaleString("en-ZA")}
+                                                                                    </td>
+
+                                                                                    <td>
+                                                                                        {!hasComparisonData ? (
+                                                                                            <span className="comparison-change insufficient">
+                                                                                                —
                                                                                             </span>
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                );
-                                                                            })}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
+                                                                                        ) : (
+                                                                                            <span className={`comparison-change ${categoryClass}`}>
+                                                                                                {change > 0 && <ArrowUp size={14} />}
+                                                                                                {change < 0 && <ArrowDown size={14} />}
+                                                                                                {change > 0 ? "+" : ""}
+                                                                                                {formatNumber(change)}%
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <span className={`activity-category ${categoryClass}`}>
+                                                                                            {category}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
 
-                                                                <p className="historical-comparison-note">
-                                                                    Figures are based on recorded loyalty transactions
-                                                                    and may not reflect total business activity.
-                                                                </p>
-                                                            </>
-                                                        )}
-                                                </section>
-
-
-
-                                            </>
-                                        )}
-
-
-                                </>
+                                                            <p className="historical-comparison-note">
+                                                                Figures are based on recorded loyalty transactions and may not reflect total business activity.
+                                                            </p>
+                                                        </>
+                                                    )}
+                                            </section>
+                                        </>
+                                    )}
+                            </>
                         </>
                     )}
 
