@@ -351,8 +351,8 @@ return (
       </div>
     </header>
 
-    <div className="page-content">
-      <div className="demand-page-header report-heading">
+    <div className="page-content context-events-page">
+      <div className="demand-page-header report-heading context-events-page-header">
         <div className="page-heading">
           <h1>Calendar &amp; Context Events</h1>
           <p>Manage academic dates and other events that influence student demand.</p>
@@ -388,21 +388,17 @@ return (
   )}
 
   <section
-    className="panel no-print"
-    style={{ padding: "24px", marginBottom: "24px" }}
+    className="panel no-print context-event-entry-panel"
   >
-    <h2>{editingId ? "Edit event" : "Add a context event"}</h2>
+    <h2 className="context-event-section-heading">
+      {editingId ? "Edit event" : "Add a context event"}
+    </h2>
 
     <form
+      className="context-event-form"
       onSubmit={saveEvent}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        gap: "16px",
-        alignItems: "end",
-      }}
     >
-      <label>
+      <label className="context-event-form-field">
         Event name
         <input
           required
@@ -414,7 +410,7 @@ return (
         />
       </label>
 
-      <label>
+      <label className="context-event-form-field">
         Event type
         <select
           required
@@ -432,7 +428,7 @@ return (
         </select>
       </label>
 
-      <label>
+      <label className="context-event-form-field">
         Start date
         <input
           type="date"
@@ -444,7 +440,7 @@ return (
         />
       </label>
 
-      <label>
+      <label className="context-event-form-field">
         End date
         <input
           type="date"
@@ -457,7 +453,7 @@ return (
         />
       </label>
 
-      <div style={{ display: "flex", gap: "8px" }}>
+      <div className="context-event-form-actions">
         <button
           className="btn-primary"
           type="submit"
