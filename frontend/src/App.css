@@ -4459,10 +4459,6 @@ body[data-role="Manager"] a[href="#context-events"] {
   padding-right: 2px;
 }
 
-.historical-comparison-table tbody tr:hover {
-  background: #f8fbfd;
-}
-
 .comparison-change {
   display: inline-flex;
   align-items: center;
