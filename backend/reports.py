@@ -8,10 +8,15 @@ from sqlalchemy.orm import Session
 
 import database
 import models
+from performance import PerformanceJSONResponse
 from access.constants import Role
 from access.deps import get_current_user
 
-router = APIRouter(prefix="/api/reports", tags=["Reports"])
+router = APIRouter(
+    prefix="/api/reports",
+    tags=["Reports"],
+    default_response_class=PerformanceJSONResponse,
+)
 
 ALL_ROLES = {Role.ADMIN.value, Role.MANAGER.value, Role.STAFF.value}
 ADMIN_MANAGER = {Role.ADMIN.value, Role.MANAGER.value}

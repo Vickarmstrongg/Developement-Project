@@ -1,7 +1,8 @@
-from sqlalchemy import func
+from sqlalchemy import case, func
 from datetime import timedelta
 import models
 from privacy import is_suppressed
+from performance import timed_stage
 import re
 
 def parse_gps(gps_str):
@@ -83,6 +84,7 @@ def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
     }
 
 
+@timed_stage("rush_hour.vendor_size_tiers")
 def get_vendor_size_tiers(db, type_id):
     """Buckets vendors of a given type into small/medium/large by total transaction volume."""
     vendors = db.query(
@@ -107,32 +109,59 @@ def get_vendor_size_tiers(db, type_id):
             tiers[v.vendor_id] = "large"
     return tiers
 
+@timed_stage("rush_hour.bulk_vendor_status")
 def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
     """Same calculation as get_vendor_status, but for many vendors in one query.
     Privacy checked against TOTAL distinct students across all 4 weeks combined."""
     dates = get_last_n_occurrences(reference_date, day_of_week, n=4)
+    transaction_date = func.date(models.Transaction.datetime)
 
     rows = db.query(
         models.Transaction.vendor_id,
-        func.date(models.Transaction.datetime).label("d"),
-        models.Transaction.student_id,
+        *[
+            func.count(
+                case(
+                    (
+                        transaction_date == occurrence_date,
+                        models.Transaction.transaction_id,
+                    )
+                )
+            ).label(f"transactions_{index}")
+            for index, occurrence_date in enumerate(dates)
+        ],
+        func.count(func.distinct(models.Transaction.student_id)).label(
+            "student_count"
+        ),
+        func.count(
+            case(
+                (
+                    models.Transaction.student_id.is_(None),
+                    models.Transaction.transaction_id,
+                )
+            )
+        ).label("null_student_transactions"),
     ).filter(
         models.Transaction.vendor_id.in_(vendor_ids),
-        func.date(models.Transaction.datetime).in_(dates),
+        transaction_date.in_(dates),
         func.extract("hour", models.Transaction.datetime).in_(
             [hour - 1, hour, hour + 1]
         ),
-    ).all()
+    ).group_by(models.Transaction.vendor_id).all()
 
     counts = {vid: {d: 0 for d in dates} for vid in vendor_ids}
-    all_students_by_vendor = {vid: set() for vid in vendor_ids}
     for row in rows:
-        counts[row.vendor_id][row.d] += 1
-        all_students_by_vendor[row.vendor_id].add(row.student_id)
+        for index, occurrence_date in enumerate(dates):
+            counts[row.vendor_id][occurrence_date] = getattr(
+                row, f"transactions_{index}"
+            )
+    student_counts = {
+        row.vendor_id: row.student_count + int(row.null_student_transactions > 0)
+        for row in rows
+    }
 
     results = {}
     for vid in vendor_ids:
-        student_count = len(all_students_by_vendor[vid])
+        student_count = student_counts.get(vid, 0)
 
         if is_suppressed(student_count):
             results[vid] = {"status": "suppressed", "level": None, "student_count": student_count}
@@ -164,6 +193,7 @@ def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
         }
     return results
 
+@timed_stage("rush_hour.vendor_status")
 def get_weekly_pattern(db, vendor_id, reference_date):
     """Returns the quiet/normal/busy level for every hour of every day, for one vendor."""
     pattern = {}

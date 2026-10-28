@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 import database
 import models
+from performance import PerformanceJSONResponse
 
 from . import settings
 from .constants import Role, UserStatus
@@ -16,7 +17,11 @@ from .mailer import send_invite_email, send_reset_email
 from .schemas import InviteRequest, Message, UserOut, UserUpdate
 from .security import issue_token
 
-router = APIRouter(prefix="/users", tags=["users (Admin only)"])
+router = APIRouter(
+    prefix="/users",
+    tags=["users (Admin only)"],
+    default_response_class=PerformanceJSONResponse,
+)
 
 AdminUser = Depends(require_roles(Role.ADMIN))
 

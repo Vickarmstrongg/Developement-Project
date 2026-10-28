@@ -19,9 +19,18 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import models
+from performance import timed_stage
 
 MIN_PEER_BUSINESSES = 3
 AVERAGE_BAND_PERCENTAGE = 0.10  # Within ±10% of peer mean is "average"
+
+
+def _operational_tier(txn_count: int) -> str:
+    if txn_count < 1500:
+        return "small"
+    if txn_count < 3000:
+        return "medium"
+    return "large"
 
 
 def get_vendor_operational_tier(db: Session, vendor_id: int) -> str:
@@ -34,13 +43,10 @@ def get_vendor_operational_tier(db: Session, vendor_id: int) -> str:
         .filter(models.Transaction.vendor_id == vendor_id)
         .scalar() or 0
     )
-    if txn_count < 1500:
-        return "small"
-    elif txn_count < 3000:
-        return "medium"
-    return "large"
+    return _operational_tier(txn_count)
 
 
+@timed_stage("fair_comparison.calculation")
 def calculate_fair_comparison(
     db: Session,
     vendor_id: int,
@@ -54,7 +60,25 @@ def calculate_fair_comparison(
     # Fetch vendor type name
     vendor_type = db.query(models.VendorType).filter(models.VendorType.type_id == vendor.type_id).first()
     type_name = vendor_type.name if vendor_type else "Food & Beverage"
-    vendor_size = get_vendor_operational_tier(db, vendor.vendor_id)
+
+    # Fetch same-type vendors and transaction totals together to avoid one
+    # full-history count query per vendor.
+    same_type_vendors = (
+        db.query(models.Vendor)
+        .filter(models.Vendor.type_id == vendor.type_id)
+        .all()
+    )
+    same_type_vendor_ids = [v.vendor_id for v in same_type_vendors]
+    transaction_counts = dict(
+        db.query(
+            models.Transaction.vendor_id,
+            func.count(models.Transaction.transaction_id).label("total"),
+        )
+        .filter(models.Transaction.vendor_id.in_(same_type_vendor_ids))
+        .group_by(models.Transaction.vendor_id)
+        .all()
+    ) if same_type_vendor_ids else {}
+    vendor_size = _operational_tier(transaction_counts.get(vendor.vendor_id, 0))
 
     # 2. Determine date window (single day if requested, or latest 7 days recorded)
     if filter_date:
@@ -68,17 +92,10 @@ def calculate_fair_comparison(
         end_date = latest_txn
         start_date = end_date - timedelta(days=6)
 
-    # 3. Find peer vendors sharing the same vendor type
-    same_type_vendors = (
-        db.query(models.Vendor)
-        .filter(models.Vendor.type_id == vendor.type_id)
-        .all()
-    )
-
-    # Filter peers by matching operational size tier
+    # Filter peers by matching operational size tier.
     peer_vendor_ids = [
         v.vendor_id for v in same_type_vendors
-        if get_vendor_operational_tier(db, v.vendor_id) == vendor_size
+        if _operational_tier(transaction_counts.get(v.vendor_id, 0)) == vendor_size
     ]
 
     # Privacy constraint check: Minimum 3 peer businesses in cohort

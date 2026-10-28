@@ -3,9 +3,11 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import models
+from performance import timed_stage
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
+@timed_stage("demand_forecast.calculation")
 def calculate_demand_forecast(
     db: Session, 
     vendor_id: int, 
@@ -168,5 +170,4 @@ def calculate_demand_forecast(
             "days": comparison_days,
         },
     }
-
 

@@ -144,6 +144,7 @@ function DemandForecast({
     const [profileOpen, setProfileOpen] = useState(false);
 
     const [selectedComparisonDate, setSelectedComparisonDate] = useState("");
+    const defaultComparisonDateRequest = useRef(null);
     const [historicalComparison, setHistoricalComparison] = useState(null);
     const [comparisonLoading, setComparisonLoading] = useState(false);
     const [comparisonError, setComparisonError] = useState("");
@@ -317,6 +318,11 @@ function DemandForecast({
         async function loadForecast() {
             if (!vendorId) return;
 
+            if (defaultComparisonDateRequest.current === selectedComparisonDate) {
+                defaultComparisonDateRequest.current = null;
+                return;
+            }
+
             try {
                 setLoading(true);
                 setError("");
@@ -346,6 +352,8 @@ function DemandForecast({
                     !selectedComparisonDate &&
                     data.historical_comparison?.selected_week_start
                 ) {
+                    defaultComparisonDateRequest.current =
+                        data.historical_comparison.selected_week_start;
                     setSelectedComparisonDate(
                         data.historical_comparison.selected_week_start
                     );
