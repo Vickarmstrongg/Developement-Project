@@ -167,8 +167,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                     <div className="page-heading">
                         <h1>Reports</h1>
                         <p>
-                            A record of reports exported from Byte &amp; Bite: who
-                            exported what, and when.
+                            A record of reports exported from Byte &amp; Bite: who exported what, and when.
                         </p>
                     </div>
 
