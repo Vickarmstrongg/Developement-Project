@@ -23,7 +23,6 @@ import {
 
 import ReportButton from "./ReportButton";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import HonestResultsChecker from "./HonestResultsChecker";
 import UsersLink from "./UsersLink";
 
 function formatNumber(value) {
@@ -143,7 +142,6 @@ function DemandForecast({
     onOpenWeeklyEvidence,
 }) {
     const [profileOpen, setProfileOpen] = useState(false);
-    const [activeFeature, setActiveFeature] = useState("forecast");
 
     const [selectedComparisonDate, setSelectedComparisonDate] = useState("");
     const [historicalComparison, setHistoricalComparison] = useState(null);
@@ -1123,27 +1121,6 @@ function DemandForecast({
                         </section>
                     ) : (
                         <>
-                            <nav className="demand-feature-tabs" aria-label="Demand Forecast tools">
-
-                                <button
-                                    type="button"
-                                    className={activeFeature === "forecast" ? "active" : ""}
-                                    aria-current={activeFeature === "forecast" ? "page" : undefined}
-                                    onClick={() => setActiveFeature("forecast")}
-                                >
-                                    Demand Forecast
-                                </button>
-                                <button
-                                    type="button"
-                                    className={activeFeature === "honest" ? "active" : ""}
-                                    aria-current={activeFeature === "honest" ? "page" : undefined}
-                                    onClick={() => setActiveFeature("honest")}
-                                >
-                                    Honest Results Checker
-                                </button>
-                            </nav>
-
-                            {activeFeature === "forecast" ? (
                                 <>
                                     <div className="demand-page-header report-heading">
                                         <div className="page-heading">
@@ -1736,15 +1713,6 @@ function DemandForecast({
 
 
                                 </>
-
-                            ) : (
-                                <HonestResultsChecker
-                                    key={vendorId}
-                                    currentUser={currentUser}
-                                    defaultVendorId={vendorId}
-                                />
-                            )}
-
                         </>
                     )}
 
