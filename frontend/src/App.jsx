@@ -20,6 +20,7 @@ import WorkspaceSidebar from "./WorkspaceSidebar";
 import Users from "./Users";
 import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
+import ForgotPassword from "./ForgotPassword";
 
 const HASH_TO_VIEW = {
   "#dashboard": "dashboard",
@@ -259,7 +260,9 @@ function App() {
   if (window.location.pathname === "/set-password") {
     return <SetPassword />;
   }
-
+   if (window.location.pathname === "/forgot-password") {
+     return <ForgotPassword />;
+   }
   if (!loggedIn) {
     return (
       <Login
@@ -402,9 +405,9 @@ function App() {
                 </button>
 
                 {profileOpen && (
-                  <div className="profile-dropdown">
-                    <UsersLink/>  
-                    <button
+                    <div className="profile-dropdown">
+                      <UsersLink />
+                      <button
                       className="logout-option"
                       onClick={handleLogout}
                     >
@@ -515,7 +518,7 @@ function App() {
 
               {profileOpen && (
                 <div className="profile-dropdown">
-                  <UsersLink/>  
+                  <UsersLink />
                   <button
                     className="logout-option"
                     onClick={handleLogout}

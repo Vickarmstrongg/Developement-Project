@@ -551,7 +551,7 @@ function FairComparison({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
-                                    <UsersLink />  
+
                                     <button className="logout-option" onClick={handleLogout}>
                                         <LogOut size={15} />
                                         Log Out
