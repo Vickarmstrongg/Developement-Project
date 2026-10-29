@@ -1,11 +1,14 @@
+import { useState } from "react";
 import {
   CalendarDays,
+  ChevronsLeft,
+  ChevronsRight,
   Clock3,
   FileText,
   LayoutDashboard,
   Scale,
   TrendingUp,
-  Users
+  Users,
 } from "lucide-react";
 import logo from "./assets/Logo.png";
 import { getStoredUser } from "./api";
@@ -19,10 +22,34 @@ const NAV_ITEMS = [
   { id: "users", hash: "#users", label: "Users", icon: Users, adminOnly: true },
 ];
 
+const STORAGE_KEY = "bb_sidebar_collapsed";
+
+function readCollapsed() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 function WorkspaceSidebar({ activeView, onNavigate }) {
-    const isAdmin = getStoredUser()?.role === "Admin";
+  const isAdmin = getStoredUser()?.role === "Admin";
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+
+  function toggle() {
+    setCollapsed((current) => {
+      const next = !current;
+      try {
+        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable, ignore */
+      }
+      return next;
+    });
+  }
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
       <div className="brand">
         <span className="brand-name">Byte &amp; Bite</span>
         <img src={logo} alt="Byte & Bite" className="brand-logo" />
@@ -32,21 +59,25 @@ function WorkspaceSidebar({ activeView, onNavigate }) {
         <div className="sidebar-section">
           <span className="sidebar-title">WORKSPACE</span>
           <nav aria-label="Workspace">
-            {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(({ id, hash, label, icon: Icon }) => (
-              <a
-                key={id}
-                href={hash}
-                className={`sidebar-link${activeView === id ? " active" : ""}`}
-                aria-current={activeView === id ? "page" : undefined}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onNavigate(id);
-                }}
-              >
-                <Icon size={16} />
-                {label}
-              </a>
-            ))}
+            {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(
+              ({ id, hash, label, icon: Icon }) => (
+                <a
+                  key={id}
+                  href={hash}
+                  title={label}
+                  aria-label={label}
+                  className={`sidebar-link${activeView === id ? " active" : ""}`}
+                  aria-current={activeView === id ? "page" : undefined}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onNavigate(id);
+                  }}
+                >
+                  <Icon size={16} />
+                  <span className="sidebar-label">{label}</span>
+                </a>
+              )
+            )}
           </nav>
         </div>
 
@@ -55,15 +86,28 @@ function WorkspaceSidebar({ activeView, onNavigate }) {
           <nav aria-label="Reporting">
             <a
               href="#reports"
+              title="Reports"
+              aria-label="Reports"
               className={`sidebar-link${activeView === "reports" ? " active" : ""}`}
               aria-current={activeView === "reports" ? "page" : undefined}
             >
               <FileText size={16} />
-              Reports
+              <span className="sidebar-label">Reports</span>
             </a>
           </nav>
         </div>
       </div>
+
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={toggle}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+        <span className="sidebar-label">Collapse</span>
+      </button>
     </aside>
   );
 }
