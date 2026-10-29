@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 import database
 import models
+from performance import PerformanceJSONResponse
 
 from . import settings
 from .constants import UserStatus
@@ -32,7 +33,11 @@ from .security import (
     verify_password,
 )
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+    default_response_class=PerformanceJSONResponse,
+)
 
 
 @router.post("/login", response_model=TokenResponse)

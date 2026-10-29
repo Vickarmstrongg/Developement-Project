@@ -9,11 +9,16 @@ import models
 from access.constants import Role
 from access.deps import get_current_user
 from database import get_db
+from performance import PerformanceJSONResponse, timed_stage
 from privacy import MIN_STUDENTS_THRESHOLD, is_suppressed
 from rush_hour import get_bulk_vendor_status
 
 
-router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
+router = APIRouter(
+    prefix="/api/dashboard",
+    tags=["Dashboard"],
+    default_response_class=PerformanceJSONResponse,
+)
 
 DAY_NAMES = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 TIME_PERIODS = (
@@ -32,6 +37,14 @@ def _can_view_revenue(user: models.User) -> bool:
 
 def _accessible_vendor_ids(user: models.User) -> list[int] | None:
     return None if user.all_vendors else user.vendor_ids
+
+
+def _get_transaction_date_bounds(transaction_scope):
+    bounds = transaction_scope.with_entities(
+        func.max(func.date(models.Transaction.datetime)).label("latest_date"),
+        func.min(func.date(models.Transaction.datetime)).label("earliest_date"),
+    ).one()
+    return bounds.latest_date, bounds.earliest_date
 
 
 def _base_query(
@@ -100,6 +113,7 @@ def _get_filter_options(
     }
 
 
+@timed_stage("dashboard.heatmap")
 def _build_heatmap(db: Session, base_query) -> list[dict[str, Any]]:
     hour = func.extract("hour", models.Transaction.datetime)
     period_index = case(
@@ -143,6 +157,7 @@ def _build_heatmap(db: Session, base_query) -> list[dict[str, Any]]:
 
 
 @router.get("/overview")
+@timed_stage("dashboard.overview")
 def get_dashboard_overview(
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
@@ -163,12 +178,7 @@ def get_dashboard_overview(
         transaction_scope = transaction_scope.filter(
             models.Transaction.vendor_id.in_(accessible_vendor_ids)
         )
-    latest_date = transaction_scope.with_entities(
-        func.max(func.date(models.Transaction.datetime))
-    ).scalar()
-    earliest_date = transaction_scope.with_entities(
-        func.min(func.date(models.Transaction.datetime))
-    ).scalar()
+    latest_date, earliest_date = _get_transaction_date_bounds(transaction_scope)
     if latest_date is None:
         return {
             "sample_data": False,

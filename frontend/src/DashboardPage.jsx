@@ -86,6 +86,91 @@ function KpiCard({ title, value, detail, icon: Icon, tone = "green", linkProps =
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <section
+      className="dashboard-skeletons"
+      role="status"
+      aria-label="Loading dashboard data"
+      aria-busy="true"
+    >
+      <span className="dashboard-skeleton-sr-only">Loading dashboard data…</span>
+
+      <div className="dashboard-kpi-grid" aria-hidden="true">
+        <div className="dashboard-kpi-group">
+          {[0, 1, 2, 3].map((item) => (
+            <div className={`dashboard-skeleton-kpi panel tone-${item}`} key={item}>
+              <span className="dashboard-skeleton-kpi-strip" />
+              <span className="dashboard-skeleton-kpi-copy">
+                <span className="dashboard-skeleton-block dashboard-skeleton-label" />
+                <span className="dashboard-skeleton-block dashboard-skeleton-value" />
+                <span className="dashboard-skeleton-block dashboard-skeleton-detail" />
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="dashboard-skeleton-kpi panel dashboard-skeleton-feature">
+          <span className="dashboard-skeleton-kpi-strip" />
+          <span className="dashboard-skeleton-kpi-copy">
+            <span className="dashboard-skeleton-block dashboard-skeleton-label" />
+            <span className="dashboard-skeleton-block dashboard-skeleton-feature-value" />
+            <span className="dashboard-skeleton-block dashboard-skeleton-detail" />
+          </span>
+        </div>
+      </div>
+
+      <section className="dashboard-main-grid" aria-hidden="true">
+        <article className="dashboard-panel panel dashboard-skeleton-panel">
+          <div className="dashboard-skeleton-heading">
+            <span className="dashboard-skeleton-block dashboard-skeleton-title" />
+            <span className="dashboard-skeleton-block dashboard-skeleton-caption" />
+          </div>
+          <span className="dashboard-skeleton-block dashboard-skeleton-chart" />
+        </article>
+        <article className="dashboard-panel panel dashboard-skeleton-panel">
+          <div className="dashboard-skeleton-heading">
+            <span className="dashboard-skeleton-block dashboard-skeleton-title" />
+            <span className="dashboard-skeleton-block dashboard-skeleton-caption" />
+          </div>
+          <span className="dashboard-skeleton-heatmap">
+            {Array.from({ length: 49 }, (_, item) => (
+              <span
+                className={`dashboard-skeleton-block${item % 7 === 0 ? " row-label" : ""}${item < 7 ? " column-label" : ""}`}
+                key={item}
+              />
+            ))}
+          </span>
+          <span className="dashboard-skeleton-block dashboard-skeleton-caption dashboard-skeleton-legend" />
+        </article>
+      </section>
+
+      <section className="dashboard-lower-grid" aria-hidden="true">
+        <div className="dashboard-lower-group">
+          {[0, 1].map((item) => (
+            <article className="dashboard-panel panel dashboard-skeleton-panel" key={item}>
+              <div className="dashboard-skeleton-heading">
+                <span className="dashboard-skeleton-block dashboard-skeleton-title" />
+                <span className="dashboard-skeleton-block dashboard-skeleton-caption" />
+              </div>
+              <span className="dashboard-skeleton-block dashboard-skeleton-copy-line" />
+              <span className="dashboard-skeleton-block dashboard-skeleton-copy-line short" />
+            </article>
+          ))}
+        </div>
+        <article className="dashboard-panel panel dashboard-skeleton-panel">
+          <div className="dashboard-skeleton-heading">
+            <span className="dashboard-skeleton-block dashboard-skeleton-title" />
+            <span className="dashboard-skeleton-block dashboard-skeleton-caption" />
+          </div>
+          {[0, 1, 2].map((item) => (
+            <span className="dashboard-skeleton-block dashboard-skeleton-event" key={item} />
+          ))}
+        </article>
+      </section>
+    </section>
+  );
+}
+
 function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
   const [filters, setFilters] = useState({
     start_date: "",
@@ -115,7 +200,6 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
     async function loadDashboard() {
       setLoading(true);
       setError("");
-      setData(null);
       try {
         const response = await apiFetch(
           `/api/dashboard/overview${query ? `?${query}` : ""}`,
@@ -320,10 +404,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
       )}
 
       {loading && !data && !error && (
-        <section className="dashboard-state panel" aria-live="polite">
-          <RefreshCw size={18} className="dashboard-spinning" />
-          <span>Loading dashboard data…</span>
-        </section>
+        <DashboardSkeleton />
       )}
 
       {data && !data.sample_data && (

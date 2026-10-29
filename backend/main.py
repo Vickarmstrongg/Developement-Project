@@ -12,6 +12,13 @@ import dashboard
 import reports
 from fair_comparison import calculate_fair_comparison
 import notifications
+from performance import (
+    PerformanceJSONResponse,
+    PerformanceMiddleware,
+    install_sqlalchemy_timing,
+    performance_logging_enabled,
+    timed_stage,
+)
 
 from access import routes as auth_routes, users as user_routes
 from access.settings import CORS_ORIGINS
@@ -34,7 +41,14 @@ from rush_hour import (
 from demand_forecast import calculate_demand_forecast
 
 
-app = FastAPI(title="Byte & Bite API")
+app = FastAPI(
+    title="Byte & Bite API",
+    default_response_class=PerformanceJSONResponse,
+)
+
+if performance_logging_enabled():
+    install_sqlalchemy_timing(database.engine)
+    app.add_middleware(PerformanceMiddleware)
 
 app.include_router(context_events.router)
 app.include_router(dashboard.router)
@@ -58,6 +72,7 @@ app.include_router(user_routes.router)   # /users/... (Admin only)
 
 
 @app.get("/vendors/{vendor_id}/weekly-pattern")
+@timed_stage("rush_hour.weekly_pattern")
 def weekly_pattern(
     vendor_id: int,
     db: Session = Depends(database.get_db),
@@ -143,6 +158,7 @@ def vendor_summary(
 
 
 @app.get("/vendors/{vendor_id}/demand-forecast")
+@timed_stage("demand_forecast.endpoint")
 def get_demand_forecast(
     vendor_id: int,
     selected_date: Optional[date] = None,
@@ -168,6 +184,7 @@ def get_demand_forecast(
 
 @app.get("/vendors/{vendor_id}/fair-comparison",
         dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER)), Depends(require_vendor_access)])
+@timed_stage("fair_comparison.endpoint")
 def get_fair_comparison(
     vendor_id: int,
     filter_date: Optional[date] = None,
@@ -181,6 +198,7 @@ def get_fair_comparison(
 
 
 @app.get("/rush-hour-radar", dependencies=[Depends(get_current_user)])
+@timed_stage("rush_hour.endpoint")
 def rush_hour_radar(
     day: int,
     hour: int,

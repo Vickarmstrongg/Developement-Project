@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 import database
 import models
 from access.deps import get_current_user
+from performance import PerformanceJSONResponse, timed_stage
 import re
 
 router = APIRouter(
     prefix="/notifications",
     tags=["Notifications"],
+    default_response_class=PerformanceJSONResponse,
 )
 
 @router.get("")
@@ -159,6 +161,7 @@ def clear_notification(
     return {"message": "Notification cleared"}
 
 
+@timed_stage("demand_forecast.notification_check")
 def check_transaction_change(db: Session, vendor_id: int, user_id: int):
     daily_rows = (
         db.query(

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 import database
 import models
+from performance import PerformanceJSONResponse
 from access.constants import Role
 from access.deps import get_current_user, require_roles
 
@@ -15,6 +16,7 @@ router = APIRouter(
     prefix="/context-events",
     tags=["Context events"],
     dependencies=[Depends(get_current_user)],
+    default_response_class=PerformanceJSONResponse,
 )
 
 
