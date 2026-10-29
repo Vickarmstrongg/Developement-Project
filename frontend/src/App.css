@@ -5163,19 +5163,15 @@ body[data-role="Manager"] a[href="#context-events"] {
 }
 
 .recommendation-table th:nth-child(1) {
-  width: 31%;
+  width: 33%;
 }
 
 .recommendation-table th:nth-child(2) {
-  width: 18%;
+  width: 33%;
 }
 
 .recommendation-table th:nth-child(3) {
-  width: 31%;
-}
-
-.recommendation-table th:nth-child(4) {
-  width: 20%;
+  width: 33%;
 }
 
 .recommendation-table td {
@@ -5184,6 +5180,30 @@ body[data-role="Manager"] a[href="#context-events"] {
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
+
+
+/* Auto-generated table padding css for gap between table and heading */
+
+.recommendation-table th:first-child,
+.recommendation-table td:first-child {
+  text-align: left;
+  padding-left: 40px;
+}
+
+.recommendation-table th:nth-child(2),
+.recommendation-table td:nth-child(2) {
+  text-align: center;
+  padding-right: 80px;;
+}
+
+.recommendation-table th:last-child,
+.recommendation-table td:last-child {
+  text-align: left;
+  padding-left: 150px;
+  padding-right: 40px;
+}
+
+
 
 .recommendation-table tbody tr:last-child td {
   border-bottom: none;
@@ -5250,6 +5270,7 @@ body[data-role="Manager"] a[href="#context-events"] {
 .recommendation-table .recommendation-badge {
   display: inline-flex;
   align-items: center;
+  min-width: 150px;
   max-width: 100%;
   padding: 6px 10px;
   border-radius: 6px;

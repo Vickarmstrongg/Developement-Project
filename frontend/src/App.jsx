@@ -1090,7 +1090,6 @@ function App() {
                     <th>Business</th>
                     <th>Traffic status</th>
                     <th>Recommendation</th>
-                    <th>Last updated</th>
                   </tr>
                 </thead>
 
@@ -1121,22 +1120,13 @@ function App() {
                             {getRecommendationLabel(v.recommendation)}
                           </span>
                         </td>
-
-                        <td className="recommendation-updated">
-                          {lastUpdated
-                            ? lastUpdated.toLocaleString("en-ZA", {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            })
-                            : "—"}
-                        </td>
                       </tr>
                     );
                   })}
 
                   {filteredRecommendations.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="recommendation-empty">
+                      <td colSpan="3" className="recommendation-empty">
                         No matching recommendations found.
                       </td>
                     </tr>
