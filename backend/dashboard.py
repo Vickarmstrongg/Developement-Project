@@ -22,12 +22,12 @@ router = APIRouter(
 
 DAY_NAMES = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 TIME_PERIODS = (
-    {"label": "07:00–10:00", "start_hour": 7, "end_hour": 10},
-    {"label": "10:00–12:00", "start_hour": 10, "end_hour": 12},
-    {"label": "12:00–14:00", "start_hour": 12, "end_hour": 14},
-    {"label": "14:00–17:00", "start_hour": 14, "end_hour": 17},
-    {"label": "17:00–20:00", "start_hour": 17, "end_hour": 20},
-    {"label": "20:00–22:00", "start_hour": 20, "end_hour": 22},
+    {"label": "07:00-10:00", "start_hour": 7, "end_hour": 10},
+    {"label": "10:00-12:00", "start_hour": 10, "end_hour": 12},
+    {"label": "12:00-14:00", "start_hour": 12, "end_hour": 14},
+    {"label": "14:00-17:00", "start_hour": 14, "end_hour": 17},
+    {"label": "17:00-20:00", "start_hour": 17, "end_hour": 20},
+    {"label": "20:00-22:00", "start_hour": 20, "end_hour": 22},
 )
 
 
@@ -362,7 +362,7 @@ def get_dashboard_overview(
             radar = {
                 "status": "available",
                 "reference_date": latest_date.isoformat(),
-                "reference_period": "12:00–13:00",
+                "reference_period": "12:00-13:00",
                 "vendors_in_view": len(visible_levels),
                 "busy": visible_levels.count("busy"),
                 "normal": visible_levels.count("normal"),

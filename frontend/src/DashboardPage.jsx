@@ -49,13 +49,22 @@ function formatDate(value) {
         year: "numeric",
       });
 }
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDateWithDay(value) {
+  if (!value) return "-";
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return `${WEEKDAYS[parsed.getDay()]} ${parsed.getDate()} ${MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
+}
 
 function TrendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
   return (
     <div className="dashboard-tooltip">
-      <strong>{formatDate(label)}</strong>
+      <strong>{formatDateWithDay(label)}</strong>
       {point.status === "suppressed" ? (
         <span>Transactions hidden for privacy</span>
       ) : (
@@ -304,7 +313,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
           {data && !data.sample_data && !loading && (
             <ReportButton
               title="Dashboard"
-              subtitle={`${formatDate(filters.start_date)} – ${formatDate(filters.end_date)} · ${vendorLabel || "All vendors"}`}
+              subtitle={`${formatDate(filters.start_date)} - ${formatDate(filters.end_date)} · ${vendorLabel || "All vendors"}`}
               reportType="dashboard"
               vendorId={filters.vendor_id}
               periodStart={filters.start_date}
@@ -361,7 +370,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
         </label>
         {data?.date_range?.start && (
           <p className="dashboard-range">
-            Showing {formatDate(data.date_range.start)} – {formatDate(data.date_range.end)}
+            Showing {formatDate(data.date_range.start)} - {formatDate(data.date_range.end)}
           </p>
         )}
       </section>
@@ -449,7 +458,13 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
               value={data.service_outlook?.status === "available"
                 ? data.service_outlook.title.replace("Historically busiest: ", "")
                 : "Unavailable"}
-              detail="Historical, not a forecast"
+              detail={
+                data.service_outlook?.status === "available"
+                  ? "Based on past transactions"
+                  : kpis.status === "no_data"
+                    ? "No transactions in this date range"
+                    : "Too few customers in each time slot to show it (privacy rule)"
+              }
               icon={Clock3}
               tone="red"
               linkProps={cardLink(onDemandForecast, "Demand Forecast")}
@@ -472,8 +487,8 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
                       <CartesianGrid stroke="#dde6e2" strokeDasharray="3 3" />
                       <XAxis
                         dataKey="date"
-                        tickFormatter={formatDate}
-                        minTickGap={25}
+                        tickFormatter={formatDateWithDay}
+                        minTickGap={50}
                         tick={{ fontSize: 10, fill: "#758683" }}
                         tickLine={false}
                         axisLine={{ stroke: "#dfe7e4" }}

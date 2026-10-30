@@ -266,9 +266,9 @@ function App() {
   if (!loggedIn) {
     return (
       <Login
-        onLogin={(user) => {
+          onLogin={(user) => {
           setProfileOpen(false);
-          setView(viewFromHash());
+          navigateTo("dashboard");
           setSessionUser(user);
         }}
       />
