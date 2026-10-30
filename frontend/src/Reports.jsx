@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, ChevronDown, LogOut, RefreshCw } from "lucide-react";
+import { Bell, ChevronDown, LogOut } from "lucide-react";
 import { apiFetch } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
@@ -17,9 +17,9 @@ function formatWhen(value) {
     return Number.isNaN(date.getTime())
         ? value
         : date.toLocaleString("en-ZA", {
-              dateStyle: "medium",
-              timeStyle: "short",
-          });
+            dateStyle: "medium",
+            timeStyle: "short",
+        });
 }
 
 function formatDay(value) {
@@ -28,10 +28,10 @@ function formatDay(value) {
     return Number.isNaN(date.getTime())
         ? value
         : date.toLocaleDateString("en-ZA", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-          });
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
 }
 
 function formatPeriod(start, end) {
@@ -45,7 +45,6 @@ function Reports({ currentUser, onNavigate, onLogout }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
-    const [reloadKey, setReloadKey] = useState(0);
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef(null);
 
@@ -55,8 +54,8 @@ function Reports({ currentUser, onNavigate, onLogout }) {
         user.role === "Admin"
             ? "All exports"
             : user.role === "Manager"
-              ? "Exports for your businesses"
-              : "Your exports";
+                ? "Exports for your businesses"
+                : "Your exports";
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -98,7 +97,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
 
         load();
         return () => controller.abort();
-    }, [reloadKey]);
+    }, []);
 
     const types = [
         ...new Map(
@@ -167,14 +166,15 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                     <div className="page-heading">
                         <h1>Reports</h1>
                         <p>
-                            A record of reports exported from Byte &amp; Bite: who exported what, and when.
+                            A record of reports exported from Byte &amp; Bite: who exported what and when.
                         </p>
                     </div>
 
-                    <section className="panel context-events-panel">
-                        <div className="context-events-toolbar">
+                    <section className="panel reports-panel">
+                        <div className="reports-toolbar">
                             <h2>{heading}</h2>
-                            <div className="context-events-controls">
+
+                            <div className="reports-controls">
                                 <label>
                                     Report
                                     <select
@@ -189,41 +189,33 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                                         ))}
                                     </select>
                                 </label>
-                                <button
-                                    type="button"
-                                    className="btn-ghost"
-                                    onClick={() => setReloadKey((key) => key + 1)}
-                                    disabled={loading}
-                                >
-                                    <RefreshCw size={14} /> Refresh
-                                </button>
                             </div>
                         </div>
 
                         {error && (
-                            <div className="context-events-state" role="alert">
+                            <div className="reports-state" role="alert">
                                 {error}
                             </div>
                         )}
 
                         {loading && !error && (
-                            <div className="context-events-state" role="status">
+                            <div className="reports-state" role="status">
                                 Loading reports…
                             </div>
                         )}
 
                         {!loading && !error && visible.length === 0 && (
-                            <div className="context-events-state" role="status">
+                            <div className="reports-state" role="status">
                                 No exports have been recorded yet.
                             </div>
                         )}
 
                         {!loading && !error && visible.length > 0 && (
-                            <div className="context-events-table-wrap">
-                                <table className="context-events-table">
+                            <div className="reports-table-wrap">
+                                <table className="reports-table">
                                     <thead>
                                         <tr>
-                                            <th align="left">When</th>
+                                            <th align="left">Date & Time</th>
                                             <th align="left">Report</th>
                                             <th align="left">Business</th>
                                             <th align="left">Period</th>

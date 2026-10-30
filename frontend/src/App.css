@@ -5421,3 +5421,141 @@ body[data-role="Manager"] a[href="#context-events"] {
 .business-search-toggle:hover {
   color: #243c36;
 }
+
+/* Reports Page css */
+
+.reports-panel {
+    min-width: 0;
+    padding: 18px;
+}
+
+.reports-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.reports-toolbar h2 {
+    margin: 0;
+    color: #173f40;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.reports-controls {
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+}
+
+.reports-controls label {
+    display: grid;
+    flex: 0 1 155px;
+    min-width: 125px;
+    gap: 6px;
+    color: #64736e;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.reports-controls select {
+    width: 100%;
+    min-height: 36px;
+    padding: 0 10px;
+    border: 1px solid #dce5e0;
+    border-radius: 6px;
+    background: #fff;
+    color: #263d39;
+    font-size: 12px;
+}
+
+.reports-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e4ebe7;
+    border-radius: 7px;
+}
+
+.reports-table {
+    width: 100%;
+    min-width: 850px;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.reports-table th,
+.reports-table td {
+    padding: 11px 10px;
+    border-bottom: 1px solid #e8eeeb;
+    text-align: left;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+}
+
+.reports-table th {
+    background: #f4f7f5;
+    color: #53645e;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.reports-table td {
+    color: #354a44;
+    line-height: 1.5;
+}
+
+.reports-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.reports-table tbody tr:hover {
+    background: #f8faf9;
+}
+
+.reports-table th:nth-child(1),
+.reports-table td:nth-child(1) {
+    width: 18%;
+}
+
+.reports-table th:nth-child(2),
+.reports-table td:nth-child(2) {
+    width: 20%;
+}
+
+.reports-table th:nth-child(3),
+.reports-table td:nth-child(3) {
+    width: 20%;
+}
+
+.reports-table th:nth-child(4),
+.reports-table td:nth-child(4) {
+    width: 20%;
+}
+
+.reports-table th:nth-child(5),
+.reports-table td:nth-child(5) {
+    width: 16%;
+}
+
+.reports-table th:nth-child(6),
+.reports-table td:nth-child(6) {
+    width: 11%;
+}
+
+.reports-state {
+    padding: 35px 20px;
+    color: #788780;
+    font-size: 13px;
+    text-align: center;
+}
+
+.reports-state[role="alert"] {
+    color: #a94442;
+}
