@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import logo from "./assets/Logo.png";
 import "./Login.css";
@@ -7,9 +7,15 @@ import { apiFetch } from "./api";
 // Opened from the invite / reset email: /set-password?token=...
 function SetPassword() {
     
-const [token, setToken] = useState(
+const [token,] = useState(
     () => new URLSearchParams(window.location.search).get("token") || ""
 );
+
+useEffect(() => {
+    if(window.location.search) {
+        window.history.replaceState(null, "", window.location.pathname);
+        }
+    }, []);
 
 
     const [password, setPassword] = useState("");
@@ -25,10 +31,6 @@ const [token, setToken] = useState(
         event.preventDefault();
         setError("");
         
-        if (!token.trim()) {
-            setError("Please enter your invitation token.");
-            return;
-        }
 
         if (password.length < 8) {
             setError("Password must be at least 8 characters long.");
@@ -76,8 +78,10 @@ const [token, setToken] = useState(
 {!token ? (
                     <>
                         <div className="login-heading">
-                            <h2>Link not valid</h2>
-                            <p>This link is missing its token. Ask your Admin to send a new invite.</p>
+                            <h2>Open the link from your email</h2>
+                            <p>This page can only be opened from the link in your invite or
+                                reset email. Open that email and click the link again. If it
+                                has expired, ask your Admin for a new invite.</p>
                         </div>
                         <button
                             type="button"
@@ -111,24 +115,8 @@ const [token, setToken] = useState(
                         </div>
 
                         <form onSubmit={handleSubmit}>
-                            <div className="login-field">
-                                <label htmlFor="invite-token">Invitation token</label>
-
-                                    <div className="input-wrapper">
-                                        <Lock size={17} />
-
-                                        <input
-                                            id="invite-token"
-                                            type="text"
-                                            placeholder="Enter your invitation token"
-                                            value={token}
-                                            onChange={(e) => setToken(e.target.value)}
-                                            autoComplete="off"
-                                            disabled={loading}
-                                            required
-                                        />
-                                    </div>
-
+                            <div className="login-field"> 
+                               
                                 <label htmlFor="new-password">New password</label>
                                 <div className="input-wrapper">
                                     <Lock size={17} />
