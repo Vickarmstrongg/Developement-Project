@@ -918,7 +918,7 @@ body,
   width: 100%;
   min-width: 0;
   height: 40px;
-  padding: 0 29px 0 34px;
+  padding: 0 29px 0 12px;
   appearance: none;
   border: 1px solid #dfe7e5;
   border-radius: 7px;

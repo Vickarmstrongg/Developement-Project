@@ -574,11 +574,9 @@ function FairComparison({
 
                             <div className="fair-filter-panel">
                                 <div className="fair-filter-field fair-business-field">
-                                    <label htmlFor="fair-business-select">Business</label>
+                                    <label htmlFor="fair-business-select">Vendor</label>
 
-                                    <div className="fair-select-wrap">
-                                        <Store size={18} />
-
+                                    <div className="fair-select-wrap">                                    
                                         <select
                                             id="fair-business-select"
                                             value={vendorId}
@@ -614,8 +612,6 @@ function FairComparison({
                                     <label htmlFor="fair-period-select">Period</label>
 
                                     <div className="fair-select-wrap">
-                                        <CalendarDays size={18} />
-
                                         <select
                                             id="fair-period-select"
                                             value={periodMode}
