@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from datetime import date
 from typing import Optional
+import logging
 
 import database
 import models
@@ -47,9 +48,12 @@ app = FastAPI(
 )
 
 if performance_logging_enabled():
+    perf_logger = logging.getLogger("bytebite.performance")
+    perf_logger.setLevel(logging.INFO)
+    perf_logger.addHandler(logging.StreamHandler())
     install_sqlalchemy_timing(database.engine)
     app.add_middleware(PerformanceMiddleware)
-
+    
 app.include_router(context_events.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
