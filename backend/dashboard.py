@@ -1,3 +1,4 @@
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -29,6 +30,27 @@ TIME_PERIODS = (
     {"label": "17:00-20:00", "start_hour": 17, "end_hour": 20},
     {"label": "20:00-22:00", "start_hour": 20, "end_hour": 22},
 )
+# Keeps finished dashboard answers in memory for a few minutes
+CACHE_SECONDS = 300
+CACHE_MAX_ENTRIES = 200
+_overview_cache: dict[tuple, tuple[float, dict]] = {}
+
+
+def _cache_get(key):
+    entry = _overview_cache.get(key)
+    if entry is None:
+        return None
+    saved_at, payload = entry
+    if time.monotonic() - saved_at > CACHE_SECONDS:
+        _overview_cache.pop(key, None)
+        return None
+    return payload
+
+
+def _cache_set(key, payload):
+    if len(_overview_cache) >= CACHE_MAX_ENTRIES:
+        _overview_cache.pop(next(iter(_overview_cache)), None)
+    _overview_cache[key] = (time.monotonic(), payload)
 
 
 def _can_view_revenue(user: models.User) -> bool:
@@ -59,8 +81,8 @@ def _base_query(
         db.query(models.Transaction)
         .join(models.Vendor, models.Vendor.vendor_id == models.Transaction.vendor_id)
         .filter(
-            func.date(models.Transaction.datetime) >= start_date,
-            func.date(models.Transaction.datetime) <= end_date,
+            models.Transaction.datetime >= start_date,
+            models.Transaction.datetime < end_date + timedelta(days=1),
         )
     )
     if vendor_id is not None:
@@ -173,6 +195,17 @@ def get_dashboard_overview(
         )
 
     accessible_vendor_ids = _accessible_vendor_ids(current_user)
+    cache_key = (
+        _can_view_revenue(current_user),
+        None if accessible_vendor_ids is None else tuple(sorted(accessible_vendor_ids)),
+        start_date,
+        end_date,
+        vendor_id,
+        vendor_type,
+    )
+    cached_payload = _cache_get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
     transaction_scope = db.query(models.Transaction)
     if accessible_vendor_ids is not None:
         transaction_scope = transaction_scope.filter(
@@ -428,7 +461,7 @@ def get_dashboard_overview(
             .scalar()
         )
 
-    return {
+    payload = {
         "sample_data": False,
         "access_mode": "authenticated",
         "date_range": {
@@ -460,3 +493,5 @@ def get_dashboard_overview(
             "notice": None,
         },
     }
+    _cache_set(cache_key, payload)
+    return payload

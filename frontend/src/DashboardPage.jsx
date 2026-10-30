@@ -21,7 +21,8 @@ import {
 } from "recharts";
 import { apiFetch, getStoredUser } from "./api";
 import ReportButton from "./ReportButton";
-
+// Remembers dashboard results while the app is open, so returning to the tab is instant
+const dashboardCache = new Map();
 function formatNumber(value) {
   return typeof value === "number" && Number.isFinite(value)
     ? value.toLocaleString("en-ZA", { maximumFractionDigits: 0 })
@@ -205,6 +206,11 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
       return undefined;
     }
 
+    // Keyed by user too, so one person's data is never shown to another
+    const cacheKey = `${getStoredUser()?.email || ""}|${query}`;
+    const cached = dashboardCache.get(cacheKey);
+    if (cached) setData(cached);
+
     const controller = new AbortController();
     async function loadDashboard() {
       setLoading(true);
@@ -218,6 +224,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
         if (!response.ok) {
           throw new Error(result.detail || `Could not load dashboard (${response.status}).`);
         }
+        dashboardCache.set(cacheKey, result);
         setData(result);
         if (!filters.start_date && !filters.end_date && result.date_range?.start) {
           const defaults = new URLSearchParams({
