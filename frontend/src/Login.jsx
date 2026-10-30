@@ -114,12 +114,7 @@ function Login({ onLogin }) {
                         </a>
                     </div>
                     
-                    <div className="login-options">
-                        <a href="/set-password">
-                             Create Account : with invite
-                        </a>
-                    </div>
-
+                   
                     <button
                         type="submit"
                         className="login-button"
