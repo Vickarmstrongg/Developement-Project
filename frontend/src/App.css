@@ -2537,17 +2537,6 @@ body,
   font-size: 12px;
 }
 
-.dashboard-refresh {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.dashboard-refresh:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
 .dashboard-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(190px, auto);

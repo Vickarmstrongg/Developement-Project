@@ -3,7 +3,6 @@ import {
   AlertCircle,
   CalendarDays,
   Clock3,
-  RefreshCw,
   Store,
   TrendingUp,
   Users,
@@ -309,14 +308,6 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
           <p>Your overview of student food demand and vendor performance.</p>
         </div>
         <div className="dashboard-heading-actions">
-          <button
-            className="btn-ghost dashboard-refresh"
-            type="button"
-            onClick={() => setRefreshKey((key) => key + 1)}
-            disabled={loading}
-          >
-            <RefreshCw size={15} /> Refresh
-          </button>
           {data && !data.sample_data && !loading && (
             <ReportButton
               title="Dashboard"
