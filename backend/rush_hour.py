@@ -70,11 +70,12 @@ def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
     else:
         level = "normal"
 
-    recommendation = None
     if level == "quiet":
-        recommendation = "Consider a promotion to lift traffic during this period."
+        recommendation = "increase"
     elif level == "busy":
-        recommendation = "Avoid discounts - this period is already at or above normal capacity."
+        recommendation = "decrease"
+    else:
+        recommendation = "hold"
 
     return {
         "status": "ok",
@@ -180,11 +181,12 @@ def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
         else:
             level = "normal"
 
-        recommendation = None
         if level == "quiet":
-            recommendation = "Consider a promotion to lift traffic during this period."
+            recommendation = "increase"
         elif level == "busy":
-            recommendation = "Avoid discounts - this period is already at or above normal capacity."
+            recommendation = "decrease"
+        else:
+            recommendation = "hold"
 
         results[vid] = {
             "status": "ok", "level": level,

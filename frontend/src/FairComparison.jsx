@@ -955,7 +955,19 @@ function FairComparison({
 
                                         {dailyTrend.length > 0 ? (
                                             <>
+                                                {periodMode !== "day" && (
+                                                    <div className="fair-trend-legend">
+                                                        <span>
+                                                            <span className="fair-legend-line fair-legend-venue" />
+                                                            Your business
+                                                        </span>
 
+                                                        <span>
+                                                            <span className="fair-legend-line fair-legend-peer" />
+                                                            {groupName}
+                                                        </span>
+                                                    </div>
+                                                )}
 
                                                 <div className="fair-trend-chart">
                                                     {periodMode === "day" ? (
@@ -1011,7 +1023,7 @@ function FairComparison({
                                                                                 className="fair-chart-day"
                                                                             >
                                                                                 {bar.label === "Your venue"
-                                                                                    ? "Your venue"
+                                                                                    ? "Your business"
                                                                                     : "Peer average"}
                                                                             </text>
                                                                         </g>

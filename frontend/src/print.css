@@ -1,4 +1,3 @@
-
 .report-heading {
     display: flex;
     flex-wrap: wrap;
@@ -32,8 +31,6 @@
 .report-button:hover {
     background: #2d9088;
 }
-
-
 
 .fair-page-heading .report-button {
   align-self: flex-start;
@@ -146,13 +143,24 @@
         padding: 4px 6px;
     }
 
-  /* ---------- Demand Forecast ---------- */
+  /* ---------- Historical Comparison - Demand Forecast ---------- */
   .summary-card,
   .forecast-card,
   .forecast-chart {
     box-shadow: none;
     break-inside: avoid;
   }
+
+
+  .historical-comparison-card {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .historical-comparison-card .table-scroll {
+    overflow: visible;
+  }
+
 
   /* ---------- Fair Comparison ---------- */
   .fair-filter-panel {

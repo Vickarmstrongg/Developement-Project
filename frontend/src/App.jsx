@@ -3,6 +3,8 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  Search,
+  Clock3,
 } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -79,6 +81,18 @@ const LEVEL_LABELS = {
   busy: "Busy",
 };
 
+const RECOMMENDATION_LABELS = {
+  increase: "Increase discount",
+  decrease: "Decrease discount",
+  hold: "Hold discount",
+};
+
+function getRecommendationLabel(recommendation) {
+  return RECOMMENDATION_LABELS[
+    (recommendation || "").toLowerCase()
+  ] || "No recommendation";
+}
+
 function TrackpadMapPan() {
   const map = useMap();
 
@@ -150,14 +164,23 @@ function App() {
   const [day, setDay] = useState(4);
   const [hour, setHour] = useState(12);
   const [typeId, setTypeId] = useState("");
+
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [recommendationPage, setRecommendationPage] = useState(1);
   const recommendationsPerPage = 15;
 
+  const [recommendationSearch, setRecommendationSearch] = useState("");
+  const [businessSearchText, setBusinessSearchText] = useState("");
+  const [businessDropdownOpen, setBusinessDropdownOpen] = useState(false);
+  const [recommendationType, setRecommendationType] = useState("all");
+
   const [profileOpen, setProfileOpen] = useState(false);
 
+
   const profileRef = useRef(null);
+  const businessSearchRef = useRef(null);
 
   const currentUser = {
     ...sessionUser,
@@ -193,6 +216,29 @@ function App() {
       document.removeEventListener(
         "mousedown",
         handleClickOutside
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleBusinessClickOutside(event) {
+      if (
+        businessSearchRef.current &&
+        !businessSearchRef.current.contains(event.target)
+      ) {
+        setBusinessDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleBusinessClickOutside
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleBusinessClickOutside
       );
     };
   }, []);
@@ -237,8 +283,17 @@ function App() {
     }
 
     apiFetch(url)
-      .then((res) => res.json())
-      .then((data) => setVendors(data.vendors || []))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch rush hour radar data");
+        }
+
+        return res.json();
+      })
+      .then((data) => {
+        setVendors(data.vendors || []);
+        setLastUpdated(new Date());
+      })
       .catch((err) =>
         console.error("Error fetching rush hour radar:", err)
       )
@@ -247,7 +302,7 @@ function App() {
 
   useEffect(() => {
     setRecommendationPage(1);
-  }, [day, hour, typeId]);
+  }, [day, hour, typeId, vendors]);
 
 
   function handleLogout() {
@@ -260,9 +315,9 @@ function App() {
   if (window.location.pathname === "/set-password") {
     return <SetPassword />;
   }
-   if (window.location.pathname === "/forgot-password") {
-     return <ForgotPassword />;
-   }
+  if (window.location.pathname === "/forgot-password") {
+    return <ForgotPassword />;
+  }
   if (!loggedIn) {
     return (
       <Login
@@ -281,6 +336,7 @@ function App() {
         vendorId={evidenceDetails.vendorId}
         vendorName={evidenceDetails.vendorName}
         selectedDate={evidenceDetails.selectedDate}
+        metric={evidenceDetails.metric}
         onBack={() => navigateTo("demand")}
         onLogout={handleLogout}
         onDashboard={() => navigateTo("dashboard")}
@@ -405,9 +461,9 @@ function App() {
                 </button>
 
                 {profileOpen && (
-                    <div className="profile-dropdown">
-                      <UsersLink />
-                      <button
+                  <div className="profile-dropdown">
+                    <UsersLink />
+                    <button
                       className="logout-option"
                       onClick={handleLogout}
                     >
@@ -431,21 +487,50 @@ function App() {
     );
   }
 
-  const recommendations = vendors.filter(
-    (v) => v.recommendation
+  const recommendations = vendors.filter((v) =>
+    ["increase", "decrease", "hold"].includes(
+      (v.recommendation || "").toLowerCase()
+    )
   );
 
+  const filteredRecommendations = recommendations.filter((v) => {
+    const matchesBusiness = (v.name || "")
+      .toLowerCase()
+      .includes(recommendationSearch.toLowerCase());
+
+    const recommendationKind = (
+      v.recommendation || ""
+    ).toLowerCase();
+
+    const matchesType =
+      recommendationType === "all" ||
+      recommendationKind === recommendationType;
+
+    return matchesBusiness && matchesType;
+  });
+
   const totalRecommendationPages = Math.ceil(
-    recommendations.length / recommendationsPerPage
+    filteredRecommendations.length / recommendationsPerPage
   );
 
   const startIndex =
     (recommendationPage - 1) * recommendationsPerPage;
 
-  const sortedRecommendations = [...recommendations].sort(
+  const TRAFFIC_ORDER = {
+    quiet: 1,
+    busy: 2,
+    normal: 3,
+  };
+
+  const sortedRecommendations = [...filteredRecommendations].sort(
     (a, b) => {
-      const priority = (v) => v.level === "quiet" ? 1 : 2;
-      return priority(a) - priority(b);
+      const levelA = (a.level || "").toLowerCase();
+      const levelB = (b.level || "").toLowerCase();
+
+      return (
+        (TRAFFIC_ORDER[levelA] || 99) -
+        (TRAFFIC_ORDER[levelB] || 99)
+      );
     }
   );
 
@@ -453,6 +538,7 @@ function App() {
     startIndex,
     startIndex + recommendationsPerPage
   );
+
 
   const busyCount = vendors.filter(
     (v) => v.level === "busy"
@@ -462,8 +548,10 @@ function App() {
     (v) => v.level === "quiet"
   ).length;
 
-  const recCount = vendors.filter(
-    (v) => v.recommendation
+  const recCount = vendors.filter((v) =>
+    ["increase", "decrease"].includes(
+      (v.recommendation || "").toLowerCase()
+    )
   ).length;
 
   return (
@@ -593,11 +681,11 @@ function App() {
                 ))}
               </select>
               {!loading && vendors.length > 0 && (
-              <ReportButton
-                title="Rush Hour Radar"
-                subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
-                reportType="rush_hour_radar"
-              />
+                <ReportButton
+                  title="Rush Hour Radar"
+                  subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
+                  reportType="rush_hour_radar"
+                />
               )}
             </div>
           </div>
@@ -737,7 +825,7 @@ function App() {
 
                             <br />
 
-                            {v.recommendation}
+                            {getRecommendationLabel(v.recommendation)}
                           </>
                         )}
                       </Popup>
@@ -829,8 +917,9 @@ function App() {
                         </div>
 
                         <div className="pulse-meta">
-                          {v.recommendation ||
-                            "No action needed"}
+                          {v.status === "suppressed"
+                            ? "Insufficient data to make a recommendation"
+                            : getRecommendationLabel(v.recommendation)}
                         </div>
                       </div>
 
@@ -863,61 +952,195 @@ function App() {
                       </span>
                     </div>
                   ))}
-
               </div>
             </div>
-
           </div>
 
           <div className="panel recs-panel">
-            <h3>Auto-generated recommendations</h3>
-
-            <p className="panel-sub">
-              Shown only when a recurring pattern crosses the threshold
-            </p>
-
-            {recommendations.length === 0 && (
-              <p className="loading-text">
-                No recommendations for this day/hour.
+            <div className="recommendations-heading">
+              <h3>Auto-generated recommendations</h3>
+              <p>
+                Shown when a recurring traffic pattern crosses the quiet or busy threshold.
               </p>
-            )}
+            </div>
 
-            {visibleRecommendations
-              .map((v) => (
+            <div className="recommendation-filters">
+              <div className="recommendation-filter">
+                <label htmlFor="recommendation-search">Business</label>
+
                 <div
-                  className={`rec-row ${v.level}`}
-                  key={v.vendor_id}
+                  className="recommendation-search"
+                  ref={businessSearchRef}
+                  onClick={() => setBusinessDropdownOpen(true)}
                 >
-                  <div>
-                    <strong>{v.name}</strong>
+                  <Search size={18} aria-hidden="true" />
 
-                    <div className="pulse-meta">
-                      {v.recommendation}
+                  <input
+                    id="recommendation-search"
+                    type="text"
+                    placeholder="Search or select a business"
+                    value={recommendationSearch}
+                    autoComplete="off"
+                    onFocus={() => setBusinessDropdownOpen(true)}
+                    onChange={(e) => {
+                      setBusinessSearchText(e.target.value);
+                      setRecommendationSearch(e.target.value);
+                      setRecommendationPage(1);
+                      setBusinessDropdownOpen(true);
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    className="business-search-toggle"
+                    aria-label="Show businesses"
+                    aria-expanded={businessDropdownOpen}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBusinessDropdownOpen((open) => !open);
+                    }}
+                  >
+                    <ChevronDown size={18} aria-hidden="true" />
+                  </button>
+
+                  {businessDropdownOpen && (
+                    <div className="business-search-dropdown">
+                      <button
+                        type="button"
+                        className="business-search-option"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRecommendationSearch("");
+                          setBusinessSearchText("");
+                          setRecommendationPage(1);
+                          setBusinessDropdownOpen(false);
+                        }}
+                      >
+                        All businesses
+                      </button>
+
+                      {[...new Set(
+                        recommendations
+                          .map((v) => v.name)
+                          .filter(Boolean)
+                      )]
+                        .sort((a, b) => a.localeCompare(b))
+                        .filter((name) =>
+                          name.toLowerCase().includes(
+                            businessSearchText.toLowerCase()
+                          )
+                        )
+                        .map((name) => (
+                          <button
+                            type="button"
+                            className="business-search-option"
+                            key={name}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRecommendationSearch(name);
+                              setBusinessSearchText("");
+                              setRecommendationPage(1);
+                              setBusinessDropdownOpen(false);
+                            }}
+                          >
+                            {name}
+                          </button>
+                        ))}
                     </div>
-                  </div>
-
-                  <div className="rec-actions">
-                    <span className="recommendation-label">
-                      {v.level === "quiet"
-                        ? "Run promotion"
-                        : "Hold pricing"}
-                    </span>
-
-                    <span className="recommendation-label dismiss-label">
-                      Dismiss
-                    </span>
-                  </div>
+                  )}
                 </div>
-              ))}
+              </div>
+
+              <div className="recommendation-filter">
+                <label htmlFor="recommendation-type">
+                  Recommendation type
+                </label>
+
+                <select
+                  id="recommendation-type"
+                  value={recommendationType}
+                  onChange={(e) => {
+                    setRecommendationType(e.target.value);
+                    setRecommendationPage(1);
+                  }}
+                >
+                  <option value="all">All recommendation types</option>
+                  <option value="increase">Increase discount</option>
+                  <option value="decrease">Decrease discount</option>
+                  <option value="hold">Hold discount</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="recommendation-count-row">
+              <span>
+                Showing <strong>{filteredRecommendations.length}</strong> recommendations
+              </span>
+
+              <span className="recommendation-sort-label">
+                <Clock3 size={16} />
+                Quiet businesses shown first
+              </span>
+            </div>
+
+            <div className="recommendation-table-wrapper">
+              <table className="recommendation-table">
+                <thead>
+                  <tr>
+                    <th>Business</th>
+                    <th>Traffic status</th>
+                    <th>Recommendation</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {visibleRecommendations.map((v) => {
+                    const recommendationKind = (
+                      v.recommendation || ""
+                    ).toLowerCase();
+
+                    const status =
+                      v.status === "suppressed"
+                        ? "Insufficient data"
+                        : (LEVEL_LABELS[v.level] || "Normal");
+
+                    return (
+                      <tr key={v.vendor_id}>
+                        <td className="recommendation-business">{v.name}</td>
+
+                        <td>
+                          <span className={`traffic-status ${v.level}`}>
+                            <span className="traffic-status-dot" />
+                            {status}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={`recommendation-badge ${recommendationKind}`}>
+                            {getRecommendationLabel(v.recommendation)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {filteredRecommendations.length === 0 && (
+                    <tr>
+                      <td colSpan="3" className="recommendation-empty">
+                        No matching recommendations found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {totalRecommendationPages > 1 && (
               <div className="recommendation-pagination">
                 <button
                   type="button"
                   disabled={recommendationPage === 1}
-                  onClick={() =>
-                    setRecommendationPage((page) => page - 1)
-                  }
+                  onClick={() => setRecommendationPage((page) => page - 1)}
                 >
                   Previous
                 </button>
@@ -928,19 +1151,14 @@ function App() {
 
                 <button
                   type="button"
-                  disabled={
-                    recommendationPage === totalRecommendationPages
-                  }
-                  onClick={() =>
-                    setRecommendationPage((page) => page + 1)
-                  }
+                  disabled={recommendationPage === totalRecommendationPages}
+                  onClick={() => setRecommendationPage((page) => page + 1)}
                 >
                   Next
                 </button>
               </div>
             )}
           </div>
-
         </div>
       </main>
     </div>
