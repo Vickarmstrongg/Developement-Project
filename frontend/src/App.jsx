@@ -462,7 +462,7 @@ function App() {
 
                 {profileOpen && (
                   <div className="profile-dropdown">
-                    <UsersLink />
+                  
                     <button
                       className="logout-option"
                       onClick={handleLogout}
@@ -606,7 +606,7 @@ function App() {
 
               {profileOpen && (
                 <div className="profile-dropdown">
-                  <UsersLink />
+                  
                   <button
                     className="logout-option"
                     onClick={handleLogout}
