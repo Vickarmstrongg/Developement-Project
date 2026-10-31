@@ -9,6 +9,7 @@ import {
   Users,
   Utensils,
   Wallet,
+  ChevronDown,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -194,6 +195,8 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [printing, setPrinting] = useState(false);
   const skipDefaultRequest = useRef(null);
+  const [vendorSearch, setVendorSearch] = useState("");
+  const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -257,6 +260,12 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
         (vendor) => String(vendor.vendor_type_id) === filters.vendor_type
       )
     : options.vendors;
+  const selectedVendorName = filters.vendor_id
+    ? vendors.find((vendor) => String(vendor.id) === filters.vendor_id)?.name || ""
+    : "";
+  const filteredVendors = vendors.filter((vendor) =>
+    (vendor.name || "").toLowerCase().includes(vendorSearch.toLowerCase())
+  );
   const kpis = data?.kpis || {};
   const vendorLabel = filters.vendor_id
     ? vendors.find((vendor) => String(vendor.id) === filters.vendor_id)?.name
@@ -303,11 +312,130 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
 
   return (
     <div className="dashboard-page page-content">
-      <div className="dashboard-heading-row">
+       <div className="dashboard-heading-row">
         <div className="page-heading">
           <h1>Dashboard</h1>
           <p>Your overview of student food demand and vendor performance.</p>
         </div>
+
+        <div className="fair-filter-panel" aria-label="Dashboard filters">
+          <div className="fair-filter-field fair-date-field">
+            <label htmlFor="dashboard-start-date">Start date</label>
+            <input
+              id="dashboard-start-date"
+              type="date"
+              value={filters.start_date}
+              max={filters.end_date || undefined}
+              onChange={(event) => changeFilter("start_date", event.target.value)}
+            />
+          </div>
+
+          <div className="fair-filter-field fair-date-field">
+            <label htmlFor="dashboard-end-date">End date</label>
+            <input
+              id="dashboard-end-date"
+              type="date"
+              value={filters.end_date}
+              min={filters.start_date || undefined}
+              onChange={(event) => changeFilter("end_date", event.target.value)}
+            />
+          </div>
+
+          <div className="fair-filter-field fair-period-field">
+            <label htmlFor="dashboard-vendor-type">Vendor type</label>
+
+            <div className="fair-select-wrap">
+              <select
+                id="dashboard-vendor-type"
+                value={filters.vendor_type}
+                onChange={(event) => changeFilter("vendor_type", event.target.value)}
+              >
+                <option value="">All vendor types</option>
+                {options.vendor_types.map((type) => (
+                  <option key={type.id} value={type.id}>{type.name}</option>
+                ))}
+              </select>
+
+              <ChevronDown size={16} className="fair-select-chevron" />
+            </div>
+          </div>
+
+          <div className="fair-filter-field fair-business-field">
+            <label htmlFor="dashboard-vendor-select">Vendor</label>
+
+            <div className="fair-select-wrap">
+              <input
+                id="dashboard-vendor-select"
+                type="text"
+                placeholder="Search vendors..."
+                value={
+                  vendorDropdownOpen
+                    ? vendorSearch
+                    : selectedVendorName || "All vendors"
+                }
+                onFocus={() => {
+                  setVendorSearch("");
+                  setVendorDropdownOpen(true);
+                }}
+                onBlur={() => setVendorDropdownOpen(false)}
+                onChange={(event) => {
+                  setVendorSearch(event.target.value);
+                  setVendorDropdownOpen(true);
+                }}
+                autoComplete="off"
+              />
+
+              <ChevronDown size={16} className="fair-select-chevron" />
+
+              {vendorDropdownOpen && (
+                <div
+                  className="business-search-dropdown"
+                  style={{ fontSize: "11px" }}
+                >
+                  {vendorSearch === "" && (
+                    <button
+                      type="button"
+                      className="business-search-option"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        changeFilter("vendor_id", "");
+                        setVendorSearch("");
+                        setVendorDropdownOpen(false);
+                        document.activeElement.blur();
+                      }}
+                    >
+                      All vendors
+                    </button>
+                  )}
+
+                  {filteredVendors.length > 0 ? (
+                    filteredVendors.map((vendor) => (
+                      <button
+                        key={vendor.id}
+                        type="button"
+                        className="business-search-option"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          changeFilter("vendor_id", String(vendor.id));
+                          setVendorSearch("");
+                          setVendorDropdownOpen(false);
+                          document.activeElement.blur();
+                        }}
+                      >
+                        {vendor.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="business-search-empty">
+                      No vendors found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="dashboard-heading-actions">
           {data && !data.sample_data && !loading && (
             <ReportButton
@@ -324,55 +452,11 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
         </div>
       </div>
 
-      <section className="dashboard-filters panel" aria-label="Dashboard filters">
-        <label>
-          Start date
-          <input
-            type="date"
-            value={filters.start_date}
-            max={filters.end_date || undefined}
-            onChange={(event) => changeFilter("start_date", event.target.value)}
-          />
-        </label>
-        <label>
-          End date
-          <input
-            type="date"
-            value={filters.end_date}
-            min={filters.start_date || undefined}
-            onChange={(event) => changeFilter("end_date", event.target.value)}
-          />
-        </label>
-        <label>
-          Vendor type
-          <select
-            value={filters.vendor_type}
-            onChange={(event) => changeFilter("vendor_type", event.target.value)}
-          >
-            <option value="">All vendor types</option>
-            {options.vendor_types.map((type) => (
-              <option key={type.id} value={type.id}>{type.name}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Vendor
-          <select
-            value={filters.vendor_id}
-            onChange={(event) => changeFilter("vendor_id", event.target.value)}
-          >
-            <option value="">All vendors</option>
-            {vendors.map((vendor) => (
-              <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
-            ))}
-          </select>
-        </label>
-        {data?.date_range?.start && (
-          <p className="dashboard-range">
-            Showing {formatDate(data.date_range.start)} - {formatDate(data.date_range.end)}
-          </p>
-        )}
-      </section>
+      {data?.date_range?.start && (
+        <p className="dashboard-range">
+          Showing {formatDate(data.date_range.start)} - {formatDate(data.date_range.end)}
+        </p>
+      )}
 
       {data?.access_mode === "local_preview" && (
         <div className="dashboard-preview-notice" role="status">

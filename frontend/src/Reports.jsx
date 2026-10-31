@@ -245,7 +245,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                                                     {TYPE_TO_VIEW[row.report_type] && (
                                                         <button
                                                             type="button"
-                                                            className="btn-ghost"
+                                                            className="open-report-button"
                                                             title="Opens the live page. Figures may have changed since this export."
                                                             onClick={() =>
                                                                 onNavigate(

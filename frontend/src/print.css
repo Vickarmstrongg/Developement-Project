@@ -32,12 +32,19 @@
     background: #2d9088;
 }
 
+.rush-page-header .report-button,
+.demand-page-header .report-button,
 .fair-page-heading .report-button,
-.rush-page-header .report-button {
+.dashboard-heading-actions .report-button {
   align-self: flex-start;
-  margin-top: 20px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  justify-content: center;
+  width: 118px;
   height: 40px;
-  padding: 0 16px;
+  margin-top: 20px;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 
 .report-header {

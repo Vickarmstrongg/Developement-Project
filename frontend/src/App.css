@@ -897,6 +897,7 @@ body,
   color: #536665;
   font-size: 11px;
   font-weight: 600;
+  line-height: 13px;
 }
 
 .fair-select-wrap {
@@ -2524,10 +2525,13 @@ body,
 }
 
 .dashboard-heading-row {
+  flex-wrap: wrap;
   margin-bottom: 18px;
 }
 
 .dashboard-heading-row .page-heading {
+  flex: 1;
+  min-width: 220px;
   margin: 0;
 }
 
@@ -2570,10 +2574,10 @@ body,
 }
 
 .dashboard-range {
-  margin: 0;
+  margin: 0 0 16px;
   color: #607470;
   font-size: 11px;
-  text-align: right;
+  text-align: left;
 }
 
 .dashboard-privacy-notice,
@@ -5505,10 +5509,6 @@ body[data-role="Manager"] a[href="#context-events"] {
     border-bottom: none;
 }
 
-.reports-table tbody tr:hover {
-    background: #f8faf9;
-}
-
 .reports-table th:nth-child(1),
 .reports-table td:nth-child(1) {
     width: 18%;
@@ -5550,6 +5550,26 @@ body[data-role="Manager"] a[href="#context-events"] {
     color: #a94442;
 }
 
+.open-report-button {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #e5f2eb;
+  color: #000000;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.open-report-button:hover {
+  background: #d3ebdf;
+}
+
+.open-report-button:focus-visible {
+  outline: 2px solid #103f40;
+  outline-offset: 2px;
+}
 
 
 /* ---------- Collapsible sidebar ---------- */
