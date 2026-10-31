@@ -93,7 +93,12 @@ function FairComparison({
 
     const [vendors, setVendors] = useState([]);
     const [vendorId, setVendorId] = useState("");
+    const [vendorSearch, setVendorSearch] = useState("");
+    const [debouncedVendorSearch, setDebouncedVendorSearch] = useState("");
+    const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
     const [periodMode, setPeriodMode] = useState("week");
+
+
     const [filterDate, setFilterDate] = useState("");
     const [result, setResult] = useState(null);
     const [contextEvents, setContextEvents] = useState([]);
@@ -137,6 +142,24 @@ function FairComparison({
             onLogout();
         }
     }
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedVendorSearch(vendorSearch);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [vendorSearch]);
+
+    const selectedVendorName =
+        vendors.find((vendor) => String(vendor.vendor_id) === String(vendorId))
+            ?.name || "";
+
+    const filteredVendors = vendors.filter((vendor) =>
+        (vendor.name || "")
+            .toLowerCase()
+            .includes(debouncedVendorSearch.toLowerCase())
+    );
 
 
     useEffect(() => {
@@ -576,35 +599,61 @@ function FairComparison({
                                 <div className="fair-filter-field fair-business-field">
                                     <label htmlFor="fair-business-select">Vendor</label>
 
-                                    <div className="fair-select-wrap">                                    
-                                        <select
+                                    <div className="fair-select-wrap">
+                                        <input
                                             id="fair-business-select"
-                                            value={vendorId}
-                                            onChange={(event) => setVendorId(event.target.value)}
+                                            type="text"
+                                            placeholder={
+                                                loadingVendors ? "Loading vendors..." : "Search vendors..."
+                                            }
+                                            value={vendorDropdownOpen ? vendorSearch : selectedVendorName}
+                                            onFocus={() => {
+                                                setVendorSearch("");
+                                                setDebouncedVendorSearch("");
+                                                setVendorDropdownOpen(true);
+                                            }}
+                                            onBlur={() => setVendorDropdownOpen(false)}
+                                            onChange={(event) => {
+                                                setVendorSearch(event.target.value);
+                                                setVendorDropdownOpen(true);
+                                            }}
                                             disabled={loadingVendors || vendors.length === 0}
-                                        >
-                                            {loadingVendors && (
-                                                <option value="">Loading businesses...</option>
-                                            )}
-
-                                            {!loadingVendors && vendors.length === 0 && (
-                                                <option value="">No businesses available</option>
-                                            )}
-
-                                            {vendors.map((vendor) => (
-                                                <option
-                                                    key={vendor.vendor_id}
-                                                    value={String(vendor.vendor_id)}
-                                                >
-                                                    {vendor.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            autoComplete="off"
+                                        />
 
                                         <ChevronDown
                                             size={16}
                                             className="fair-select-chevron"
                                         />
+
+                                        {vendorDropdownOpen && (
+                                            <div
+                                                className="business-search-dropdown"
+                                                style={{ fontSize: "11px" }}
+                                            >
+                                                {filteredVendors.length > 0 ? (
+                                                    filteredVendors.map((vendor) => (
+                                                        <button
+                                                            key={vendor.vendor_id}
+                                                            type="button"
+                                                            className="business-search-option"
+                                                            onMouseDown={(event) => event.preventDefault()}
+                                                            onClick={() => {
+                                                                setVendorId(String(vendor.vendor_id));
+                                                                setVendorDropdownOpen(false);
+                                                                document.activeElement.blur();
+                                                            }}
+                                                        >
+                                                            {vendor.name}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="business-search-empty">
+                                                        No vendors found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
