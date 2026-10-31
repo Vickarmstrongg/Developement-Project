@@ -623,7 +623,7 @@ function App() {
         <div className="rush-content">
 
           <div className="rush-page-header">
-            <div>
+            <div className="fair-heading-copy">
               <h1>Rush Hour Radar</h1>
 
               <p className="rush-subtitle">
@@ -632,62 +632,99 @@ function App() {
 
             </div>
 
-            <div className="filters">
-              <select
-                value={day}
-                onChange={(e) =>
-                  setDay(Number(e.target.value))
-                }
-              >
-                {DAYS.map((d) => (
-                  <option
-                    key={d.value}
-                    value={d.value}
-                  >
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+            <div className="fair-filter-panel">
+              <div className="fair-filter-field">
+                <label htmlFor="rush-day-select">Day</label>
 
-              <select
-                value={hour}
-                onChange={(e) =>
-                  setHour(Number(e.target.value))
-                }
-              >
-                {MEAL_SLOTS.map((s) => (
-                  <option
-                    key={s.value}
-                    value={s.value}
+                <div className="fair-select-wrap">
+                  <select
+                    id="rush-day-select"
+                    value={day}
+                    onChange={(e) =>
+                      setDay(Number(e.target.value))
+                    }
                   >
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                    {DAYS.map((d) => (
+                      <option
+                        key={d.value}
+                        value={d.value}
+                      >
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
 
-              <select
-                value={typeId}
-                onChange={(e) =>
-                  setTypeId(e.target.value)
-                }
-              >
-                {VENDOR_TYPES.map((t) => (
-                  <option
-                    key={t.value}
-                    value={t.value}
+                  <ChevronDown
+                    size={16}
+                    className="fair-select-chevron"
+                  />
+                </div>
+              </div>
+
+              <div className="fair-filter-field">
+                <label htmlFor="rush-time-select">Time slot</label>
+
+                <div className="fair-select-wrap">
+                  <select
+                    id="rush-time-select"
+                    value={hour}
+                    onChange={(e) =>
+                      setHour(Number(e.target.value))
+                    }
                   >
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              {!loading && vendors.length > 0 && (
-                <ReportButton
-                  title="Rush Hour Radar"
-                  subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
-                  reportType="rush_hour_radar"
-                />
-              )}
+                    {MEAL_SLOTS.map((s) => (
+                      <option
+                        key={s.value}
+                        value={s.value}
+                      >
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown
+                    size={16}
+                    className="fair-select-chevron"
+                  />
+                </div>
+              </div>
+
+              <div className="fair-filter-field">
+                <label htmlFor="rush-type-select">Vendor type</label>
+
+                <div className="fair-select-wrap">
+                  <select
+                    id="rush-type-select"
+                    value={typeId}
+                    onChange={(e) =>
+                      setTypeId(e.target.value)
+                    }
+                  >
+                    {VENDOR_TYPES.map((t) => (
+                      <option
+                        key={t.value}
+                        value={t.value}
+                      >
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown
+                    size={16}
+                    className="fair-select-chevron"
+                  />
+                </div>
+              </div>
             </div>
+
+            {!loading && vendors.length > 0 && (
+              <ReportButton
+                title="Rush Hour Radar"
+                subtitle={`${DAYS.find((d) => d.value === day)?.label} · ${MEAL_SLOTS.find((s) => s.value === hour)?.label} · ${VENDOR_TYPES.find((t) => String(t.value) === String(typeId))?.label}`}
+                reportType="rush_hour_radar"
+              />
+            )}
           </div>
 
           <div className="stat-row">

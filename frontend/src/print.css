@@ -32,7 +32,8 @@
     background: #2d9088;
 }
 
-.fair-page-heading .report-button {
+.fair-page-heading .report-button,
+.rush-page-header .report-button {
   align-self: flex-start;
   margin-top: 20px;
   height: 40px;
