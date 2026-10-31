@@ -656,9 +656,10 @@ input {
 
 .stat-label {
   font-size: 11px;
-  color: #5c6b68;
+  color: #71817e;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.7px;
+  font-weight: 700;
 }
 
 .stat-value {
