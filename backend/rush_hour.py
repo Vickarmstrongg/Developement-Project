@@ -1,8 +1,9 @@
 from sqlalchemy import case, func
-from datetime import timedelta
+from datetime import date, timedelta
 import models
 from privacy import is_suppressed
 from performance import timed_stage
+from reference_date import get_reference_date  # noqa: F401 (capped at today; re-exported)
 import re
 
 def parse_gps(gps_str):
@@ -17,12 +18,6 @@ def parse_gps(gps_str):
 
 QUIET_THRESHOLD = 0.70   # 30% below baseline
 BUSY_THRESHOLD = 1.20    # 20% above baseline
-
-
-def get_reference_date(db):
-    """Use the latest date in the data as 'today', since this is historical synthetic data."""
-    latest = db.query(func.max(models.Transaction.datetime)).scalar()
-    return latest.date()
 
 
 def get_last_n_occurrences(reference_date, day_of_week, n=4):
@@ -51,7 +46,9 @@ def get_vendor_status(db, vendor_id, day_of_week, hour, reference_date):
     counts = {d: 0 for d in dates}
     all_students = set()
     for row in rows:
-        counts[row.d] += 1
+        # SQLite returns date() as text; PostgreSQL returns a date.
+        row_date = row.d if isinstance(row.d, date) else date.fromisoformat(row.d)
+        counts[row_date] += 1
         all_students.add(row.student_id)
 
     if is_suppressed(len(all_students)):
@@ -114,6 +111,12 @@ def get_vendor_size_tiers(db, type_id):
 def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
     """Same calculation as get_vendor_status, but for many vendors in one query.
     Privacy checked against TOTAL distinct students across all 4 weeks combined."""
+    if reference_date is None:
+        # No usable history: nothing to compare, so nothing is shown.
+        return {
+            vid: {"status": "suppressed", "level": None, "student_count": 0}
+            for vid in vendor_ids
+        }
     dates = get_last_n_occurrences(reference_date, day_of_week, n=4)
     transaction_date = func.date(models.Transaction.datetime)
 
@@ -199,6 +202,8 @@ def get_bulk_vendor_status(db, vendor_ids, day_of_week, hour, reference_date):
 def get_weekly_pattern(db, vendor_id, reference_date):
     """Returns the quiet/normal/busy level for every hour of every day, for one vendor."""
     pattern = {}
+    if reference_date is None:
+        return {f"{d}-{h}": "suppressed" for d in range(7) for h in range(24)}
     for day_of_week in range(7):
         for hour in range(24):
             status = get_vendor_status(db, vendor_id, day_of_week, hour, reference_date)

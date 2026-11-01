@@ -12,6 +12,7 @@ from access.deps import get_current_user
 from database import get_db
 from performance import PerformanceJSONResponse, timed_stage
 from privacy import MIN_STUDENTS_THRESHOLD, is_suppressed
+from reference_date import get_reference_date, today_in_app_timezone
 from rush_hour import get_bulk_vendor_status
 
 
@@ -80,6 +81,13 @@ def _get_transaction_date_bounds(transaction_scope):
         func.min(func.date(models.Transaction.datetime)).label("earliest_date"),
     ).one()
     return bounds.latest_date, bounds.earliest_date
+
+
+def _resolve_date_window(start_date, end_date, reference_date, earliest_date):
+    # Analytics never extend past the reference date, even if the caller asks for it.
+    end_date = min(end_date or reference_date, reference_date)
+    start_date = start_date or max(earliest_date, end_date - timedelta(days=6))
+    return start_date, end_date
 
 
 def _base_query(
@@ -211,6 +219,7 @@ def get_dashboard_overview(
     cache_key = (
         _can_view_revenue(current_user),
         None if accessible_vendor_ids is None else tuple(sorted(accessible_vendor_ids)),
+        today_in_app_timezone(),
         start_date,
         end_date,
         vendor_id,
@@ -225,11 +234,17 @@ def get_dashboard_overview(
             models.Transaction.vendor_id.in_(accessible_vendor_ids)
         )
     scope_key = None if accessible_vendor_ids is None else tuple(sorted(accessible_vendor_ids))
-    latest_date, earliest_date = _stable_get(
+    _, earliest_date = _stable_get(
         ("bounds", scope_key),
         lambda: _get_transaction_date_bounds(transaction_scope),
     )
-    if latest_date is None:
+    reference_date = get_reference_date(
+        db,
+        today_provider=lambda: today_in_app_timezone(),
+        scope=transaction_scope,
+    )
+    # No history at all, or every transaction is still in the future.
+    if reference_date is None or earliest_date > reference_date:
         return {
             "sample_data": False,
             "access_mode": "authenticated",
@@ -267,8 +282,9 @@ def get_dashboard_overview(
             },
         }
 
-    end_date = end_date or latest_date
-    start_date = start_date or max(earliest_date, end_date - timedelta(days=6))
+    start_date, end_date = _resolve_date_window(
+        start_date, end_date, reference_date, earliest_date
+    )
     if start_date > end_date:
         raise HTTPException(
             status_code=422,
@@ -359,7 +375,7 @@ def get_dashboard_overview(
     for row in trend_rows:
         suppressed = is_suppressed(row.students)
         point: dict[str, Any] = {
-            "date": row.date.isoformat(),
+            "date": str(row.date),
             "transactions": None if suppressed else int(row.transactions),
             "status": "suppressed" if suppressed else "available",
         }
@@ -395,13 +411,13 @@ def get_dashboard_overview(
         "reason": "No vendors have transactions in the selected date range.",
     }
     if base_vendor_ids:
-        reference_weekday = latest_date.weekday()
+        reference_weekday = reference_date.weekday()
         statuses = get_bulk_vendor_status(
             db,
             base_vendor_ids,
             reference_weekday,
             12,
-            latest_date,
+            reference_date,
         )
         visible_levels = [
             value["level"]
@@ -411,7 +427,7 @@ def get_dashboard_overview(
         if visible_levels:
             radar = {
                 "status": "available",
-                "reference_date": latest_date.isoformat(),
+                "reference_date": reference_date.isoformat(),
                 "reference_period": "12:00-13:00",
                 "vendors_in_view": len(visible_levels),
                 "busy": visible_levels.count("busy"),
@@ -422,7 +438,7 @@ def get_dashboard_overview(
             radar = {
                 "status": "unavailable",
                 "reason": "Radar statuses are suppressed by the existing privacy rule.",
-                "reference_date": latest_date.isoformat(),
+                "reference_date": reference_date.isoformat(),
             }
 
     upcoming_until = end_date + timedelta(days=30)
@@ -485,7 +501,7 @@ def get_dashboard_overview(
             "start": start_date.isoformat(),
             "end": end_date.isoformat(),
             "available_start": earliest_date.isoformat(),
-            "available_end": latest_date.isoformat(),
+            "available_end": reference_date.isoformat(),
         },
         "selected_filters": {
             "vendor_id": vendor_id,
