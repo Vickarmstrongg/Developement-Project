@@ -40,11 +40,17 @@ from rush_hour import (
     get_weekly_pattern,
 )
 from demand_forecast import calculate_demand_forecast
+from migration_status import (
+    require_migration_complete,
+    current_status as migration_current_status,
+    is_ready as migration_is_ready,
+)
 
 
 app = FastAPI(
     title="Byte & Bite API",
     default_response_class=PerformanceJSONResponse,
+    dependencies=[Depends(require_migration_complete)],
 )
 
 if performance_logging_enabled():
@@ -98,6 +104,11 @@ def db_check(db: Session = Depends(database.get_db)):
     return {"database": "connected"}
 
 
+@app.get("/migration-status")
+def migration_status():
+    return {"ready": migration_is_ready(migration_current_status(database.engine))}
+
+
 @app.get("/vendors")
 def get_vendors(
     db: Session = Depends(database.get_db),
@@ -113,6 +124,12 @@ def get_vendors(
         {"vendor_id": v.vendor_id, "name": v.name, "address": v.address, "type_id": v.type_id}
         for v in vendors
     ]
+
+
+@app.get("/vendor-types", dependencies=[Depends(get_current_user)])
+def get_vendor_types(db: Session = Depends(database.get_db)):
+    types = db.query(models.VendorType).order_by(models.VendorType.type_id).all()
+    return [{"type_id": t.type_id, "name": t.name} for t in types]
 
 
 @app.get("/vendors/{vendor_id}/summary")
