@@ -977,6 +977,19 @@ body,
   font-size: 11px;
 }
 
+/* Making filter for vendor have a mouse hand rather than an I-cursor */
+#dashboard-vendor-select,
+#fair-business-select,
+#demand-vendor-select {
+  cursor: pointer;
+}
+
+#dashboard-vendor-select:disabled,
+#fair-business-select:disabled,
+#demand-vendor-select:disabled {
+  cursor: not-allowed;
+}
+
 .fair-period-summary {
   display: flex;
   align-items: center;
@@ -5650,18 +5663,4 @@ body[data-role="Manager"] a[href="#context-events"] {
   box-shadow: none;
   padding-left: 0;
   padding-right: 0;
-}
-
-
-/* Making filter for vendor have a mouse hand rather than an I-cursor */
-#dashboard-vendor-select,
-#fair-business-select,
-#demand-vendor-select {
-  cursor: pointer;
-}
-
-#dashboard-vendor-select:disabled,
-#fair-business-select:disabled,
-#demand-vendor-select:disabled {
-  cursor: not-allowed;
 }
