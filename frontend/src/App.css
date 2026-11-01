@@ -563,12 +563,11 @@ input {
 .forecast-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
 }
 
 .forecast-table th,
 .forecast-table td {
-  padding: 8px 10px;
+  padding: 14px 24px;
   text-align: left;
   border-bottom: 1px solid #edf1ef;
   white-space: nowrap;
@@ -583,6 +582,19 @@ input {
 .forecast-table td {
   color: #304846;
   font-size: 14px;
+}
+
+/* Number columns (Transactions, Customers, Revenue) centred */
+.forecast-table th:not(:first-child):not(:last-child),
+.forecast-table td:not(:first-child):not(:last-child) {
+  text-align: center;
+}
+
+/* Event column takes the remaining space and can wrap */
+.forecast-table th:last-child,
+.forecast-table td:last-child {
+  width: 35%;
+  white-space: normal;
 }
 
 .forecast-note {
@@ -5638,4 +5650,18 @@ body[data-role="Manager"] a[href="#context-events"] {
   box-shadow: none;
   padding-left: 0;
   padding-right: 0;
+}
+
+
+/* Making filter for vendor have a mouse hand rather than an I-cursor */
+#dashboard-vendor-select,
+#fair-business-select,
+#demand-vendor-select {
+  cursor: pointer;
+}
+
+#dashboard-vendor-select:disabled,
+#fair-business-select:disabled,
+#demand-vendor-select:disabled {
+  cursor: not-allowed;
 }
