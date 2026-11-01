@@ -1,0 +1,4 @@
+user_id,email,role,status,current_vendor_link_count,vendor_source_uuid
+5,example.manager@example.com,Manager,active,2,b76dc24a-1ff3-4899-9138-2ab687901b70
+5,example.manager@example.com,Manager,active,2,5d789353-46f9-4cd8-b8c1-49a3fa80182b
+6,example.staff@example.com,Staff,active,1,b76dc24a-1ff3-4899-9138-2ab687901b70
