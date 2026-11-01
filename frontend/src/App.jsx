@@ -3,7 +3,6 @@ import {
   Bell,
   LogOut,
   ChevronDown,
-  Search,
   Clock3,
 } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
@@ -1010,111 +1009,118 @@ function App() {
               </p>
             </div>
 
-            <div className="recommendation-filters">
-              <div className="recommendation-filter">
-                <label htmlFor="recommendation-search">Business</label>
+            <div className="fair-filter-panel">
+              <div className="fair-filter-field fair-business-field">
+                <label htmlFor="recommendation-vendor-select">Vendor</label>
 
-                <div
-                  className="recommendation-search"
-                  ref={businessSearchRef}
-                  onClick={() => setBusinessDropdownOpen(true)}
-                >
-                  <Search size={18} aria-hidden="true" />
-
+                <div className="fair-select-wrap">
                   <input
-                    id="recommendation-search"
+                    id="recommendation-vendor-select"
                     type="text"
-                    placeholder="Search or select a business"
-                    value={recommendationSearch}
-                    autoComplete="off"
-                    onFocus={() => setBusinessDropdownOpen(true)}
-                    onChange={(e) => {
-                      setBusinessSearchText(e.target.value);
-                      setRecommendationSearch(e.target.value);
-                      setRecommendationPage(1);
+                    placeholder="Search vendors..."
+                    value={
+                      businessDropdownOpen
+                        ? businessSearchText
+                        : recommendationSearch || "All vendors"
+                    }
+                    onFocus={() => {
+                      setBusinessSearchText("");
                       setBusinessDropdownOpen(true);
                     }}
+                    onBlur={() => setBusinessDropdownOpen(false)}
+                    onChange={(e) => {
+                      setBusinessSearchText(e.target.value);
+                      setBusinessDropdownOpen(true);
+                    }}
+                    autoComplete="off"
                   />
 
-                  <button
-                    type="button"
-                    className="business-search-toggle"
-                    aria-label="Show businesses"
-                    aria-expanded={businessDropdownOpen}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBusinessDropdownOpen((open) => !open);
-                    }}
-                  >
-                    <ChevronDown size={18} aria-hidden="true" />
-                  </button>
+                  <ChevronDown size={16} className="fair-select-chevron" />
 
                   {businessDropdownOpen && (
-                    <div className="business-search-dropdown">
-                      <button
-                        type="button"
-                        className="business-search-option"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setRecommendationSearch("");
-                          setBusinessSearchText("");
-                          setRecommendationPage(1);
-                          setBusinessDropdownOpen(false);
-                        }}
-                      >
-                        All businesses
-                      </button>
+                    <div
+                      className="business-search-dropdown"
+                      style={{ fontSize: "11px" }}
+                    >
+                      {businessSearchText === "" && (
+                        <button
+                          type="button"
+                          className="business-search-option"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setRecommendationSearch("");
+                            setBusinessSearchText("");
+                            setRecommendationPage(1);
+                            setBusinessDropdownOpen(false);
+                            document.activeElement.blur();
+                          }}
+                        >
+                          All vendors
+                        </button>
+                      )}
 
-                      {[...new Set(
-                        recommendations
-                          .map((v) => v.name)
-                          .filter(Boolean)
-                      )]
-                        .sort((a, b) => a.localeCompare(b))
-                        .filter((name) =>
-                          name.toLowerCase().includes(
-                            businessSearchText.toLowerCase()
-                          )
-                        )
-                        .map((name) => (
-                          <button
-                            type="button"
-                            className="business-search-option"
-                            key={name}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRecommendationSearch(name);
-                              setBusinessSearchText("");
-                              setRecommendationPage(1);
-                              setBusinessDropdownOpen(false);
-                            }}
-                          >
-                            {name}
-                          </button>
-                        ))}
+                      {(() => {
+                        const vendorNames = [...new Set(
+                          recommendations
+                            .map((v) => v.name)
+                            .filter(Boolean)
+                        )]
+                          .sort((a, b) => a.localeCompare(b))
+                          .filter((name) =>
+                            name.toLowerCase().includes(
+                              businessSearchText.toLowerCase()
+                            )
+                          );
+
+                        return vendorNames.length > 0 ? (
+                          vendorNames.map((name) => (
+                            <button
+                              type="button"
+                              className="business-search-option"
+                              key={name}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setRecommendationSearch(name);
+                                setBusinessSearchText("");
+                                setRecommendationPage(1);
+                                setBusinessDropdownOpen(false);
+                                document.activeElement.blur();
+                              }}
+                            >
+                              {name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="business-search-empty">
+                            No vendors found
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="recommendation-filter">
-                <label htmlFor="recommendation-type">
-                  Recommendation type
-                </label>
+              <div className="fair-filter-field fair-recommendation-field">
+                <label htmlFor="recommendation-type">Recommendation type</label>
 
-                <select
-                  id="recommendation-type"
-                  value={recommendationType}
-                  onChange={(e) => {
-                    setRecommendationType(e.target.value);
-                    setRecommendationPage(1);
-                  }}
-                >
-                  <option value="all">All recommendation types</option>
-                  <option value="increase">Increase discount</option>
-                  <option value="decrease">Decrease discount</option>
-                  <option value="hold">Hold discount</option>
-                </select>
+                <div className="fair-select-wrap">
+                  <select
+                    id="recommendation-type"
+                    value={recommendationType}
+                    onChange={(e) => {
+                      setRecommendationType(e.target.value);
+                      setRecommendationPage(1);
+                    }}
+                  >
+                    <option value="all">All recommendation types</option>
+                    <option value="increase">Increase discount</option>
+                    <option value="decrease">Decrease discount</option>
+                    <option value="hold">Hold discount</option>
+                  </select>
+
+                  <ChevronDown size={16} className="fair-select-chevron" />
+                </div>
               </div>
             </div>
 
@@ -1133,7 +1139,7 @@ function App() {
               <table className="recommendation-table">
                 <thead>
                   <tr>
-                    <th>Business</th>
+                    <th>Vendor</th>
                     <th>Traffic status</th>
                     <th>Recommendation</th>
                   </tr>
