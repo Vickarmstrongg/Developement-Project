@@ -53,6 +53,19 @@ def _cache_set(key, payload):
     _overview_cache[key] = (time.monotonic(), payload)
 
 
+# Longer memory for things that rarely change (vendor lists, date range)
+STABLE_CACHE_SECONDS = 1800
+_stable_cache: dict[tuple, tuple[float, Any]] = {}
+
+
+def _stable_get(key, compute):
+    entry = _stable_cache.get(key)
+    if entry is not None and time.monotonic() - entry[0] <= STABLE_CACHE_SECONDS:
+        return entry[1]
+    value = compute()
+    _stable_cache[key] = (time.monotonic(), value)
+    return value
+
 def _can_view_revenue(user: models.User) -> bool:
     return user.role in {Role.ADMIN.value, Role.MANAGER.value}
 
@@ -211,7 +224,11 @@ def get_dashboard_overview(
         transaction_scope = transaction_scope.filter(
             models.Transaction.vendor_id.in_(accessible_vendor_ids)
         )
-    latest_date, earliest_date = _get_transaction_date_bounds(transaction_scope)
+    scope_key = None if accessible_vendor_ids is None else tuple(sorted(accessible_vendor_ids))
+    latest_date, earliest_date = _stable_get(
+        ("bounds", scope_key),
+        lambda: _get_transaction_date_bounds(transaction_scope),
+    )
     if latest_date is None:
         return {
             "sample_data": False,
@@ -476,7 +493,10 @@ def get_dashboard_overview(
             "vendor_type_name": selected_type,
         },
         "permissions": {"can_view_revenue": can_view_revenue},
-        "filter_options": _get_filter_options(db, accessible_vendor_ids),
+        "filter_options": _stable_get(
+            ("filters", scope_key),
+            lambda: _get_filter_options(db, accessible_vendor_ids),
+        ),
         "kpis": kpis,
         "demand_trend": trend,
         "demand_heatmap": {
