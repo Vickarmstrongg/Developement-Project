@@ -53,12 +53,7 @@ const DAYS = [
   { value: 6, label: "Sunday" },
 ];
 
-const VENDOR_TYPES = [
-  { value: "", label: "All types" },
-  { value: 3, label: "Restaurant" },
-  { value: 4, label: "Fast Food" },
-  { value: 5, label: "Cafe / Coffee Shop" },
-];
+const ALL_VENDOR_TYPES_OPTION = { value: "", label: "All types" };
 
 const MEAL_SLOTS = [
   { value: 8, label: "Breakfast (07:00 – 09:00)" },
@@ -164,6 +159,8 @@ function App() {
   const [day, setDay] = useState(4);
   const [hour, setHour] = useState(12);
   const [typeId, setTypeId] = useState("");
+  const [vendorTypeOptions, setVendorTypeOptions] = useState([]);
+  const VENDOR_TYPES = [ALL_VENDOR_TYPES_OPTION, ...vendorTypeOptions];
 
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -270,6 +267,18 @@ function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    apiFetch("/vendor-types")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((types) =>
+        setVendorTypeOptions(
+          types.map((t) => ({ value: t.type_id, label: t.name }))
+        )
+      )
+      .catch((err) => console.error("Error fetching vendor types:", err));
+  }, [loggedIn]);
 
   useEffect(() => {
     if (!loggedIn || view !== "rush") return;

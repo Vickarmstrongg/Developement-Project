@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import func
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ import database
 import models
 from access.deps import get_current_user
 from performance import PerformanceJSONResponse, timed_stage
+from reference_date import get_reference_date, today_in_app_timezone
 import re
 
 router = APIRouter(
@@ -162,13 +163,32 @@ def clear_notification(
 
 
 @timed_stage("demand_forecast.notification_check")
-def check_transaction_change(db: Session, vendor_id: int, user_id: int):
+def check_transaction_change(
+    db: Session,
+    vendor_id: int,
+    user_id: int,
+    today_provider=today_in_app_timezone,
+):
+    # Never later than today, so future-dated rows are not treated as history
+    reference_date = get_reference_date(
+        db,
+        today_provider=today_provider,
+        scope=db.query(models.Transaction).filter(
+            models.Transaction.vendor_id == vendor_id
+        ),
+    )
+    if reference_date is None:
+        return
+
     daily_rows = (
         db.query(
             func.date(models.Transaction.datetime).label("txn_date"),
             func.count(models.Transaction.transaction_id).label("transaction_count"),
         )
-        .filter(models.Transaction.vendor_id == vendor_id)
+        .filter(
+            models.Transaction.vendor_id == vendor_id,
+            models.Transaction.datetime < reference_date + timedelta(days=1),
+        )
         .group_by(func.date(models.Transaction.datetime))
         .order_by(func.date(models.Transaction.datetime))
         .all()
@@ -177,16 +197,20 @@ def check_transaction_change(db: Session, vendor_id: int, user_id: int):
     if not daily_rows:
         return
 
+    # SQLite returns date() as text; PostgreSQL returns a date.
     daily_counts = {
-        row.txn_date: row.transaction_count
+        (
+            row.txn_date if isinstance(row.txn_date, date)
+            else date.fromisoformat(row.txn_date)
+        ): row.transaction_count
         for row in daily_rows
     }
 
-    latest_recorded_date = max(daily_counts)
-    eligible_dates = [
-        day for day in daily_counts
-        if day < latest_recorded_date
-    ]
+    # Today is still in progress, so it is skipped; earlier days are complete.
+    if reference_date == today_provider():
+        eligible_dates = [day for day in daily_counts if day < reference_date]
+    else:
+        eligible_dates = list(daily_counts)
 
     if not eligible_dates:
         return

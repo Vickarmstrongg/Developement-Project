@@ -1,0 +1,24 @@
+# Lecturer-provided datasets
+data/new/
+data/cleaned/
+data/cleaned.tmp/
+data/cleaned.tmp.*
+data/migration/
+
+# Old lecturer datasets
+backend/data/old/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+.env.*
+
+# Virtual environments
+venv/
+.venv/
+
+# Node dependencies
+node_modules/
