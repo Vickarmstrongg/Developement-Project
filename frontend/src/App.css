@@ -4488,82 +4488,13 @@ body[data-role="Manager"] a[href="#context-events"] {
 }
 
 .comparison-controls {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 16px;
-  width: 100%;
   margin-bottom: 18px;
-  box-sizing: border-box;
 }
 
-.comparison-week-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 7px;
-  margin: 0;
-  padding: 0;
-  width: 200px;
-  flex: 0 0 200px;
-  min-width: 0;
-}
-
-.comparison-week-selector input[type="date"] {
-  display: block;
-  width: 100%;
-  height: 39px;
-  margin: 0;
-  padding: 9px 8px;
-  border: 1px solid #d6e4ef;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #173d5b;
-  font: inherit;
-  font-size: 13px;
-  box-sizing: border-box;
-}
-
-.comparison-metric-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 7px;
-  width: 200px;
-  flex: 0 0 200px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-}
-
-.comparison-week-selector label,
-.comparison-metric-selector label {
-  color: #173d5b;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.comparison-metric-selector select {
-  width: 100%;
-  height: 39px;
-  padding: 9px 12px;
-  border: 1px solid #d6e4ef;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #173d5b;
-  font: inherit;
-  font-size: 13px;
-  box-sizing: border-box;
-}
-
-.comparison-week-selector p {
-  width: max-content;
-  max-width: none;
-  margin: 0;
+.comparison-week-hint {
+  margin: 10px 0 0;
   color: #69839a;
   font-size: 12px;
-  white-space: nowrap;
 }
 
 .comparison-period-cards {
@@ -4748,7 +4679,6 @@ body[data-role="Manager"] a[href="#context-events"] {
 .evidence-page {
   padding: 8px 0 32px;
   color: #173b5e;
-  background: #ffffff;
   padding-left: 32px;
   padding-right: 32px;
   box-sizing: border-box;
