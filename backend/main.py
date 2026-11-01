@@ -273,6 +273,7 @@ def rush_hour_radar(
         if not mine:
             # withheld by the server, so it never reaches the browser
             row.pop("recommendation", None)
+            row.pop("name", None)
 
         results.append(row)
 

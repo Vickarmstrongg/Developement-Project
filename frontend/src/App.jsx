@@ -788,7 +788,8 @@ function App() {
                   .filter((v) => v.lat && v.lon)
                   .map((v) => (
                     <CircleMarker
-                      key={v.vendor_id}
+                      key={`${v.vendor_id}-${v.mine}`}
+                      interactive={v.mine !== false}
                       center={[
                         v.lat,
                         v.lon,
@@ -817,6 +818,7 @@ function App() {
                         weight: 2,
                       }}
                     >
+                      {v.mine !== false && (
                       <Popup>
                         <strong>{v.name}</strong>
 
@@ -838,6 +840,7 @@ function App() {
                           </>
                         )}
                       </Popup>
+                      )}
                     </CircleMarker>
                   ))}
               </MapContainer>
@@ -897,7 +900,8 @@ function App() {
 
               <div className="pulse-list">
 
-                {[...vendors]
+                {vendors
+                .filter((v) => v.mine != false)
                   .sort((a, b) => {
                     if (
                       a.status === "ok" &&
