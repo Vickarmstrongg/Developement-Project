@@ -329,7 +329,7 @@ function App() {
   if (!loggedIn) {
     return (
       <Login
-          onLogin={(user) => {
+        onLogin={(user) => {
           setProfileOpen(false);
           navigateTo("dashboard");
           setSessionUser(user);
@@ -1002,14 +1002,15 @@ function App() {
           </div>
 
           <div className="panel recs-panel">
-            <div className="recommendations-heading">
-              <h3>Auto-generated recommendations</h3>
-              <p>
-                Shown when a recurring traffic pattern crosses the quiet or busy threshold.
-              </p>
-            </div>
+            <div className="recommendations-toolbar">
+              <div className="recommendations-heading">
+                <h3>Auto-generated recommendations</h3>
+                <p>
+                  Shown when a recurring traffic pattern crosses the quiet or busy threshold.
+                </p>
+              </div>
 
-            <div className="fair-filter-panel">
+              <div className="fair-filter-panel"></div>
               <div className="fair-filter-field fair-business-field">
                 <label htmlFor="recommendation-vendor-select">Vendor</label>
 
