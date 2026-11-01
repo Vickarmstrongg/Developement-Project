@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 import models
 from performance import timed_stage
+from reference_date import get_reference_date, today_in_app_timezone
 
 MIN_PEER_BUSINESSES = 3
 AVERAGE_BAND_PERCENTAGE = 0.10  # Within ±10% of peer mean is "average"
@@ -50,8 +51,15 @@ def get_vendor_operational_tier(db: Session, vendor_id: int) -> str:
 def calculate_fair_comparison(
     db: Session,
     vendor_id: int,
-    filter_date: Optional[date] = None
+    filter_date: Optional[date] = None,
+    today_provider=today_in_app_timezone,
 ) -> dict:
+    # Latest transaction date, never after today; future rows are not history.
+    reference_date = get_reference_date(db, today_provider=today_provider)
+    if reference_date is None:
+        return {"error": "No transaction data available"}
+    history_cutoff = reference_date + timedelta(days=1)
+
     # 1. Fetch vendor to verify it exists
     vendor = db.query(models.Vendor).filter(models.Vendor.vendor_id == vendor_id).first()
     if not vendor:
@@ -74,7 +82,10 @@ def calculate_fair_comparison(
             models.Transaction.vendor_id,
             func.count(models.Transaction.transaction_id).label("total"),
         )
-        .filter(models.Transaction.vendor_id.in_(same_type_vendor_ids))
+        .filter(
+            models.Transaction.vendor_id.in_(same_type_vendor_ids),
+            models.Transaction.datetime < history_cutoff,
+        )
         .group_by(models.Transaction.vendor_id)
         .all()
     ) if same_type_vendor_ids else {}
@@ -85,11 +96,8 @@ def calculate_fair_comparison(
         start_date = filter_date
         end_date = filter_date
     else:
-        # Default: latest 7 days of 2025 transaction data
-        latest_txn = db.query(func.max(func.date(models.Transaction.datetime))).scalar()
-        if not latest_txn:
-            return {"error": "No transaction data available"}
-        end_date = latest_txn
+        # Default: the latest 7 days up to the reference date
+        end_date = reference_date
         start_date = end_date - timedelta(days=6)
 
     # Filter peers by matching operational size tier.
@@ -117,6 +125,7 @@ def calculate_fair_comparison(
         )
         .filter(
             models.Transaction.vendor_id.in_(peer_vendor_ids),
+            models.Transaction.datetime < history_cutoff,
             func.date(models.Transaction.datetime) >= start_date,
             func.date(models.Transaction.datetime) <= end_date
         )
@@ -150,6 +159,7 @@ def calculate_fair_comparison(
         )
         .filter(
             models.Transaction.vendor_id.in_(peer_vendor_ids),
+            models.Transaction.datetime < history_cutoff,
             func.date(models.Transaction.datetime) >= start_date,
             func.date(models.Transaction.datetime) <= end_date
         )

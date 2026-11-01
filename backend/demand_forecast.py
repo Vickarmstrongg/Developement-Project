@@ -1,9 +1,11 @@
 from datetime import date, timedelta
 from collections import defaultdict
+from types import SimpleNamespace
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import models
 from performance import timed_stage
+from reference_date import get_reference_date, today_in_app_timezone
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -12,6 +14,7 @@ def calculate_demand_forecast(
     db: Session, 
     vendor_id: int, 
     selected_date: str = None,
+    today_provider=today_in_app_timezone,
 ):
 
     # 1. Fetch vendor to verify it exists
@@ -19,7 +22,18 @@ def calculate_demand_forecast(
     if not vendor:
         return {"error": "Vendor not found"}
 
-    # 2. Query daily transaction totals
+    # 2. Reference date: this vendor's latest transaction date, never after today
+    reference_date = get_reference_date(
+        db,
+        today_provider=today_provider,
+        scope=db.query(models.Transaction).filter(
+            models.Transaction.vendor_id == vendor_id
+        ),
+    )
+    if reference_date is None:
+        return {"error": "No transaction history for this vendor"}
+
+    # Query daily transaction totals; future-dated rows are never history
     daily_stats = (
         db.query(
             func.date(models.Transaction.datetime).label("txn_date"),
@@ -27,7 +41,10 @@ def calculate_demand_forecast(
             func.sum(models.Transaction.value).label("revenue"),
             func.count(func.distinct(models.Transaction.student_id)).label("customer_count"),
         )
-        .filter(models.Transaction.vendor_id == vendor_id)
+        .filter(
+            models.Transaction.vendor_id == vendor_id,
+            models.Transaction.datetime < reference_date + timedelta(days=1),
+        )
         .group_by(func.date(models.Transaction.datetime))
         .order_by("txn_date")
         .all()
@@ -35,6 +52,20 @@ def calculate_demand_forecast(
 
     if not daily_stats:
         return {"error": "No transaction history for this vendor"}
+
+    # SQLite returns date() as text; PostgreSQL returns a date.
+    daily_stats = [
+        SimpleNamespace(
+            txn_date=(
+                row.txn_date if isinstance(row.txn_date, date)
+                else date.fromisoformat(row.txn_date)
+            ),
+            order_count=row.order_count,
+            revenue=row.revenue,
+            customer_count=row.customer_count,
+        )
+        for row in daily_stats
+    ]
 
     # 3. Calculate baseline day-of-week averages
     dow_totals = defaultdict(lambda: {"orders": 0, "revenue": 0.0, "customers": 0, "days": 0})
@@ -55,7 +86,7 @@ def calculate_demand_forecast(
     }
 
     # 4. Trend factor: last 28 days vs full history average
-    last_date = max(row.txn_date for row in daily_stats)
+    last_date = reference_date
     recent_cutoff = last_date - timedelta(days=28)
     recent_rows = [r for r in daily_stats if r.txn_date > recent_cutoff]
 

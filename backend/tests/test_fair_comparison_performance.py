@@ -46,7 +46,8 @@ class FairComparisonQueryTests(unittest.TestCase):
         result = calculate_fair_comparison(db, 21, date(2026, 10, 28))
         event.remove(engine, "before_cursor_execute", count_query)
 
-        self.assertEqual(query_count, 6)
+        # Includes the single reference-date lookup; still no per-vendor queries.
+        self.assertEqual(query_count, 7)
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["peer_group"]["participating_businesses"], 3)
         self.assertEqual(result["metrics"]["vendor_transactions"], 2)
