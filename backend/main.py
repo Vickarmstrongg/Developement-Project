@@ -225,7 +225,8 @@ def rush_hour_radar(
     hour: int,
     type_id: int = None,
     size: str = None,
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    user: models.User = Depends(get_current_user)
 ):
     reference_date = get_reference_date(db)
 
@@ -246,6 +247,8 @@ def rush_hour_radar(
     status_by_vendor = get_bulk_vendor_status(
         db, vendor_ids, day, hour, reference_date
     )
+    # Admin: every recommendation. Manager / Staff: only their own businesses.
+    my_ids = None if user.all_vendors else set(user.vendor_ids)
 
     results = []
 
@@ -256,13 +259,23 @@ def rush_hour_radar(
         status = status_by_vendor[v.vendor_id]
         lat, lon = parse_gps(v.gps)
 
-        results.append({
+        mine = my_ids is None or v.vendor_id in my_ids
+
+        row = {
             "vendor_id": v.vendor_id,
             "name": v.name,
             "lat": lat,
             "lon": lon,
             **status,
-        })
+            "mine": mine,
+        }
+
+        if not mine:
+            # withheld by the server, so it never reaches the browser
+            row.pop("recommendation", None)
+            row.pop("name", None)
+
+        results.append(row)
 
     return {
         "day": day,

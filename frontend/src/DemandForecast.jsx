@@ -187,7 +187,7 @@ function DemandForecast({
     const profileRef = useRef(null);
 
     const [vendors, setVendors] = useState([]);
-    const [vendorId, setVendorId] = useState("21");
+    const [vendorId, setVendorId] = useState("");
 
     const [businessSearch, setBusinessSearch] = useState("");
     const [debouncedBusinessSearch, setDebouncedBusinessSearch] = useState("");
@@ -279,12 +279,23 @@ function DemandForecast({
                 const data = await response.json();
 
                 setVendors(data);
-                if (
-                    data.length > 0 &&
-                    !data.some((v) => String(v.vendor_id) === vendorId)
-                ) {
-                    setVendorId(String(data[0].vendor_id));
-                }
+               setVendorId((currentId) => {
+    if (data.length === 0) {
+        return "";
+    }
+
+    const currentVendorIsAvailable = data.some(
+        (vendor) =>
+            String(vendor.vendor_id) === String(currentId)
+    );
+
+    if (currentVendorIsAvailable) {
+        return currentId;
+    }
+
+    return String(data[0].vendor_id);
+});
+
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -331,7 +342,7 @@ function DemandForecast({
 
     useEffect(() => {
         async function loadForecast() {
-            if (!vendorId) return;
+            if (loadingVendors || !vendorId) return;
 
             if (defaultComparisonDateRequest.current === selectedComparisonDate) {
                 defaultComparisonDateRequest.current = null;
@@ -481,7 +492,7 @@ function DemandForecast({
         }
 
         loadForecast();
-    }, [vendorId, selectedComparisonDate]);
+    }, [vendorId, selectedComparisonDate, loadingVendors]);
 
 
     async function loadNotifications() {
@@ -902,7 +913,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
-                                    <UsersLink />
+                                    
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}
