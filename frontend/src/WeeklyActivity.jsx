@@ -20,7 +20,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
 function WeeklyActivityEvidence({
@@ -267,6 +267,7 @@ function WeeklyActivityEvidence({
                         <button
                             type="button"
                             className="notification-button"
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >
@@ -368,9 +369,39 @@ function WeeklyActivityEvidence({
                     </div>
 
                     {loading && (
-                        <p className="loading-text">
-                            Loading weekly activity...
-                        </p>
+                        <div
+                            className="weekly-evidence-grid"
+                            role="status"
+                            aria-label="Loading weekly activity"
+                            aria-busy="true"
+                        >
+                            <div className="weekly-evidence-main" aria-hidden="true">
+                                <section className="panel evidence-chart-panel">
+                                    <div className="skeleton" style={{ height: 14, width: 220, marginBottom: 16 }} />
+                                    <div className="skeleton" style={{ height: 260 }} />
+                                </section>
+
+                                <div className="evidence-total-cards">
+                                    <section className="panel evidence-total-card">
+                                        <div className="skeleton" style={{ height: 56, width: "100%" }} />
+                                    </section>
+                                    <section className="panel evidence-total-card">
+                                        <div className="skeleton" style={{ height: 56, width: "100%" }} />
+                                    </section>
+                                </div>
+                            </div>
+
+                            <aside className="panel evidence-highlights-panel" aria-hidden="true">
+                                <div className="skeleton" style={{ height: 22, width: "60%", marginBottom: 18 }} />
+                                {[0, 1, 2].map((item) => (
+                                    <div
+                                        className="skeleton"
+                                        key={item}
+                                        style={{ height: 78, marginBottom: 12 }}
+                                    />
+                                ))}
+                            </aside>
+                        </div>
                     )}
 
                     {!loading && error && (

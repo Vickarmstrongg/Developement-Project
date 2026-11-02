@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, LogOut } from "lucide-react";
-import { apiFetch } from "./api";
+import { apiFetch, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
 // which page each report type belongs to (names used by App.jsx navigation)
@@ -121,7 +121,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                     <div className="topbar-right">
                         <button
                             className="notification-button"
-                            onClick={() => (window.location.href = "/notifications")}
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >
@@ -199,8 +199,21 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                         )}
 
                         {loading && !error && (
-                            <div className="reports-state" role="status">
-                                Loading reports…
+                            <div
+                                className="reports-table-wrap"
+                                role="status"
+                                aria-label="Loading reports"
+                                aria-busy="true"
+                            >
+                                <div aria-hidden="true">
+                                    {[0, 1, 2, 3, 4, 5].map((row) => (
+                                        <div
+                                            className="skeleton"
+                                            key={row}
+                                            style={{ height: 38, marginBottom: 10 }}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
 

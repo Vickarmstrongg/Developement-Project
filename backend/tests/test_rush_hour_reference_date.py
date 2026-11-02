@@ -177,17 +177,20 @@ class EndpointTests(RushHourReferenceDateBase):
             self.add_day(1, day, students=6)
         for day in FUTURE_WEDNESDAYS:
             self.add_day(1, day, students=30, per_student=3)
-        result = main.rush_hour_radar(day=2, hour=12, db=self.db)
+        admin = self._user(Role.ADMIN.value, all_vendors=True)
+        result = main.rush_hour_radar(day=2, hour=12, db=self.db, user=admin)
         vendor = next(v for v in result["vendors"] if v["vendor_id"] == 1)
         self.assertEqual(vendor["level"], "normal")
         self.assertEqual(vendor["student_count"], 6)
         self.assertEqual(set(vendor), {
             "vendor_id", "name", "lat", "lon", "status", "level",
-            "student_count", "recommendation",
+            "student_count", "recommendation", "mine",
         })
+        self.assertTrue(vendor["mine"])
 
     def test_radar_on_empty_database_does_not_crash(self):
-        result = main.rush_hour_radar(day=2, hour=12, db=self.db)
+        admin = self._user(Role.ADMIN.value, all_vendors=True)
+        result = main.rush_hour_radar(day=2, hour=12, db=self.db, user=admin)
         self.assertTrue(all(v["status"] == "suppressed" for v in result["vendors"]))
 
     def test_weekly_pattern_response_shape_and_future_exclusion(self):

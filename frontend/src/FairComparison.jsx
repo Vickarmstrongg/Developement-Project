@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 
 import {
     Bell,
@@ -545,9 +545,7 @@ function FairComparison({
                     <div className="topbar-right">
                         <button
                             className="notification-button"
-                            onClick={() => {
-                                window.location.href = "/notifications";
-                            }}
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >
@@ -768,14 +766,29 @@ function FairComparison({
                             vendors.length > 0 &&
                             !(periodMode === "day" && !filterDate) &&
                             loading && (
-                                <section className="fair-message fair-message-loading">
-                                    <RefreshCw size={22} className="fair-spin" />
-                                    <div>
-                                        <h2>Loading comparison</h2>
-                                        <p>
-                                            Please wait while the latest comparison data is
-                                            retrieved.
-                                        </p>
+                                <section
+                                    className="fair-score-card"
+                                    role="status"
+                                    aria-label="Loading comparison"
+                                    aria-busy="true"
+                                >
+                                    <div className="fair-score-left" aria-hidden="true">
+                                        <div className="skeleton" style={{ height: 14, width: 190, marginBottom: 20 }} />
+                                        <div className="skeleton" style={{ height: 34, width: "55%", marginBottom: 12 }} />
+                                        <div className="skeleton" style={{ height: 14, width: "85%", marginBottom: 28 }} />
+                                        <div className="skeleton" style={{ height: 48, width: 150, marginBottom: 10 }} />
+                                        <div className="skeleton" style={{ height: 12, width: "70%", marginBottom: 26 }} />
+                                        <div className="skeleton" style={{ height: 10, marginBottom: 18 }} />
+                                        <div className="skeleton" style={{ height: 10, width: "75%", marginBottom: 22 }} />
+                                        <div className="skeleton" style={{ height: 14, width: "50%" }} />
+                                    </div>
+
+                                    <div className="fair-score-right" aria-hidden="true">
+                                        <div className="skeleton" style={{ height: 14, width: 160, marginBottom: 14 }} />
+                                        <div className="skeleton" style={{ height: 28, width: "60%", marginBottom: 26 }} />
+                                        <div className="skeleton" style={{ height: 44, width: 120, marginBottom: 26 }} />
+                                        <div className="skeleton" style={{ height: 16, marginBottom: 14 }} />
+                                        <div className="skeleton" style={{ height: 16 }} />
                                     </div>
                                 </section>
                             )}

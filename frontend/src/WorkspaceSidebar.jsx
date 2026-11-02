@@ -68,8 +68,13 @@ function WorkspaceSidebar({ activeView, onNavigate }) {
                   aria-label={label}
                   className={`sidebar-link${activeView === id ? " active" : ""}`}
                   aria-current={activeView === id ? "page" : undefined}
-                  onClick={(event) => {
-                    event.preventDefault();
+                 onClick={(event) => {
+                  event.preventDefault();
+                  if (id === "users") {
+                    // App.jsx opens the Users page when the address changes to #users
+                    window.location.hash = hash;
+                    return;
+                  }
                     onNavigate(id);
                   }}
                 >

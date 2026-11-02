@@ -12,7 +12,7 @@ import {
   List,
   X,
 } from "lucide-react";
-import { apiFetch } from "./api";
+import { apiFetch, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
@@ -321,7 +321,7 @@ return (
       <div className="topbar-right">
         <button
           className="notification-button"
-          onClick={() => (window.location.href = "/notifications")}
+          onClick={goToNotificationHistory}
           aria-label="Notifications"
           title="Notifications"
         >
@@ -588,7 +588,16 @@ return (
         </div>
 
         {loading ? (
-          <div className="context-events-state" role="status">Loading calendar events…</div>
+          <div role="status" aria-label="Loading calendar events" aria-busy="true">
+            <div
+              aria-hidden="true"
+              style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}
+            >
+              {Array.from({ length: 35 }, (_, item) => (
+                <div className="skeleton" key={item} style={{ height: 72 }} />
+              ))}
+            </div>
+          </div>
         ) : error ? null : events.length === 0 ? (
           <div className="context-events-state" role="status">No events found for these filters.</div>
         ) : (
@@ -677,7 +686,13 @@ return (
 
     {displayMode === "list" && (
       loading ? (
-        <div className="context-events-state" role="status">Loading events…</div>
+        <div role="status" aria-label="Loading events" aria-busy="true">
+          <div aria-hidden="true">
+            {[0, 1, 2, 3, 4, 5].map((row) => (
+              <div className="skeleton" key={row} style={{ height: 38, marginBottom: 10 }} />
+            ))}
+          </div>
+        </div>
       ) : error ? null : events.length === 0 ? (
         <div className="context-events-state" role="status">No events found for these filters.</div>
       ) : (

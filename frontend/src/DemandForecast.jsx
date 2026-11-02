@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, apiFetchCached, getStoredUser } from "./api";
 
 import {
     Bell,
@@ -177,7 +177,13 @@ function DemandForecast({
     const [expandedNotifications, setExpandedNotifications] = useState([]);
 
 
-    const [showNotificationHistory, setShowNotificationHistory] = useState(false);
+    const [showNotificationHistory, setShowNotificationHistory] = useState(() => {
+        try {
+            return sessionStorage.getItem("bb-open-notification-history") === "1";
+        } catch {
+            return false;
+        }
+    });
     const [historyNotifications, setHistoryNotifications] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState("");
@@ -186,7 +192,7 @@ function DemandForecast({
     const profileRef = useRef(null);
 
     const [vendors, setVendors] = useState([]);
-    const [vendorId, setVendorId] = useState("21");
+    const [vendorId, setVendorId] = useState("");
 
     const [businessSearch, setBusinessSearch] = useState("");
     const [debouncedBusinessSearch, setDebouncedBusinessSearch] = useState("");
@@ -266,7 +272,7 @@ function DemandForecast({
             try {
                 setLoadingVendors(true);
 
-                const response = await apiFetch("/vendors");
+                const response = await apiFetchCached("/vendors");
 
 
                 if (!response.ok) {
@@ -278,12 +284,23 @@ function DemandForecast({
                 const data = await response.json();
 
                 setVendors(data);
-                if (
-                    data.length > 0 &&
-                    !data.some((v) => String(v.vendor_id) === vendorId)
-                ) {
-                    setVendorId(String(data[0].vendor_id));
-                }
+               setVendorId((currentId) => {
+    if (data.length === 0) {
+        return "";
+    }
+
+    const currentVendorIsAvailable = data.some(
+        (vendor) =>
+            String(vendor.vendor_id) === String(currentId)
+    );
+
+    if (currentVendorIsAvailable) {
+        return currentId;
+    }
+
+    return String(data[0].vendor_id);
+});
+
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -301,9 +318,7 @@ function DemandForecast({
             setContextEventError("");
 
             try {
-                const response = await apiFetch("/context-events", {
-                    signal: controller.signal,
-                });
+                const response = await apiFetchCached("/context-events");
 
                 const data = await response.json();
 
@@ -332,7 +347,7 @@ function DemandForecast({
 
     useEffect(() => {
         async function loadForecast() {
-            if (!vendorId) return;
+            if (loadingVendors || !vendorId) return;
 
             if (defaultComparisonDateRequest.current === selectedComparisonDate) {
                 defaultComparisonDateRequest.current = null;
@@ -482,7 +497,7 @@ function DemandForecast({
         }
 
         loadForecast();
-    }, [vendorId, selectedComparisonDate]);
+    }, [vendorId, selectedComparisonDate, loadingVendors]);
 
 
     async function loadNotifications() {
@@ -537,13 +552,27 @@ function DemandForecast({
         }
     }
 
-    async function openNotificationHistory() {
+    function openNotificationHistory() {
         setNotificationsOpen(false);
         setHistoryFilter("all");
         setShowNotificationHistory(true);
-
-        await loadNotificationHistory();
     }
+
+    // The note from another page's bell has been used, so remove it
+    useEffect(() => {
+        try {
+            sessionStorage.removeItem("bb-open-notification-history");
+        } catch {
+            // Storage unavailable: nothing to clear
+        }
+    }, []);
+
+    // Loads the history whenever it is showing, and again if the business changes
+    useEffect(() => {
+        if (showNotificationHistory) {
+            loadNotificationHistory();
+        }
+    }, [showNotificationHistory, vendorId]);
 
     async function updateNotification(notificationId, action) {
         try {
@@ -889,7 +918,7 @@ function DemandForecast({
 
                             {profileOpen && (
                                 <div className="profile-dropdown">
-                                    <UsersLink />
+                                    
                                     <button
                                         className="logout-option"
                                         onClick={handleLogout}
@@ -1236,9 +1265,27 @@ function DemandForecast({
                                 </div>
 
                                 {loading && (
-                                    <p>
-                                        Loading demand forecast...
-                                    </p>
+                                    <div
+                                        role="status"
+                                        aria-label="Loading demand forecast"
+                                        aria-busy="true"
+                                    >
+                                        <section className="summary-grid" aria-hidden="true">
+                                            {(isStaff ? [0, 1] : [0, 1, 2]).map((item) => (
+                                                <div className="summary-card" key={item}>
+                                                    <div className="skeleton" style={{ height: 12, width: "60%", marginBottom: 14 }} />
+                                                    <div className="skeleton" style={{ height: 30, width: "45%", marginBottom: 12 }} />
+                                                    <div className="skeleton" style={{ height: 12, width: "70%" }} />
+                                                </div>
+                                            ))}
+                                        </section>
+
+                                        <section className="forecast-card" aria-hidden="true">
+                                            <div className="skeleton" style={{ height: 22, width: 240, marginBottom: 10 }} />
+                                            <div className="skeleton" style={{ height: 14, width: "55%", marginBottom: 20 }} />
+                                            <div className="skeleton" style={{ height: 280 }} />
+                                        </section>
+                                    </div>
                                 )}
 
                                 {error === "NO_DATA" && (
