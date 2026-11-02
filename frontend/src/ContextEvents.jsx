@@ -18,6 +18,7 @@ import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
 
 const API = "/context-events";
+const OTHER_TYPE = "__other__";
 const CALENDAR_MODES = ["month", "week", "day"];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -163,6 +164,7 @@ end_date: "",
 };
 
 const [form, setForm] = useState(emptyForm);
+const [customType, setCustomType] = useState("");
 
 useEffect(() => {
   function handleClickOutside(event) {
@@ -310,11 +312,12 @@ end_date: event.end_date,
 }
 
 function resetForm() {
-setEditingId(null);
-setForm({
-...emptyForm,
-event_type: types[0] || "",
-});
+  setCustomType("");
+  setEditingId(null);
+  setForm({
+    ...emptyForm,
+    event_type: types[0] || "",
+  });
 }
 
 async function saveEvent(event) {
@@ -328,7 +331,13 @@ try {
   const response = await apiFetch(url, {
     method: editingId ? "PUT" : "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(form),
+    body: JSON.stringify({
+  ...form,
+  event_type:
+    form.event_type === OTHER_TYPE
+      ? customType.trim().toLowerCase().replace(/\s+/g, "_")
+      : form.event_type,
+}),
   });
 
   if (!response.ok) {
@@ -338,8 +347,9 @@ try {
     );
   }
 
-  resetForm();
-  await loadEvents();
+resetForm();
+await loadEvents();
+await loadTypes();
 } catch (err) {
   setError(err.message);
 } finally {
@@ -492,12 +502,13 @@ return (
             setForm({ ...form, event_type: e.target.value })
           }
         >
-          {types.map((type) => (
-            <option key={type} value={type}>
-              {formatEventType(type)}
-            </option>
-          ))}
-        </select>
+{types.map((type) => (
+  <option key={type} value={type}>
+    {formatEventType(type)}
+  </option>
+))}
+<option value={OTHER_TYPE}>Other</option>
+</select>
       </label>
 
       <label className="context-event-form-field">
@@ -549,6 +560,21 @@ return (
           </button>
         )}
       </div>
+
+      {form.event_type === OTHER_TYPE && (
+        <label
+          className="context-event-form-field"
+          style={{ gridColumn: "1 / -1" }}
+        >
+          Custom event type
+          <input
+            required
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
+            placeholder="e.g. Sporting Event"
+          />
+        </label>
+      )}
     </form>
   </section>
 
