@@ -5629,3 +5629,19 @@ body[data-role="Manager"] a[href="#context-events"] {
   padding-left: 0;
   padding-right: 0;
 }
+
+.skeleton {
+  background: linear-gradient(90deg, #e9eeec 25%, #f4f7f6 50%, #e9eeec 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

@@ -1,3 +1,4 @@
+import time
 from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import func
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,6 +16,11 @@ router = APIRouter(
     tags=["Notifications"],
     default_response_class=PerformanceJSONResponse,
 )
+
+# The notification check scans a vendor's whole history, so it runs at most
+# once per user and vendor in this window
+CHECK_EVERY_SECONDS = 600
+_last_check: dict[tuple[int, int], float] = {}
 
 @router.get("")
 def get_notifications(
@@ -169,6 +175,12 @@ def check_transaction_change(
     user_id: int,
     today_provider=today_in_app_timezone,
 ):
+    if today_provider is today_in_app_timezone:
+        key = (vendor_id, user_id)
+        now = time.monotonic()
+        if now - _last_check.get(key, -CHECK_EVERY_SECONDS) < CHECK_EVERY_SECONDS:
+            return
+        _last_check[key] = now
     # Never later than today, so future-dated rows are not treated as history
     reference_date = get_reference_date(
         db,
