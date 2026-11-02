@@ -1253,9 +1253,27 @@ function DemandForecast({
                                 </div>
 
                                 {loading && (
-                                    <p>
-                                        Loading demand forecast...
-                                    </p>
+                                    <div
+                                        role="status"
+                                        aria-label="Loading demand forecast"
+                                        aria-busy="true"
+                                    >
+                                        <section className="summary-grid" aria-hidden="true">
+                                            {(isStaff ? [0, 1] : [0, 1, 2]).map((item) => (
+                                                <div className="summary-card" key={item}>
+                                                    <div className="skeleton" style={{ height: 12, width: "60%", marginBottom: 14 }} />
+                                                    <div className="skeleton" style={{ height: 30, width: "45%", marginBottom: 12 }} />
+                                                    <div className="skeleton" style={{ height: 12, width: "70%" }} />
+                                                </div>
+                                            ))}
+                                        </section>
+
+                                        <section className="forecast-card" aria-hidden="true">
+                                            <div className="skeleton" style={{ height: 22, width: 240, marginBottom: 10 }} />
+                                            <div className="skeleton" style={{ height: 14, width: "55%", marginBottom: 20 }} />
+                                            <div className="skeleton" style={{ height: 280 }} />
+                                        </section>
+                                    </div>
                                 )}
 
                                 {error === "NO_DATA" && (

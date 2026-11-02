@@ -199,8 +199,21 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                         )}
 
                         {loading && !error && (
-                            <div className="reports-state" role="status">
-                                Loading reports…
+                            <div
+                                className="reports-table-wrap"
+                                role="status"
+                                aria-label="Loading reports"
+                                aria-busy="true"
+                            >
+                                <div aria-hidden="true">
+                                    {[0, 1, 2, 3, 4, 5].map((row) => (
+                                        <div
+                                            className="skeleton"
+                                            key={row}
+                                            style={{ height: 38, marginBottom: 10 }}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
 

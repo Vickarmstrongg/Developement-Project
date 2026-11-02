@@ -543,7 +543,17 @@ function Users({
                         <h2>All users</h2>
 
                         {loading ? (
-                            <p>Loading users...</p>
+                            <div role="status" aria-label="Loading users" aria-busy="true">
+                                <div aria-hidden="true">
+                                    {[0, 1, 2, 3, 4].map((row) => (
+                                        <div
+                                            className="skeleton"
+                                            key={row}
+                                            style={{ height: 52, marginBottom: 10 }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         ) : users.length === 0 ? (
                             <p>No users yet.</p>
                         ) : (

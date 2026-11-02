@@ -146,6 +146,15 @@ function ResetMapButton() {
     </button>
   );
 }
+function StatSkeleton() {
+  return (
+    <span
+      className="skeleton"
+      aria-hidden="true"
+      style={{ display: "inline-block", height: 26, width: 46, verticalAlign: "middle" }}
+    />
+  );
+}
 
 function App() {
   const [sessionUser, setSessionUser] = useState(() =>
@@ -163,7 +172,7 @@ function App() {
   const VENDOR_TYPES = [ALL_VENDOR_TYPES_OPTION, ...vendorTypeOptions];
 
   const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [recommendationPage, setRecommendationPage] = useState(1);
   const recommendationsPerPage = 15;
@@ -703,7 +712,7 @@ function App() {
               </div>
 
               <div className="stat-value">
-                {vendors.length}
+                {loading ? <StatSkeleton /> : vendors.length}
               </div>
             </div>
 
@@ -718,7 +727,7 @@ function App() {
                   color: LEVEL_COLORS.busy,
                 }}
               >
-                {busyCount}
+                {loading ? <StatSkeleton /> : busyCount}
               </div>
             </div>
 
@@ -733,7 +742,7 @@ function App() {
                   color: LEVEL_COLORS.quiet,
                 }}
               >
-                {quietCount}
+                {loading ? <StatSkeleton /> : quietCount}
               </div>
             </div>
 
@@ -743,7 +752,7 @@ function App() {
               </div>
 
               <div className="stat-value">
-                {recCount}
+                {loading ? <StatSkeleton /> : recCount}
               </div>
             </div>
 
@@ -892,7 +901,15 @@ function App() {
               </p>
 
               <div className="pulse-list">
-
+                {loading && vendors.length === 0 &&
+                  [0, 1, 2, 3, 4].map((item) => (
+                    <div
+                      className="skeleton"
+                      key={item}
+                      aria-hidden="true"
+                      style={{ height: 52, marginBottom: 10 }}
+                    />
+                  ))}
                 {[...vendors]
                   .sort((a, b) => {
                     if (
@@ -1129,7 +1146,16 @@ function App() {
                     );
                   })}
 
-                  {filteredRecommendations.length === 0 && (
+                  {loading && vendors.length === 0 &&
+                    [0, 1, 2, 3].map((item) => (
+                      <tr key={`skeleton-${item}`} aria-hidden="true">
+                        <td colSpan="3">
+                          <div className="skeleton" style={{ height: 30 }} />
+                        </td>
+                      </tr>
+                    ))}
+
+                  {!loading && filteredRecommendations.length === 0 && (
                     <tr>
                       <td colSpan="3" className="recommendation-empty">
                         No matching recommendations found.
