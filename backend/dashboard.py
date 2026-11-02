@@ -67,6 +67,31 @@ def _stable_get(key, compute):
     _stable_cache[key] = (time.monotonic(), value)
     return value
 
+
+
+_radar_cache: dict[tuple, tuple[float, Any]] = {}
+
+
+def _radar_statuses(db: Session, vendor_ids: list[int], reference_date: date):
+    """Radar status per vendor, calculating only the vendors not remembered yet."""
+    now = time.monotonic()
+    result = {}
+    missing = []
+    for vendor_id in vendor_ids:
+        entry = _radar_cache.get((vendor_id, reference_date))
+        if entry is not None and now - entry[0] <= STABLE_CACHE_SECONDS:
+            result[vendor_id] = entry[1]
+        else:
+            missing.append(vendor_id)
+    if missing:
+        fresh = get_bulk_vendor_status(
+            db, missing, reference_date.weekday(), 12, reference_date
+        )
+        for vendor_id, status in fresh.items():
+            _radar_cache[(vendor_id, reference_date)] = (now, status)
+            result[vendor_id] = status
+    return result
+
 def _can_view_revenue(user: models.User) -> bool:
     return user.role in {Role.ADMIN.value, Role.MANAGER.value}
 
@@ -411,14 +436,7 @@ def get_dashboard_overview(
         "reason": "No vendors have transactions in the selected date range.",
     }
     if base_vendor_ids:
-        reference_weekday = reference_date.weekday()
-        statuses = get_bulk_vendor_status(
-            db,
-            base_vendor_ids,
-            reference_weekday,
-            12,
-            reference_date,
-        )
+        statuses = _radar_statuses(db, base_vendor_ids, reference_date)
         visible_levels = [
             value["level"]
             for value in statuses.values()

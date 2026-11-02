@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, apiFetchCached, getStoredUser } from "./api";
 
 import {
     Bell,
@@ -261,7 +261,7 @@ function DemandForecast({
             try {
                 setLoadingVendors(true);
 
-                const response = await apiFetch("/vendors");
+                const response = await apiFetchCached("/vendors");
 
 
                 if (!response.ok) {
@@ -296,9 +296,7 @@ function DemandForecast({
             setContextEventError("");
 
             try {
-                const response = await apiFetch("/context-events", {
-                    signal: controller.signal,
-                });
+                const response = await apiFetchCached("/context-events");
 
                 const data = await response.json();
 

@@ -70,3 +70,36 @@ export async function login(email, password) {
     saveSession(data.access_token, data.user);
     return data.user;
 }
+
+// Remembers list responses (vendors, calendar events) for a few minutes so
+// pages don't each download the same list again. Remembered per signed-in user.
+const listCache = new Map();
+
+export function apiFetchCached(path, ttlMs = 300000) {
+  const key = `${getStoredUser()?.email || ""}|${path}`;
+  const hit = listCache.get(key);
+  let pending;
+  if (hit && Date.now() - hit.time < ttlMs) {
+    pending = hit.pending;
+  } else {
+    pending = apiFetch(path).then(async (res) => ({
+      status: res.status,
+      body: await res.text(),
+    }));
+    listCache.set(key, { time: Date.now(), pending });
+    // Never remember a failed response
+    pending.then(
+      (r) => {
+        if (r.status !== 200) listCache.delete(key);
+      },
+      () => listCache.delete(key)
+    );
+  }
+  return pending.then(
+    ({ status, body }) =>
+      new Response(body, {
+        status,
+        headers: { "Content-Type": "application/json" },
+      })
+  );
+}

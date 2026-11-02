@@ -13,7 +13,7 @@ Rules (BRD v2 & Client Minutes):
     - Output label: "above_average", "average", or "below_average"[cite: 3].
     - Optional filter by specific date[cite: 3].
 """
-
+import time
 from datetime import date, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -47,8 +47,33 @@ def get_vendor_operational_tier(db: Session, vendor_id: int) -> str:
     return _operational_tier(txn_count)
 
 
+_result_cache: dict[tuple, tuple[float, dict]] = {}
+RESULT_CACHE_SECONDS = 300
+MAX_CACHED_RESULTS = 200
+
+
 @timed_stage("fair_comparison.calculation")
 def calculate_fair_comparison(
+    db: Session,
+    vendor_id: int,
+    filter_date: Optional[date] = None,
+    today_provider=today_in_app_timezone,
+) -> dict:
+    # Remembered for a few minutes; any caller passing its own date (tests) skips this
+    if today_provider is not today_in_app_timezone:
+        return _calculate_fair_comparison(db, vendor_id, filter_date, today_provider)
+    key = (vendor_id, filter_date, today_provider())
+    entry = _result_cache.get(key)
+    if entry is not None and time.monotonic() - entry[0] <= RESULT_CACHE_SECONDS:
+        return entry[1]
+    result = _calculate_fair_comparison(db, vendor_id, filter_date, today_provider)
+    if len(_result_cache) >= MAX_CACHED_RESULTS:
+        _result_cache.pop(next(iter(_result_cache)), None)
+    _result_cache[key] = (time.monotonic(), result)
+    return result
+
+
+def _calculate_fair_comparison(
     db: Session,
     vendor_id: int,
     filter_date: Optional[date] = None,
