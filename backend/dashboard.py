@@ -259,8 +259,9 @@ def get_dashboard_overview(
             models.Transaction.vendor_id.in_(accessible_vendor_ids)
         )
     scope_key = None if accessible_vendor_ids is None else tuple(sorted(accessible_vendor_ids))
+    database_key = db.get_bind()
     _, earliest_date = _stable_get(
-        ("bounds", scope_key),
+        ("bounds", database_key, scope_key),
         lambda: _get_transaction_date_bounds(transaction_scope),
     )
     reference_date = get_reference_date(
@@ -528,7 +529,7 @@ def get_dashboard_overview(
         },
         "permissions": {"can_view_revenue": can_view_revenue},
         "filter_options": _stable_get(
-            ("filters", scope_key),
+            ("filters", database_key, scope_key),
             lambda: _get_filter_options(db, accessible_vendor_ids),
         ),
         "kpis": kpis,
