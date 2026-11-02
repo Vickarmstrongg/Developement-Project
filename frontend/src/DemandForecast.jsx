@@ -1171,17 +1171,17 @@ function DemandForecast({
                                         </p>
                                     </div>
 
-                                    <div className="business-selector-row">
-                                        <div className="business-selector-field">
-                                            <label className="business-selector-label">
-                                                Business
-                                            </label>
+                                    <div className="fair-filter-panel">
+                                        <div className="fair-filter-field fair-business-field">
+                                            <label htmlFor="demand-vendor-select">Vendor</label>
 
-                                            <div className="business-search-container">
+                                            <div className="fair-select-wrap">
                                                 <input
+                                                    id="demand-vendor-select"
                                                     type="text"
-                                                    className="business-selector"
-                                                    placeholder="Search businesses..."
+                                                    placeholder={
+                                                        loadingVendors ? "Loading vendors..." : "Search vendors..."
+                                                    }
                                                     value={
                                                         businessDropdownOpen
                                                             ? businessSearch
@@ -1192,22 +1192,24 @@ function DemandForecast({
                                                         setDebouncedBusinessSearch("");
                                                         setBusinessDropdownOpen(true);
                                                     }}
+                                                    onBlur={() => setBusinessDropdownOpen(false)}
                                                     onChange={(event) => {
                                                         setBusinessSearch(event.target.value);
                                                         setBusinessDropdownOpen(true);
                                                     }}
                                                     disabled={loadingVendors}
-                                                    aria-label="Search businesses"
-                                                    aria-expanded={businessDropdownOpen}
-                                                    aria-controls="business-search-results"
                                                     autoComplete="off"
+                                                />
+
+                                                <ChevronDown
+                                                    size={16}
+                                                    className="fair-select-chevron"
                                                 />
 
                                                 {businessDropdownOpen && (
                                                     <div
-                                                        id="business-search-results"
-                                                        className="business-search-results"
-                                                        role="listbox"
+                                                        className="business-search-dropdown"
+                                                        style={{ fontSize: "11px" }}
                                                     >
                                                         {filteredVendors.length > 0 ? (
                                                             filteredVendors.map((vendor) => (
@@ -1215,15 +1217,9 @@ function DemandForecast({
                                                                     key={vendor.vendor_id}
                                                                     type="button"
                                                                     className="business-search-option"
-                                                                    role="option"
-                                                                    aria-selected={
-                                                                        String(vendor.vendor_id) ===
-                                                                        String(vendorId)
-                                                                    }
                                                                     onMouseDown={(event) =>
                                                                         event.preventDefault()
                                                                     }
-
                                                                     onClick={() => {
                                                                         setVendorId(String(vendor.vendor_id));
                                                                         setSelectedComparisonDate("");
@@ -1232,15 +1228,15 @@ function DemandForecast({
                                                                         setBusinessSearch("");
                                                                         setDebouncedBusinessSearch("");
                                                                         setBusinessDropdownOpen(false);
+                                                                        document.activeElement.blur();
                                                                     }}
-
                                                                 >
                                                                     {vendor.name}
                                                                 </button>
                                                             ))
                                                         ) : (
                                                             <div className="business-search-empty">
-                                                                No businesses found
+                                                                No vendors found
                                                             </div>
                                                         )}
                                                     </div>
@@ -1594,44 +1590,51 @@ function DemandForecast({
 
 
                                                 <div className="comparison-controls">
-                                                    <div className="comparison-week-selector">
-                                                        <label htmlFor="comparison-week-date">
-                                                            Choose a date in the week
-                                                        </label>
+                                                    <div className="fair-filter-panel">
+                                                        <div className="fair-filter-field fair-date-field">
+                                                            <label htmlFor="comparison-week-date">
+                                                                Choose a date in the week
+                                                            </label>
 
-                                                        <input
-                                                            id="comparison-week-date"
-                                                            type="date"
-                                                            value={selectedComparisonDate}
-                                                            onChange={(event) =>
-                                                                setSelectedComparisonDate(event.target.value)
-                                                            }
-                                                        />
+                                                            <input
+                                                                id="comparison-week-date"
+                                                                type="date"
+                                                                value={selectedComparisonDate}
+                                                                onChange={(event) =>
+                                                                    setSelectedComparisonDate(event.target.value)
+                                                                }
+                                                            />
+                                                        </div>
 
-                                                        <p>
-                                                            The selected date determines the Monday-Sunday week. The preceding week is compared automatically.
-                                                        </p>
+                                                        <div className="fair-filter-field fair-period-field">
+                                                            <label htmlFor="comparison-metric">Compare by</label>
+
+                                                            <div className="fair-select-wrap">
+                                                                <select
+                                                                    id="comparison-metric"
+                                                                    value={comparisonMetric}
+                                                                    onChange={(event) =>
+                                                                        setComparisonMetric(event.target.value)
+                                                                    }
+                                                                >
+                                                                    {!isStaff && (
+                                                                        <option value="revenue">Revenue</option>
+                                                                    )}
+
+                                                                    <option value="transactions">Transactions</option>
+                                                                </select>
+
+                                                                <ChevronDown
+                                                                    size={16}
+                                                                    className="fair-select-chevron"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="comparison-metric-selector">
-                                                        <label htmlFor="comparison-metric">
-                                                            Compare by
-                                                        </label>
-
-                                                        <select
-                                                            id="comparison-metric"
-                                                            value={comparisonMetric}
-                                                            onChange={(event) =>
-                                                                setComparisonMetric(event.target.value)
-                                                            }
-                                                        >
-                                                            {!isStaff && (
-                                                                <option value="revenue">Revenue</option>
-                                                            )}
-
-                                                            <option value="transactions">Transactions</option>
-                                                        </select>
-                                                    </div>
+                                                    <p className="comparison-week-hint">
+                                                        The selected date determines the Monday-Sunday week. The preceding week is compared automatically.
+                                                    </p>
                                                 </div>
 
 

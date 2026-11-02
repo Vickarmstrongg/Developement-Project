@@ -60,6 +60,17 @@ function eventTypeColor(type, types) {
   return `event-type-color-${index}`;
 }
 
+// "university_reopen" -> "University reopen"
+function formatEventType(value) {
+  if (!value) return "";
+  const text = String(value)
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function ContextEvents({
   currentUser,
   onNavigate,
@@ -419,10 +430,9 @@ return (
             setForm({ ...form, event_type: e.target.value })
           }
         >
-          <option value="">Choose type</option>
           {types.map((type) => (
             <option key={type} value={type}>
-              {type}
+              {formatEventType(type)}
             </option>
           ))}
         </select>
@@ -509,7 +519,7 @@ return (
           >
             <option value="">All event types</option>
             {types.map((type) => (
-              <option key={type} value={type}>{type}</option>
+              <option key={type} value={type}>{formatEventType(type)}</option>
             ))}
           </select>
         </label>
@@ -572,7 +582,7 @@ return (
           {types.map((type) => (
             <span key={type}>
               <i className={`context-event-dot ${eventTypeColor(type, types)}`} />
-              {type}
+              {formatEventType(type)}
             </span>
           ))}
         </div>
@@ -628,11 +638,11 @@ return (
                           type="button"
                           key={event.event_id}
                           className={`context-calendar-event ${eventTypeColor(event.event_type, types)}${selectedEvent?.event_id === event.event_id ? " selected" : ""}`}
-                          title={`${event.name} — ${event.event_type}`}
+                          title={`${event.name} — ${formatEventType(event.event_type)}`}
                           onClick={() => setSelectedEvent(event)}
                         >
                           <strong>{event.name}</strong>
-                          <span>{event.event_type}</span>
+                          <span>{formatEventType(event.event_type)}</span>
                         </button>
                       ))}
                     </div>
@@ -648,7 +658,7 @@ return (
             <div className="context-event-details-heading">
               <div>
                 <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>
-                  {selectedEvent.event_type}
+                  {formatEventType(selectedEvent.event_type)}
                 </span>
                 <h3>{selectedEvent.name}</h3>
               </div>
@@ -703,7 +713,7 @@ return (
                   <td>
                     <button type="button" className="context-event-list-name" onClick={() => setSelectedEvent(event)}>{event.name}</button>
                   </td>
-                  <td>{event.event_type}</td>
+                  <td>{formatEventType(event.event_type)}</td>
                   <td>{event.start_date}</td>
                   <td>{event.end_date}</td>
                   <td>
@@ -727,7 +737,7 @@ return (
     <section className="context-event-details" aria-live="polite">
       <div className="context-event-details-heading">
         <div>
-          <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>{selectedEvent.event_type}</span>
+          <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>{formatEventType(selectedEvent.event_type)}</span>
           <h3>{selectedEvent.name}</h3>
         </div>
         <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}><X size={17} /></button>
