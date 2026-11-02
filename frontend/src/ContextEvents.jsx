@@ -12,7 +12,7 @@ import {
   List,
   X,
 } from "lucide-react";
-import { apiFetch, goToNotificationHistory } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
@@ -70,6 +70,16 @@ function formatEventType(value) {
     .toLowerCase();
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+// Remembers each user's events per year and type so the Calendar opens instantly.
+const eventsCache = new Map();
+
+function eventsCacheKey(year, filterType) {
+  return `${getStoredUser()?.email || ""}|${year || "latest"}|${filterType || "all"}`;
+}
+
+function clearEventsCache() {
+  eventsCache.clear();
+}
 
 function ContextEvents({
   currentUser,
@@ -114,44 +124,59 @@ useEffect(() => {
 }, []);
 
 const loadEvents = useCallback(async (signal) => {
-setLoading(true);
-setError("");
+  const cacheKey = eventsCacheKey(year, filterType);
+  const cached = eventsCache.get(cacheKey);
 
-
-try {
-  const params = new URLSearchParams();
-  if (year) params.set("year", String(year));
-  if (filterType) params.set("event_type", filterType);
-
-  const query = params.toString();
-  const url = query ? `${API}?${query}` : API;
-  const response = await apiFetch(url, signal ? { signal } : {});
-
-
-  if (!response.ok) {
-    throw new Error(`Could not load events (${response.status}).`);
+  function applyEvents(loadedEvents) {
+    setEvents(loadedEvents);
+    if (!year) {
+      const latestEvent = loadedEvents.reduce((latest, event) => {
+        if (!latest || event.start_date > latest.start_date) return event;
+        return latest;
+      }, null);
+      const latestEventYear = latestEvent ? Number(latestEvent.start_date.slice(0, 4)) : 0;
+      if (latestEvent) setCalendarDate(parseDateKey(latestEvent.start_date));
+      setYear(latestEventYear || new Date().getFullYear());
+    }
   }
 
-  const data = await response.json();
-  const loadedEvents = data.events || [];
-  setEvents(loadedEvents);
-  if (!year) {
-    const latestEvent = loadedEvents.reduce((latest, event) => {
-      if (!latest || event.start_date > latest.start_date) return event;
-      return latest;
-    }, null);
-    const latestEventYear = latestEvent ? Number(latestEvent.start_date.slice(0, 4)) : 0;
-    if (latestEvent) setCalendarDate(parseDateKey(latestEvent.start_date));
-    setYear(latestEventYear || new Date().getFullYear());
+  setError("");
+  if (cached) {
+    applyEvents(cached);
+    setLoading(false);
+  } else {
+    setLoading(true);
   }
-} catch (err) {
-  if (err.name !== "AbortError") {
-    setError(`${err.message} Check that the backend is running.`);
-  }
-} finally {
-  if (!signal?.aborted) setLoading(false);
-}
 
+  try {
+    const params = new URLSearchParams();
+    if (year) params.set("year", String(year));
+    if (filterType) params.set("event_type", filterType);
+
+    const query = params.toString();
+    const url = query ? `${API}?${query}` : API;
+    const response = await apiFetch(url, signal ? { signal } : {});
+
+    if (!response.ok) {
+      throw new Error(`Could not load events (${response.status}).`);
+    }
+
+    const data = await response.json();
+    const loadedEvents = data.events || [];
+    eventsCache.set(cacheKey, loadedEvents);
+
+    if (signal?.aborted) return;
+    // On a quiet refresh, only swap the list; don't move the calendar again.
+    if (cached) setEvents(loadedEvents);
+    else applyEvents(loadedEvents);
+  } catch (err) {
+    // Keep showing remembered events if the quiet refresh fails
+    if (err.name !== "AbortError" && !cached) {
+      setError(`${err.message} Check that the backend is running.`);
+    }
+  } finally {
+    if (!signal?.aborted) setLoading(false);
+  }
 }, [year, filterType]);
 
 const loadTypes = useCallback(async () => {
@@ -277,6 +302,7 @@ try {
   }
 
   resetForm();
+  clearEventsCache();
   await loadEvents();
 } catch (err) {
   setError(err.message);
@@ -301,6 +327,7 @@ try {
   }
 
   if (editingId === eventId) resetForm();
+  clearEventsCache();
   await loadEvents();
 } catch (err) {
   setError(err.message);

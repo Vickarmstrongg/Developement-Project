@@ -154,6 +154,13 @@ function StatSkeleton() {
     />
   );
 }
+// Remembers radar results per user, day, hour and type so revisits are instant.
+const radarCache = new Map();
+
+function radarCacheKey(day, hour, typeId) {
+  const today = new Date().toISOString().slice(0, 10);
+  return `${getStoredUser()?.email || ""}|${day}|${hour}|${typeId || "all"}|${today}`;
+}
 
 function App() {
   const [sessionUser, setSessionUser] = useState(() =>
@@ -291,7 +298,16 @@ function App() {
   useEffect(() => {
     if (!loggedIn || view !== "rush") return;
 
-    setLoading(true);
+    const cacheKey = radarCacheKey(day, hour, typeId);
+    const cached = radarCache.get(cacheKey);
+    let cancelled = false;
+
+    if (cached) {
+      setVendors(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
 
     let url = `/rush-hour-radar?day=${day}&hour=${hour}`;
 
@@ -308,13 +324,22 @@ function App() {
         return res.json();
       })
       .then((data) => {
-        setVendors(data.vendors || []);
+        const rows = data.vendors || [];
+        radarCache.set(cacheKey, rows);
+        if (cancelled) return;
+        setVendors(rows);
         setLastUpdated(new Date());
       })
       .catch((err) =>
         console.error("Error fetching rush hour radar:", err)
       )
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [day, hour, typeId, loggedIn, view]);
 
   useEffect(() => {
