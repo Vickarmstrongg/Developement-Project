@@ -40,10 +40,11 @@ input {
 
 .brand {
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   padding: 0 5px 25px;
-  gap: 5px;
+  gap: 8px;
 }
 
 .brand-logo {
@@ -2724,9 +2725,21 @@ body,
 }
 
 .dashboard-section-heading {
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 15px;
   color: #39715c;
+}
+
+.dashboard-section-heading > svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 7px;
+}
+
+.dashboard-text-link svg {
+  width: 18px;
+  height: 18px;
 }
 
 .dashboard-section-heading h2 {
@@ -2882,14 +2895,22 @@ body,
 }
 
 .dashboard-text-link {
-  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: #2d8177;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  color: inherit;
   cursor: pointer;
+}
+
+.dashboard-text-link:hover {
+  background: #edf4f2;
 }
 
 .dashboard-radar-date {

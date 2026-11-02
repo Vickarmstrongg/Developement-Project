@@ -61,6 +61,12 @@ function formatDateWithDay(value) {
   return `${WEEKDAYS[parsed.getDay()]} ${parsed.getDate()} ${MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
 }
 
+function formatEventType(value) {
+  if (!value) return "";
+  const text = String(value).replace(/_/g, " ").trim().toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function TrendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
@@ -670,7 +676,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
                   <span className="dashboard-eyebrow">SERVICE OUTLOOK</span>
                   <h2>{data.service_outlook?.title || "No historical insight available"}</h2>
                 </div>
-                <Clock3 size={19} />
+                <Clock3 size={18} />
               </div>
               {data.service_outlook?.status === "available" ? (
                 <>
@@ -688,9 +694,15 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
                   <span className="dashboard-eyebrow">RUSH HOUR RADAR</span>
                   <h2>Latest reference period</h2>
                 </div>
-                <button className="dashboard-text-link" type="button" onClick={onRushHourRadar}>
-                  Open Radar
-                </button>
+                <button
+  className="dashboard-text-link"
+  type="button"
+  onClick={onRushHourRadar}
+  aria-label="Open Rush Hour Radar"
+  title="Open Rush Hour Radar"
+>
+  <Clock3 size={18} />
+</button>
               </div>
               {data.rush_hour_radar?.status === "available" ? (
                 <>
@@ -721,9 +733,15 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
                   <span className="dashboard-eyebrow">CALENDAR</span>
                   <h2>Upcoming context events</h2>
                 </div>
-                <button className="dashboard-text-link" type="button" onClick={onContextEvents}>
-                  Open calendar
-                </button>
+                <button
+  className="dashboard-text-link"
+  type="button"
+  onClick={onContextEvents}
+  aria-label="Open calendar"
+  title="Open calendar"
+>
+  <CalendarDays size={18} />
+</button>
               </div>
               {data.upcoming_context_events?.length ? (
                 <ul className="dashboard-event-list">
@@ -732,7 +750,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
                       <CalendarDays size={16} />
                       <div>
                         <strong>{event.name}</strong>
-                        <span>{event.event_type} · {formatDate(event.start_date)}</span>
+                        <span>{formatEventType(event.event_type)} · {formatDate(event.start_date)}</span>
                       </div>
                     </li>
                   ))}
