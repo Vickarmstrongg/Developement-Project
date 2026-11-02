@@ -17,7 +17,7 @@ import ContextEvents from "./ContextEvents";
 import Dashboard from "./DashboardPage";
 import SetPassword from "./SetPassword";
 import Reports from "./Reports";
-import { apiFetch, clearSession, getStoredUser, getToken } from "./api";
+import { apiFetch, clearSession, getStoredUser, getToken, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import Users from "./Users";
 import UsersLink from "./UsersLink";
@@ -434,9 +434,7 @@ function App() {
             <div className="topbar-right">
               <button
                 className="notification-button"
-                onClick={() =>
-                  (window.location.href = "/notifications")
-                }
+                onClick={goToNotificationHistory}
                 aria-label="Notifications"
                 title="Notifications"
               >
@@ -578,9 +576,7 @@ function App() {
           <div className="topbar-right">
             <button
               className="notification-button"
-              onClick={() =>
-                (window.location.href = "/notifications")
-              }
+              onClick={goToNotificationHistory}
               aria-label="Notifications"
               title="Notifications"
             >

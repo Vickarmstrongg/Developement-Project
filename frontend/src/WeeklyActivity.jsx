@@ -20,7 +20,7 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
 function WeeklyActivityEvidence({
@@ -267,6 +267,7 @@ function WeeklyActivityEvidence({
                         <button
                             type="button"
                             className="notification-button"
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >

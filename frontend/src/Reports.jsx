@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, LogOut } from "lucide-react";
-import { apiFetch } from "./api";
+import { apiFetch, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
 // which page each report type belongs to (names used by App.jsx navigation)
@@ -121,7 +121,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                     <div className="topbar-right">
                         <button
                             className="notification-button"
-                            onClick={() => (window.location.href = "/notifications")}
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >

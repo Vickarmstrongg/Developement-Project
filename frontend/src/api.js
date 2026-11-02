@@ -103,3 +103,14 @@ export function apiFetchCached(path, ttlMs = 300000) {
       })
   );
 }
+
+// Used by the notification bell on every page except Demand Forecast: opens
+// Demand Forecast with the notification history already showing
+export function goToNotificationHistory() {
+  try {
+    sessionStorage.setItem("bb-open-notification-history", "1");
+  } catch {
+    // Storage unavailable: Demand Forecast just opens normally
+  }
+  window.location.hash = "#demand-forecast";
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getStoredUser } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 
 import {
     Bell,
@@ -522,9 +522,7 @@ function FairComparison({
                     <div className="topbar-right">
                         <button
                             className="notification-button"
-                            onClick={() => {
-                                window.location.href = "/notifications";
-                            }}
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >

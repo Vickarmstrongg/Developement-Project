@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import logo from "./assets/Logo.png";
 import "./Users.css";
-import { apiFetch } from "./api";
+import { apiFetch, goToNotificationHistory } from "./api";
 
 
 const EMPTY_FORM = { full_name: "", email: "", role: "Manager", vendor_ids: [] };
@@ -374,7 +374,7 @@ function Users({
                     <div className="topbar-right">
                         <button
                             className="notification-button"
-                            onClick={() => (window.location.href = "/notifications")}
+                            onClick={goToNotificationHistory}
                             aria-label="Notifications"
                             title="Notifications"
                         >

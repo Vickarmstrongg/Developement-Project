@@ -172,7 +172,13 @@ function DemandForecast({
     const [expandedNotifications, setExpandedNotifications] = useState([]);
 
 
-    const [showNotificationHistory, setShowNotificationHistory] = useState(false);
+    const [showNotificationHistory, setShowNotificationHistory] = useState(() => {
+        try {
+            return sessionStorage.getItem("bb-open-notification-history") === "1";
+        } catch {
+            return false;
+        }
+    });
     const [historyNotifications, setHistoryNotifications] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState("");
@@ -530,13 +536,27 @@ function DemandForecast({
         }
     }
 
-    async function openNotificationHistory() {
+    function openNotificationHistory() {
         setNotificationsOpen(false);
         setHistoryFilter("all");
         setShowNotificationHistory(true);
-
-        await loadNotificationHistory();
     }
+
+    // The note from another page's bell has been used, so remove it
+    useEffect(() => {
+        try {
+            sessionStorage.removeItem("bb-open-notification-history");
+        } catch {
+            // Storage unavailable: nothing to clear
+        }
+    }, []);
+
+    // Loads the history whenever it is showing, and again if the business changes
+    useEffect(() => {
+        if (showNotificationHistory) {
+            loadNotificationHistory();
+        }
+    }, [showNotificationHistory, vendorId]);
 
     async function updateNotification(notificationId, action) {
         try {

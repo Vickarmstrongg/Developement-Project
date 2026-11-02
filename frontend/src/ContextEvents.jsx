@@ -12,7 +12,7 @@ import {
   List,
   X,
 } from "lucide-react";
-import { apiFetch } from "./api";
+import { apiFetch, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
@@ -310,7 +310,7 @@ return (
       <div className="topbar-right">
         <button
           className="notification-button"
-          onClick={() => (window.location.href = "/notifications")}
+          onClick={goToNotificationHistory}
           aria-label="Notifications"
           title="Notifications"
         >
