@@ -43,6 +43,12 @@ function capitalise(value) {
     return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function formatEventType(value) {
+    if (!value) return "";
+    const text = String(value).replace(/_/g, " ").trim().toLowerCase();
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function formatDate(value) {
     if (!value) {
         return "";
@@ -1197,7 +1203,7 @@ function FairComparison({
                                                             key={event.event_id}
                                                         >
                                                             <strong>{event.name}</strong>
-                                                            <span>{event.event_type}</span>
+                                                            <span>{formatEventType(event.event_type)}</span>
                                                             <small>
                                                                 {formatDate(event.start_date)}
                                                                 {event.start_date !== event.end_date &&

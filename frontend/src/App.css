@@ -2875,10 +2875,6 @@ body,
   gap: 16px;
 }
 
-.dashboard-outlook {
-  border-left: 3px solid #a77632;
-}
-
 .dashboard-eyebrow {
   display: block;
   margin-bottom: 5px;
@@ -5651,3 +5647,4 @@ body[data-role="Manager"] a[href="#context-events"] {
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
+}

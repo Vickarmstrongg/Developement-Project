@@ -670,7 +670,7 @@ function DashboardPage({ onContextEvents, onRushHourRadar, onDemandForecast }) {
 
           <section className="dashboard-lower-grid">
             <div className="dashboard-lower-group">
-            <article className="dashboard-panel dashboard-outlook panel dashboard-clickable" {...cardLink(onDemandForecast, "Demand Forecast")}>
+            <article className="dashboard-panel dashboard-outlook panel dashboard-clickable" {...cardLink(onRushHourRadar, "Rush Hour Radar")}>
               <div className="dashboard-section-heading">
                 <div>
                   <span className="dashboard-eyebrow">SERVICE OUTLOOK</span>
