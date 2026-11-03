@@ -240,7 +240,7 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                                         <tr>
                                             <th align="left">Date & Time</th>
                                             <th align="left">Report</th>
-                                            <th align="left">Business</th>
+                                            <th align="left">Vendor</th>
                                             <th align="left">Period</th>
                                             <th align="left">Exported by</th>
                                             <th align="left">Preview</th>

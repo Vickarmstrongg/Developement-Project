@@ -564,12 +564,11 @@ input {
 .forecast-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
 }
 
 .forecast-table th,
 .forecast-table td {
-  padding: 8px 10px;
+  padding: 14px 24px;
   text-align: left;
   border-bottom: 1px solid #edf1ef;
   white-space: nowrap;
@@ -584,6 +583,19 @@ input {
 .forecast-table td {
   color: #304846;
   font-size: 14px;
+}
+
+/* Number columns (Transactions, Customers, Revenue) centred */
+.forecast-table th:not(:first-child):not(:last-child),
+.forecast-table td:not(:first-child):not(:last-child) {
+  text-align: center;
+}
+
+/* Event column takes the remaining space and can wrap */
+.forecast-table th:last-child,
+.forecast-table td:last-child {
+  width: 35%;
+  white-space: normal;
 }
 
 .forecast-note {
@@ -657,9 +669,10 @@ input {
 
 .stat-label {
   font-size: 11px;
-  color: #5c6b68;
+  color: #71817e;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.7px;
+  font-weight: 700;
 }
 
 .stat-value {
@@ -897,6 +910,7 @@ body,
   color: #536665;
   font-size: 11px;
   font-weight: 600;
+  line-height: 13px;
 }
 
 .fair-select-wrap {
@@ -919,7 +933,7 @@ body,
   width: 100%;
   min-width: 0;
   height: 40px;
-  padding: 0 29px 0 34px;
+  padding: 0 29px 0 12px;
   appearance: none;
   border: 1px solid #dfe7e5;
   border-radius: 7px;
@@ -962,6 +976,21 @@ body,
   color: #344846;
   font-family: inherit;
   font-size: 11px;
+}
+
+/* Making filter for vendor have a mouse hand rather than an I-cursor */
+#dashboard-vendor-select,
+#fair-business-select,
+#demand-vendor-select,
+#recommendation-vendor-select {
+  cursor: pointer;
+}
+
+#dashboard-vendor-select:disabled,
+#fair-business-select:disabled,
+#demand-vendor-select:disabled,
+#recommendation-vendor-select:disabled {
+  cursor: not-allowed;
 }
 
 .fair-period-summary {
@@ -2524,10 +2553,13 @@ body,
 }
 
 .dashboard-heading-row {
+  flex-wrap: wrap;
   margin-bottom: 18px;
 }
 
 .dashboard-heading-row .page-heading {
+  flex: 1;
+  min-width: 220px;
   margin: 0;
 }
 
@@ -2581,10 +2613,10 @@ body,
 }
 
 .dashboard-range {
-  margin: 0;
+  margin: 0 0 16px;
   color: #607470;
   font-size: 11px;
-  text-align: right;
+  text-align: left;
 }
 
 .dashboard-privacy-notice,
@@ -4484,14 +4516,13 @@ body[data-role="Manager"] a[href="#context-events"] {
 }
 
 .comparison-controls {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 16px;
-  width: 100%;
   margin-bottom: 18px;
-  box-sizing: border-box;
+}
+
+.comparison-week-hint {
+  margin: 10px 0 0;
+  color: #69839a;
+  font-size: 12px;
 }
 
 .comparison-week-selector {
@@ -4744,7 +4775,6 @@ body[data-role="Manager"] a[href="#context-events"] {
 .evidence-page {
   padding: 8px 0 32px;
   color: #173b5e;
-  background: #ffffff;
   padding-left: 32px;
   padding-right: 32px;
   box-sizing: border-box;
@@ -5028,8 +5058,26 @@ body[data-role="Manager"] a[href="#context-events"] {
   box-shadow: 0 3px 12px rgba(20, 60, 60, 0.04);
 }
 
-.recommendations-heading {
+.recommendations-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
   margin-bottom: 22px;
+}
+
+.recommendations-heading {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.recs-panel .fair-filter-panel {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+.fair-recommendation-field {
+  width: 210px;
 }
 
 .recommendations-heading h3 {
@@ -5575,6 +5623,27 @@ body[data-role="Manager"] a[href="#context-events"] {
 
 .reports-state[role="alert"] {
     color: #a94442;
+}
+
+.open-report-button {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #e5f2eb;
+  color: #000000;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.open-report-button:hover {
+  background: #d3ebdf;
+}
+
+.open-report-button:focus-visible {
+  outline: 2px solid #103f40;
+  outline-offset: 2px;
 }
 
 
