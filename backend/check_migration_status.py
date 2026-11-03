@@ -1,13 +1,4 @@
-"""Read-only migration status probe used by run_remaining_migration.bat.
-
-Writes "<status> <batches_committed>" to the file given as argv[1] and exits with:
-  0  status is loading or validating (safe to continue)
-  10 status is complete
-  20 no migration state exists (never start one from the batch file)
-  21 target safety check refused
-  22 any other error (unreadable ledger, connection problem, unexpected status)
-It only runs SELECTs inside a READ ONLY transaction that is rolled back.
-"""
+# Read-only migration status 
 import sys
 
 import migrate_lecturer_data as m

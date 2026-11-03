@@ -1,18 +1,5 @@
-"""
-Fair Comparison Score Engine — Byte & Bite
-------------------------------------------
-Purpose:
-    Allows a vendor to benchmark their performance against an aggregated,
-    anonymised cohort of similar participating businesses (same vendor type
-    and size tier).
+# Fair Comparison Score 
 
-Rules (BRD v2 & Client Minutes):
-    - Peers grouped by vendor type (type_id) + size (small, medium, large)[cite: 3].
-    - Minimum 3 peer businesses in the cohort (FR-19, NFR-02)[cite: 3].
-    - Zero competitor names or individual sales numbers exposed[cite: 3].
-    - Output label: "above_average", "average", or "below_average"[cite: 3].
-    - Optional filter by specific date[cite: 3].
-"""
 import time
 from datetime import date, timedelta
 from typing import Optional
@@ -23,7 +10,7 @@ from performance import timed_stage
 from reference_date import get_reference_date, today_in_app_timezone
 
 MIN_PEER_BUSINESSES = 3
-AVERAGE_BAND_PERCENTAGE = 0.10  # Within ±10% of peer mean is "average"
+AVERAGE_BAND_PERCENTAGE = 0.10  
 
 
 def _operational_tier(txn_count: int) -> str:
@@ -59,7 +46,7 @@ def calculate_fair_comparison(
     filter_date: Optional[date] = None,
     today_provider=today_in_app_timezone,
 ) -> dict:
-    # Remembered for a few minutes; any caller passing its own date (tests) skips this
+    
     if today_provider is not today_in_app_timezone:
         return _calculate_fair_comparison(db, vendor_id, filter_date, today_provider)
     key = (vendor_id, filter_date, today_provider())
@@ -79,7 +66,7 @@ def _calculate_fair_comparison(
     filter_date: Optional[date] = None,
     today_provider=today_in_app_timezone,
 ) -> dict:
-    # Latest transaction date, never after today; future rows are not history.
+    # Latest transaction date, never after today, future rows are not history
     reference_date = get_reference_date(db, today_provider=today_provider)
     if reference_date is None:
         return {"error": "No transaction data available"}
@@ -95,7 +82,7 @@ def _calculate_fair_comparison(
     type_name = vendor_type.name if vendor_type else "Food & Beverage"
 
     # Fetch same-type vendors and transaction totals together to avoid one
-    # full-history count query per vendor.
+    # full-history count query per vendor
     same_type_vendors = (
         db.query(models.Vendor)
         .filter(models.Vendor.type_id == vendor.type_id)
@@ -116,7 +103,7 @@ def _calculate_fair_comparison(
     ) if same_type_vendor_ids else {}
     vendor_size = _operational_tier(transaction_counts.get(vendor.vendor_id, 0))
 
-    # 2. Determine date window (single day if requested, or latest 7 days recorded)
+    # 2. Determine date window 
     if filter_date:
         start_date = filter_date
         end_date = filter_date
@@ -131,7 +118,7 @@ def _calculate_fair_comparison(
         if _operational_tier(transaction_counts.get(v.vendor_id, 0)) == vendor_size
     ]
 
-    # Privacy constraint check: Minimum 3 peer businesses in cohort
+    # Privacy constraint check: Minimum 3 peer businesses
     if len(peer_vendor_ids) < MIN_PEER_BUSINESSES:
         return {
             "status": "suppressed",
@@ -141,7 +128,7 @@ def _calculate_fair_comparison(
             "vendor_type": type_name
         }
 
-    # 4. Query aggregated metrics for all peers in the cohort
+    # 4. Query aggregated metrics for all peers
     cohort_stats = (
         db.query(
             models.Transaction.vendor_id,
@@ -166,7 +153,7 @@ def _calculate_fair_comparison(
             "peer_group_size": total_cohort_businesses
         }
 
-    # 5. Extract target vendor's metrics & compute cohort averages
+    # 5. Extract target vendor's metrics & averages
     target_stats = next((s for s in cohort_stats if s.vendor_id == vendor_id), None)
     vendor_txns = target_stats.txn_count if target_stats else 0
     vendor_revenue = float(target_stats.total_revenue or 0.0) if target_stats else 0.0
@@ -228,8 +215,7 @@ def _calculate_fair_comparison(
         current_date += timedelta(days=1)
 
 
-    # -------------------------Ends here------------------------------
-
+    
     # 6. Determine classification label (above_average / average / below_average)
     if peer_avg_txns > 0:
         ratio = vendor_txns / peer_avg_txns
@@ -265,6 +251,6 @@ def _calculate_fair_comparison(
             "peer_average_revenue": peer_avg_revenue,
             "comparison_result": comparison_result
         },
-        # Delete this if don't like (this is for the trend line graph)
+    
         "daily_trend": daily_trend
     }
