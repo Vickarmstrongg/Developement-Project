@@ -17,6 +17,7 @@ import {
 import logo from "./assets/Logo.png";
 import "./Users.css";
 import { apiFetch, goToNotificationHistory } from "./api";
+import ConfirmPopup from "./ConfirmPopup";
 
 
 const EMPTY_FORM = { full_name: "", email: "", role: "Manager", vendor_ids: [] };
@@ -109,6 +110,8 @@ function Users({
     const [editingId, setEditingId] = useState(null);
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef(null);
+    const [confirmPopup, setConfirmPopup] = useState(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
 
     const me = currentUser || { name: "", role: "" };
 
@@ -258,19 +261,28 @@ function Users({
     }
 
     function deactivate(person) {
-        if (!window.confirm(`Revoke access for ${person.email}?`)) return;
-        runAction(`/users/${person.user_id}/revoke`, "POST", "Access deactivated.");
-    }
-    
-    function reactivate(person) {
-        if (!window.confirm(`Reactivate the account for ${person.email}?`)) return;
+       setConfirmPopup({
+        title: "Deactivate Account",
+        message: `Are you sure you want to deactivate ${person.email}? This user will no longer be able to access the system.`,
+        confirmText: "Deactivate",
+        variant: "danger",
+        path: `/users/${person.user_id}/revoke`,
+        method: "POST",
+        successMessage: "Account Deactivated.",
+    });
+}
 
-        runAction(
-            `/users/${person.user_id}/reactivate`,
-            "POST",
-            "Account reactivated."
-        );
-    }
+    function reactivate(person) {
+        setConfirmPopup({
+        title: "Reactivate Account",
+        message: `Are you sure you want to reactivate ${person.email}? This user will regain access to the system.`,
+        confirmText: "Reactivate",
+        variant: "success",
+        path: `/users/${person.user_id}/reactivate`,
+        method: "POST",
+        successMessage: "Account Reactivated.",
+    });
+}
 
 
     function sendReset(person) {
@@ -282,10 +294,55 @@ function Users({
     }
 
     function remove(person) {
-        if (!window.confirm(`Remove ${person.email}? This cannot be undone.`)) return;
-        if (editingId === person.user_id) resetForm();
-        runAction(`/users/${person.user_id}`, "DELETE", "User removed.");
+         setConfirmPopup({
+        title: "Remove Account",
+        message: `Are you sure you want to permanently remove ${person.email}? This action cannot be undone.`,
+        confirmText: "Remove Permanently",
+        variant: "danger",
+        path: `/users/${person.user_id}`,
+        method: "DELETE",
+        successMessage: "User removed.",
+        userId: person.user_id,
+    });
+}
+
+    async function handleConfirm() {
+    if (!confirmPopup || confirmLoading) return;
+
+    setConfirmLoading(true);
+    setError("");
+    setNotice("");
+
+    try {
+        const response = await apiFetch(confirmPopup.path, {
+            method: confirmPopup.method,
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                await readError(response, "That did not work. Please try again.")
+            );
+        }
+
+        const data =
+            response.status === 204
+                ? null
+                : await response.json().catch(() => null);
+
+        if (confirmPopup.userId === editingId) {
+            resetForm();
+        }
+
+        setNotice(data?.message || confirmPopup.successMessage);
+        setConfirmPopup(null);
+
+        await loadAll();
+    } catch (err) {
+        setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+        setConfirmLoading(false);
     }
+}
 
     return (
         <div className="app-layout">
@@ -665,6 +722,18 @@ function Users({
                     </section>
                 </div>
             </main>
+            <ConfirmPopup
+                open={confirmPopup !== null}
+                title={confirmPopup?.title}
+                message={confirmPopup?.message}
+                confirmText={confirmPopup?.confirmText}
+                variant={confirmPopup?.variant}
+                loading={confirmLoading}
+                onConfirm={handleConfirm}
+                onCancel={() => {
+                    if (!confirmLoading) setConfirmPopup(null);
+                }}
+            />
         </div>
     );
 }
