@@ -48,6 +48,11 @@ function formatRand(value) {
     return `R ${formattedWhole}.${String(cents).padStart(2, "0")}`;
 }
 
+function formatRandValue(value) {
+    if (value == null || value === "") return "N/A";
+
+    return formatRand(value).replace(/^R\s/, "");
+}
 
 function formatComparisonPeriod(startDate, endDate) {
     if (!startDate || !endDate) return "Dates unavailable";
@@ -1555,7 +1560,7 @@ function DemandForecast({
                                                                     <th>Day</th>
                                                                     <th>Transactions</th>
                                                                     <th>Customers</th>
-                                                                    {!isStaff && <th>Revenue</th>}
+                                                                    {!isStaff && <th>Revenue (R)</th>}
                                                                     <th>Event</th>
                                                                 </tr>
                                                             </thead>
@@ -1575,8 +1580,8 @@ function DemandForecast({
                                                                             <td>{item.customers}</td>
 
                                                                             {!isStaff && (
-                                                                                <td>{formatRand(item.revenue)}</td>
-                                                                            )}
+    <td>{formatRandValue(item.revenue)}</td>
+)}
 
                                                                             <td>
                                                                                 {contextEventError

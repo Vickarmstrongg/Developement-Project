@@ -74,10 +74,10 @@ def check_event(body, db):
             detail="Event name cannot be empty."
         )
 
-    if body.event_type not in allowed_types(db):
+    if not body.event_type.strip():
         raise HTTPException(
             status_code=422,
-            detail="Pick an event type from the list."
+            detail="Event type cannot be empty."
         )
 
     if body.end_date < body.start_date:

@@ -18,6 +18,7 @@ import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
 
 const API = "/context-events";
+const OTHER_TYPE = "__other__";
 const CALENDAR_MODES = ["month", "week", "day"];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -60,7 +61,6 @@ function eventTypeColor(type, types) {
   return `event-type-color-${index}`;
 }
 
-// "university_reopen" -> "University reopen"
 function formatEventType(value) {
   if (!value) return "";
   const text = String(value)
@@ -79,6 +79,69 @@ function eventsCacheKey(year, filterType) {
 
 function clearEventsCache() {
   eventsCache.clear();
+}
+
+function formatLongDate(value) {
+  return formatCalendarDate(parseDateKey(value), {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatDuration(start, end) {
+  const days =
+    Math.round((parseDateKey(end) - parseDateKey(start)) / 86400000) + 1;
+
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+function EventDetailRows({ event }) {
+  return (
+    <>
+      <div>
+        <dt>Date</dt>
+        <dd>
+          {formatLongDate(event.start_date)}
+          {event.end_date !== event.start_date &&
+            ` – ${formatLongDate(event.end_date)}`}
+        </dd>
+      </div>
+
+      <div>
+        <dt>Duration</dt>
+        <dd>{formatDuration(event.start_date, event.end_date)}</dd>
+      </div>
+
+      {(event.start_time || event.end_time || event.all_day) && (
+        <div>
+          <dt>Time</dt>
+          <dd>
+            {event.all_day
+              ? "All day"
+              : [event.start_time, event.end_time].filter(Boolean).join(" – ")}
+          </dd>
+        </div>
+      )}
+
+      {event.notes && (
+        <div>
+          <dt>Description / notes</dt>
+          <dd>{event.notes}</dd>
+        </div>
+      )}
+
+      {["subcategory", "location", "campus", "faculty", "verification_status"].map(
+        (field) =>
+          event[field] ? (
+            <div key={field}>
+              <dt>{field.replaceAll("_", " ")}</dt>
+              <dd>{event[field]}</dd>
+            </div>
+          ) : null
+      )}
+    </>
+  );
 }
 
 function ContextEvents({
@@ -111,6 +174,7 @@ end_date: "",
 };
 
 const [form, setForm] = useState(emptyForm);
+const [customType, setCustomType] = useState("");
 
 useEffect(() => {
   function handleClickOutside(event) {
@@ -273,11 +337,12 @@ end_date: event.end_date,
 }
 
 function resetForm() {
-setEditingId(null);
-setForm({
-...emptyForm,
-event_type: types[0] || "",
-});
+  setCustomType("");
+  setEditingId(null);
+  setForm({
+    ...emptyForm,
+    event_type: types[0] || "",
+  });
 }
 
 async function saveEvent(event) {
@@ -291,7 +356,13 @@ try {
   const response = await apiFetch(url, {
     method: editingId ? "PUT" : "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(form),
+    body: JSON.stringify({
+  ...form,
+  event_type:
+    form.event_type === OTHER_TYPE
+      ? customType.trim().toLowerCase().replace(/\s+/g, "_")
+      : form.event_type,
+}),
   });
 
   if (!response.ok) {
@@ -304,6 +375,7 @@ try {
   resetForm();
   clearEventsCache();
   await loadEvents();
+  await loadTypes();
 } catch (err) {
   setError(err.message);
 } finally {
@@ -457,12 +529,13 @@ return (
             setForm({ ...form, event_type: e.target.value })
           }
         >
-          {types.map((type) => (
-            <option key={type} value={type}>
-              {formatEventType(type)}
-            </option>
-          ))}
-        </select>
+{types.map((type) => (
+  <option key={type} value={type}>
+    {formatEventType(type)}
+  </option>
+))}
+<option value={OTHER_TYPE}>Other</option>
+</select>
       </label>
 
       <label className="context-event-form-field">
@@ -514,6 +587,21 @@ return (
           </button>
         )}
       </div>
+
+      {form.event_type === OTHER_TYPE && (
+        <label
+          className="context-event-form-field"
+          style={{ gridColumn: "1 / -1" }}
+        >
+          Custom event type
+          <input
+            required
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
+            placeholder="e.g. Sporting Event"
+          />
+        </label>
+      )}
     </form>
   </section>
 
@@ -693,19 +781,9 @@ return (
                 <X size={17} />
               </button>
             </div>
-            <dl>
-              <div><dt>Date</dt><dd>{formatCalendarDate(parseDateKey(selectedEvent.start_date), { day: "numeric", month: "long", year: "numeric" })}{selectedEvent.end_date !== selectedEvent.start_date && ` – ${formatCalendarDate(parseDateKey(selectedEvent.end_date), { day: "numeric", month: "long", year: "numeric" })}`}</dd></div>
-              {(selectedEvent.start_time || selectedEvent.end_time || selectedEvent.all_day) && (
-                <div><dt>Time</dt><dd>{selectedEvent.all_day ? "All day" : [selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(" – ")}</dd></div>
-              )}
-              {selectedEvent.notes && <div><dt>Description / notes</dt><dd>{selectedEvent.notes}</dd></div>}
-              {["subcategory", "location", "campus", "faculty", "scope", "verification_status"].map((field) =>
-                selectedEvent[field] ? <div key={field}><dt>{field.replaceAll("_", " ")}</dt><dd>{selectedEvent[field]}</dd></div> : null
-              )}
-              {["source", "source_organisation", "source_name", "source_file", "source_url", "source_page"].map((field) =>
-                selectedEvent[field] ? <div key={field}><dt>{field.replaceAll("_", " ")}</dt><dd>{field === "source_url" ? <a href={selectedEvent[field]} target="_blank" rel="noreferrer">{selectedEvent[field]}</a> : selectedEvent[field]}</dd></div> : null
-              )}
-            </dl>
+<dl>
+  <EventDetailRows event={selectedEvent} />
+</dl>
           </section>
         )}
       </>
@@ -769,16 +847,9 @@ return (
         </div>
         <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}><X size={17} /></button>
       </div>
-      <dl>
-        <div><dt>Date</dt><dd>{selectedEvent.start_date}{selectedEvent.end_date !== selectedEvent.start_date && ` – ${selectedEvent.end_date}`}</dd></div>
-        {(selectedEvent.start_time || selectedEvent.end_time || selectedEvent.all_day) && (
-          <div><dt>Time</dt><dd>{selectedEvent.all_day ? "All day" : [selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(" – ")}</dd></div>
-        )}
-        {selectedEvent.notes && <div><dt>Description / notes</dt><dd>{selectedEvent.notes}</dd></div>}
-        {["subcategory", "location", "campus", "faculty", "scope", "verification_status", "source", "source_organisation", "source_name", "source_file", "source_url", "source_page"].map((field) =>
-          selectedEvent[field] ? <div key={field}><dt>{field.replaceAll("_", " ")}</dt><dd>{field === "source_url" ? <a href={selectedEvent[field]} target="_blank" rel="noreferrer">{selectedEvent[field]}</a> : selectedEvent[field]}</dd></div> : null
-        )}
-      </dl>
+<dl>
+  <EventDetailRows event={selectedEvent} />
+</dl>
     </section>
   )}
 </div>
