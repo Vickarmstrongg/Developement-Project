@@ -1,4 +1,4 @@
-"""Offline tests for migrate_lecturer_data.py. No database is used."""
+#Offline tests for migrate_lecturer_data.py. No database is used
 
 import csv
 import importlib.util

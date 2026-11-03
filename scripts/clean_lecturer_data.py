@@ -1,14 +1,4 @@
-"""Build cleaned, food-only Byte & Bite datasets from the lecturer CSV files.
-
-Read-only on data/new/. Writes only to data/cleaned/ (built in a temporary
-folder, then swapped in), so it can be re-run safely. Original IDs and the
-raw text of value, discount and tx_datetime are never changed. Transactions
-are streamed row by row. Student personal data is never read into the output:
-the cleaned student file contains IDs only.
-
-Usage (from the project root):
-    backend\\venv\\Scripts\\python.exe scripts\\clean_lecturer_data.py
-"""
+# Cleaned food-only Byte & Bite datasets from the lecturer CSV files
 
 import csv
 import hashlib
@@ -47,7 +37,7 @@ HEADERS = {
     "transaction": ["id", "student_id", "vendor_id", "tx_datetime", "value", "discount"],
 }
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-# Rows after this are kept but flagged: the lecturer's calendar ends in 2026.
+# Rows after this are kept but flagged
 LATEST_EXPECTED_TX = "2026-12-31 23:59:59"
 FLAG_FIELDS = ["source_file", "line_number", "record_type", "record_id", "action", "reason"]
 
@@ -125,7 +115,7 @@ def main():
                 vendor_rows.append(row)
     food_vendor_ids = {r[0] for r in vendor_rows}
 
-    # Students (IDs only are ever stored)
+    # Students 
     student_ids, student_total, seen = set(), 0, set()
     handle, reader = open_csv(SOURCE / "student.csv", HEADERS["student.csv"])
     with handle:
@@ -139,7 +129,7 @@ def main():
                 seen.add(row[0])
                 student_ids.add(row[0])
 
-    # Transactions (streamed)
+    # Transactions 
     tx_stats = Counter()
     per_file = {}
     non_food_by_type = Counter()

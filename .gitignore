@@ -5,9 +5,6 @@ data/cleaned.tmp/
 data/cleaned.tmp.*
 data/migration/
 
-# Old lecturer datasets
-backend/data/old/
-
 # Python cache files
 __pycache__/
 *.py[cod]
