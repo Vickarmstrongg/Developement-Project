@@ -103,7 +103,7 @@ Manager
 
 tm3@example.com
 testmanager3
-manager
+manager (Currently Deactivated - Can be activated throught the Admin profile on the users page)
 
 mattjoncoker@gmail.com
 password
