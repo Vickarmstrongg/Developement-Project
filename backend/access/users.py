@@ -123,16 +123,44 @@ def update_user(
 @router.delete("/{user_id}", status_code=204)
 def remove_user(user_id: int, db: Session = Depends(database.get_db), admin: models.User = AdminUser):
     user = _get_target(db, user_id)
+
     try:
+        # Preserve notifications by transferring them to the Admin
+        db.query(models.Notification).filter(
+            models.Notification.user_id == user_id
+        ).update(
+            {models.Notification.user_id: admin.user_id},
+            synchronize_session=False
+        )
+       
+        # Keep context events but remove the deleted user's reference
+        db.query(models.ContextualEvent).filter(
+            models.ContextualEvent.created_by_user_id == user_id
+        ).update(
+            {models.ContextualEvent.created_by_user_id: None},
+            synchronize_session=False
+        )
+
+        # Keep report exports but remove the deleted user's reference
+        db.query(models.ReportExport).filter(
+            models.ReportExport.generated_by_user_id == user_id
+        ).update(
+            {models.ReportExport.generated_by_user_id: None},
+            synchronize_session=False
+        )
+
+        # Delete the user and their linked vendor access
         db.delete(user)
+
         db.commit()
+
     except IntegrityError:
         db.rollback()
-        # notifications, report_exports and contextual_events point at users
         raise HTTPException(
             409,
-            "This user has notifications, exports or events linked to them. Revoke their access instead.",
+            "Unable to delete this user because other database records still reference the account."
         )
+
     return Response(status_code=204)
 
 
