@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, LogOut } from "lucide-react";
-import { apiFetch, goToNotificationHistory } from "./api";
+import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 
 // which page each report type belongs to (names used by App.jsx navigation)
@@ -39,10 +39,20 @@ function formatPeriod(start, end) {
     if (start === end || !end) return formatDay(start);
     return `${formatDay(start)} – ${formatDay(end)}`;
 }
+// Remembers each user's exports list so returning to Reports is instant.
+const reportsCache = new Map();
+
+function reportsCacheKey() {
+    return getStoredUser()?.email || "";
+}
 
 function Reports({ currentUser, onNavigate, onLogout }) {
-    const [exportsList, setExportsList] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [exportsList, setExportsList] = useState(
+        () => reportsCache.get(reportsCacheKey()) || []
+    );
+    const [loading, setLoading] = useState(
+        () => !reportsCache.has(reportsCacheKey())
+    );
     const [error, setError] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
     const [profileOpen, setProfileOpen] = useState(false);
@@ -58,21 +68,14 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                 : "Your exports";
 
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setProfileOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    useEffect(() => {
         const controller = new AbortController();
+        const cacheKey = reportsCacheKey();
+        const hadCache = reportsCache.has(cacheKey);
 
         async function load() {
-            setLoading(true);
             setError("");
+            if (!hadCache) setLoading(true);
+
             try {
                 const response = await apiFetch("/api/reports/exports", {
                     signal: controller.signal,
@@ -85,9 +88,16 @@ function Reports({ currentUser, onNavigate, onLogout }) {
                             : `Could not load reports (${response.status}).`
                     );
                 }
-                setExportsList(data.exports || []);
+
+                const rows = data.exports || [];
+                reportsCache.set(cacheKey, rows);
+
+                if (!controller.signal.aborted) {
+                    setExportsList(rows);
+                }
             } catch (err) {
-                if (err.name !== "AbortError") {
+                // Keep showing the remembered list if the quiet refresh fails
+                if (err.name !== "AbortError" && !hadCache) {
                     setError(err.message || "Could not load reports.");
                 }
             } finally {

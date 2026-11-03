@@ -145,6 +145,13 @@ function ChartTooltip({ active, payload, isStaff, contextEvents, contextEventErr
         </div>
     );
 }
+// Remembers forecasts so returning to a vendor/date shows instantly.
+const forecastCache = new Map();
+
+function forecastCacheKey(vendorId, selectedDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    return `${getStoredUser()?.email || ""}|${vendorId}|${selectedDate || "default"}|${today}`;
+}
 
 function DemandForecast({
     onLogout,
@@ -339,6 +346,81 @@ function DemandForecast({
             controller.abort();
         };
     }, []);
+    // Counts forecast requests so a slow, out-of-date response never overwrites a newer one
+    const forecastRequestRef = useRef(0);
+
+    // Puts a forecast response on screen (used for both cached and fresh data)
+    function applyForecast(data, isRefresh) {
+        setHistoricalComparison(data.historical_comparison ?? null);
+        setComparisonError("");
+
+        // Only the first load picks the default week; a quiet refresh must not redo it
+        if (
+            !isRefresh &&
+            !selectedComparisonDate &&
+            data.historical_comparison?.selected_week_start
+        ) {
+            defaultComparisonDateRequest.current =
+                data.historical_comparison.selected_week_start;
+            setSelectedComparisonDate(
+                data.historical_comparison.selected_week_start
+            );
+        }
+
+        if (data.error) {
+            if (data.error === "No transaction history for this vendor") {
+                setForecastData([]);
+                setHistoricalComparison(null);
+                setComparisonError(
+                    "No transaction history available for comparison."
+                );
+                setForecastSummary({
+                    expectedOrders: 0,
+                    expectedCustomers: 0,
+                    expectedRevenue: 0,
+                });
+                setError("NO_DATA");
+                return;
+            }
+
+            throw new Error(data.error);
+        }
+
+        const formattedData = data.points.map((point) => ({
+            date: point.date,
+            day: point.day_of_week.substring(0, 3),
+            orders: point.expected_orders,
+            customers: point.expected_customers,
+            revenue: point.expected_revenue,
+        }));
+
+        const firstDate = new Date(`${data.points[0].date}T12:00:00`);
+        const lastDate = new Date(
+            `${data.points[data.points.length - 1].date}T12:00:00`
+        );
+
+        const formatDate = (date) =>
+            date.toLocaleDateString("en-ZA", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+            });
+
+        setForecastPeriod(`${formatDate(firstDate)} - ${formatDate(lastDate)}`);
+
+        setForecastDates({
+            start: data.points[0].date,
+            end: data.points[data.points.length - 1].date,
+        });
+
+        setForecastData(formattedData);
+
+        setForecastSummary({
+            expectedOrders: formattedData.reduce((total, item) => total + item.orders, 0),
+            expectedCustomers: formattedData.reduce((total, item) => total + item.customers, 0),
+            expectedRevenue: formattedData.reduce((total, item) => total + item.revenue, 0),
+        });
+    }
 
     useEffect(() => {
         async function loadForecast() {
@@ -349,10 +431,29 @@ function DemandForecast({
                 return;
             }
 
-            try {
-                setLoading(true);
-                setError("");
+            const requestId = ++forecastRequestRef.current;
+            const cacheKey = forecastCacheKey(vendorId, selectedComparisonDate);
+            const cached = forecastCache.get(cacheKey);
+            let showedCached = false;
 
+            setError("");
+
+            if (cached) {
+                // Seen before: show it instantly, refresh quietly in the background.
+                try {
+                    applyForecast(cached, false);
+                    showedCached = true;
+                    setLoading(false);
+                } catch {
+                    // Cached copy unusable: fall through to a normal load
+                }
+            }
+
+            if (!showedCached) {
+                setLoading(true);
+            }
+
+            try {
                 const query = selectedComparisonDate
                     ? `?selected_date=${selectedComparisonDate}`
                     : "";
@@ -361,119 +462,27 @@ function DemandForecast({
                     `/vendors/${vendorId}/demand-forecast${query}`
                 );
 
-
                 if (!response.ok) {
-                    throw new Error(
-                        "Failed to load demand forecast."
-                    );
+                    throw new Error("Failed to load demand forecast.");
                 }
 
                 const data = await response.json();
 
-                setHistoricalComparison(data.historical_comparison ?? null);
-                setComparisonError("");
-
-                if (
-                    !selectedComparisonDate &&
-                    data.historical_comparison?.selected_week_start
-                ) {
-                    defaultComparisonDateRequest.current =
-                        data.historical_comparison.selected_week_start;
-                    setSelectedComparisonDate(
-                        data.historical_comparison.selected_week_start
-                    );
+                if (!data.error) {
+                    forecastCache.set(cacheKey, data);
                 }
 
-                if (data.error) {
-                    if (
-                        data.error ===
-                        "No transaction history for this vendor"
-                    ) {
-                        setForecastData([]);
-                        setHistoricalComparison(null);
-                        setComparisonError(
-                            "No transaction history available for comparison."
-                        );
+                // A newer request (different vendor or date) has started: drop this one
+                if (requestId !== forecastRequestRef.current) return;
 
-                        setForecastSummary({
-                            expectedOrders: 0,
-                            expectedCustomers: 0,
-                            expectedRevenue: 0,
-                        });
-
-                        setError("NO_DATA");
-
-                        return;
-                    }
-
-                    throw new Error(data.error);
-                }
-
-                const formattedData = data.points.map(
-                    (point) => ({
-                        date: point.date,
-                        day: point.day_of_week.substring(0, 3),
-                        orders: point.expected_orders,
-                        customers: point.expected_customers,
-                        revenue: point.expected_revenue,
-                    })
-                );
-                const firstDate = new Date(
-                    `${data.points[0].date}T12:00:00`
-                );
-
-                const lastDate = new Date(
-                    `${data.points[data.points.length - 1].date}T12:00:00`
-                );
-
-                const formatDate = (date) =>
-                    date.toLocaleDateString("en-ZA", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                    });
-
-                setForecastPeriod(
-                    `${formatDate(firstDate)} - ${formatDate(
-                        lastDate
-                    )}`
-                );
-
-                setForecastDates({
-                    start: data.points[0].date,
-                    end: data.points[data.points.length - 1].date,
-                });
-
-                setForecastData(formattedData);
-
-                const expectedOrders =
-                    formattedData.reduce(
-                        (total, item) =>
-                            total + item.orders,
-                        0
-                    );
-
-                const expectedCustomers =
-                    formattedData.reduce(
-                        (total, item) =>
-                            total + item.customers,
-                        0
-                    );
-
-                const expectedRevenue =
-                    formattedData.reduce(
-                        (total, item) =>
-                            total + item.revenue,
-                        0
-                    );
-
-                setForecastSummary({
-                    expectedOrders,
-                    expectedCustomers,
-                    expectedRevenue,
-                });
+                applyForecast(data, showedCached);
             } catch (err) {
+                if (requestId !== forecastRequestRef.current) return;
+
                 console.error("Error loading forecast:", err);
+
+                // Already showing a cached forecast: keep it rather than show an error
+                if (showedCached) return;
 
                 setHistoricalComparison(null);
                 setComparisonError(err.message);
@@ -487,13 +496,14 @@ function DemandForecast({
                 });
                 setError(err.message);
             } finally {
-                setLoading(false);
+                if (requestId === forecastRequestRef.current) {
+                    setLoading(false);
+                }
             }
         }
 
         loadForecast();
     }, [vendorId, selectedComparisonDate, loadingVendors]);
-
 
     async function loadNotifications() {
         if (!vendorId) return;
@@ -938,39 +948,65 @@ function DemandForecast({
                                 className="back-to-forecast"
                                 onClick={() => setShowNotificationHistory(false)}
                             >
-
-                                <ArrowLeft size={22} />
+                                <ArrowLeft size={16} />
                                 Back
                             </button>
 
-                            <h1>Notification History</h1>
+                            <div className="page-heading">
+                                <h1>Notification History</h1>
+                                <p>
+                                    View previous notifications for the selected business, including notifications that you have cleared.
+                                </p>
+                            </div>
 
-                            <p>
-                                View previous notifications for the selected business, including notifications that you have cleared.
-                            </p>
+                            <section className="panel notification-history-panel">
+                                <div className="notification-history-toolbar">
+                                    <h2>
+                                        {selectedVendorName
+                                            ? `Notifications for ${selectedVendorName}`
+                                            : "Notifications"}
+                                    </h2>
 
-                            <label htmlFor="notification-history-filter">
-                                Filter notifications
-                            </label>
+                                    <div className="notification-history-controls">
+                                        <label htmlFor="notification-history-filter">
+                                            Filter
+                                            <select
+                                                id="notification-history-filter"
+                                                value={historyFilter}
+                                                onChange={(event) => setHistoryFilter(event.target.value)}
+                                            >
+                                                <option value="all">All notifications</option>
+                                                <option value="unread">Unread</option>
+                                                <option value="pinned">Pinned</option>
+                                                <option value="cleared">Cleared</option>
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
 
-                            <select
-                                id="notification-history-filter"
-                                value={historyFilter}
-                                onChange={(event) => setHistoryFilter(event.target.value)}
-                            >
-                                <option value="all">All notifications</option>
-                                <option value="unread">Unread</option>
-                                <option value="pinned">Pinned</option>
-                                <option value="cleared">Cleared</option>
-                            </select>
+                                {historyLoading && (
+                                    <div
+                                        role="status"
+                                        aria-label="Loading notification history"
+                                        aria-busy="true"
+                                    >
+                                        <div aria-hidden="true">
+                                            {[0, 1, 2].map((row) => (
+                                                <div
+                                                    className="skeleton"
+                                                    key={row}
+                                                    style={{ height: 84, marginBottom: 10 }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                            {historyLoading && (
-                                <p>Loading notification history...</p>
-                            )}
-
-                            {historyError && (
-                                <p className="notification-error">{historyError}</p>
-                            )}
+                                {historyError && (
+                                    <div className="notification-history-state" role="alert">
+                                        {historyError}
+                                    </div>
+                                )}
 
                             {!historyLoading && !historyError && (
                                 <>
@@ -1154,10 +1190,13 @@ function DemandForecast({
 
                                         return true;
                                     }).length === 0 && (
-                                            <p>No notifications in this category.</p>
+                                            <div className="notification-history-state" role="status">
+                                                No notifications in this category.
+                                            </div>
                                         )}
                                 </>
                             )}
+                            </section>
                         </section>
                     ) : (
                         <>

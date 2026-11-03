@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
+import { apiFetch, apiFetchCached, getStoredUser, goToNotificationHistory } from "./api";
 
 import {
     Bell,
@@ -79,6 +79,15 @@ function getComparisonDescription(result) {
     }
 
     return "Your comparison result is available below.";
+}
+
+// Remembers comparison results so coming back to a vendor/period shows instantly.
+const comparisonCache = new Map();
+
+function comparisonCacheKey(vendorId, periodMode, filterDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    const period = periodMode === "day" ? filterDate : "week";
+    return `${getStoredUser()?.email || ""}|${vendorId}|${period}|${today}`;
 }
 
 function FairComparison({
@@ -189,9 +198,7 @@ function FairComparison({
             }
 
             try {
-                const response = await apiFetch("/context-events", {
-                    signal: controller.signal,
-                });
+                const response = await apiFetchCached("/context-events");
 
                 const data = await response.json();
 
@@ -240,9 +247,7 @@ function FairComparison({
             setVendorError("");
 
             try {
-                const response = await apiFetch("/vendors", {
-                    signal: controller.signal,
-                });
+                const response = await apiFetchCached("/vendors");
 
                 const data = await response.json();
 
@@ -305,19 +310,30 @@ function FairComparison({
 
         async function loadComparison() {
             setError("");
-            setResult(null);
 
             if (loadingVendors || vendorError || !vendorId) {
+                setResult(null);
                 setLoading(false);
                 return;
             }
 
             if (periodMode === "day" && !filterDate) {
+                setResult(null);
                 setLoading(false);
                 return;
             }
 
-            setLoading(true);
+            const cacheKey = comparisonCacheKey(vendorId, periodMode, filterDate);
+            const cached = comparisonCache.get(cacheKey);
+
+            if (cached) {
+                // Seen before: show it instantly, refresh quietly in the background.
+                setResult(cached);
+                setLoading(false);
+            } else {
+                setResult(null);
+                setLoading(true);
+            }
 
             try {
                 let url = `/vendors/${vendorId}/fair-comparison`;
@@ -342,9 +358,14 @@ function FairComparison({
                     throw new Error(data.error);
                 }
 
-                setResult(data);
+                comparisonCache.set(cacheKey, data);
+
+                if (!controller.signal.aborted) {
+                    setResult(data);
+                }
             } catch (err) {
-                if (err.name !== "AbortError") {
+                // If we're already showing cached data, don't replace it with an error.
+                if (err.name !== "AbortError" && !cached) {
                     setError(
                         err.message ||
                         "Something went wrong while loading the comparison."
