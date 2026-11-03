@@ -750,7 +750,16 @@ input {
   align-items: flex-start;
   gap: 10px;
   border-bottom: 1px solid #edefee;
-  padding-bottom: 8px;
+  padding: 6px 10px 8px;
+  margin: 0 -10px;
+  transition: background 0.15s ease;
+}
+
+.pulse-item:hover,
+.pulse-item:focus-visible {
+  background: #edf4f2;
+  border-radius: 8px;
+  outline: none;
 }
 
 .pulse-name {
