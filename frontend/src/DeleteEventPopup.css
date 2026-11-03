@@ -1,0 +1,159 @@
+.delete-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(12, 39, 38, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.delete-popup {
+  width: 100%;
+  max-width: 420px;
+  padding: 30px;
+
+  background: #ffffff;
+  border: 1px solid #dfe7e4;
+  border-radius: 14px;
+
+  text-align: center;
+
+  box-shadow: 0 20px 55px rgba(16, 63, 64, 0.2);
+
+  animation: delete-popup-appear 0.2s ease-out;
+}
+
+.delete-popup-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background: #fbeeee;
+  color: #ac3e49;
+}
+
+.delete-popup h2 {
+  margin: 0 0 12px;
+
+  color: #172f32;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.delete-popup p {
+  margin: 0 0 18px;
+
+  color: #6b7774;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.delete-popup-event {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  margin: 0 0 26px;
+  padding: 12px 14px;
+
+  background: #f3f7f5;
+  border: 1px solid #e0e8e5;
+  border-radius: 8px;
+
+  text-align: left;
+}
+
+.delete-popup-event strong {
+  color: #172f32;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.delete-popup-event span {
+  color: #71817e;
+  font-size: 11px;
+}
+
+.delete-popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.delete-popup-actions button {
+  flex: 1;
+  min-height: 40px;
+
+  padding: 10px 16px;
+  border-radius: 7px;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.delete-popup-cancel {
+  background: #ffffff;
+  color: #304846;
+  border: 1px solid #ced9d6;
+}
+
+.delete-popup-cancel:hover:not(:disabled) {
+  background: #f3f7f5;
+}
+
+.delete-popup-submit {
+  background: #ac3e49;
+  color: #ffffff;
+  border: 1px solid #ac3e49;
+}
+
+.delete-popup-submit:hover:not(:disabled) {
+  background: #91313b;
+}
+
+.delete-popup-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.delete-popup-actions button:focus-visible {
+  outline: 2px solid #2d9088;
+  outline-offset: 3px;
+}
+
+@keyframes delete-popup-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delete-popup {
+    animation: none;
+  }
+
+  .delete-popup-actions button {
+    transition: none;
+  }
+}
