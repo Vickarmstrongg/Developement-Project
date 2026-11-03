@@ -257,10 +257,21 @@ function Users({
         }
     }
 
-    function revoke(person) {
+    function deactivate(person) {
         if (!window.confirm(`Revoke access for ${person.email}?`)) return;
-        runAction(`/users/${person.user_id}/revoke`, "POST", "Access revoked.");
+        runAction(`/users/${person.user_id}/revoke`, "POST", "Access deactivated.");
     }
+    
+    function reactivate(person) {
+        if (!window.confirm(`Reactivate the account for ${person.email}?`)) return;
+
+        runAction(
+            `/users/${person.user_id}/reactivate`,
+            "POST",
+            "Account reactivated."
+        );
+    }
+
 
     function sendReset(person) {
         runAction(`/users/${person.user_id}/reset-password`, "POST", "Password reset email sent.");
@@ -455,7 +466,7 @@ function Users({
                                             Send password reset
                                         </button>
                                         <button className="btn-ghost" onClick={() => revoke(person)}>
-                                            Revoke access
+                                            Deactivate Account
                                         </button>
                                     </div>
                                 </div>
@@ -581,7 +592,9 @@ function Users({
                                                 <td>{vendorSummary(person, vendorNames)}</td>
                                                 <td>
                                                     <span className={`users-badge ${person.status}`}>
-                                                        {person.status}
+                                                        {person.status === "revoked"
+                                                         ? "Deactivated"
+                                                        : person.status}
                                                     </span>
                                                     {person.locked && (
                                                         <span className="users-badge locked">locked</span>
@@ -619,11 +632,21 @@ function Users({
                                                             {person.status !== "revoked" && (
                                                                 <button
                                                                     className="btn-ghost"
-                                                                    onClick={() => revoke(person)}
+                                                                    onClick={() => deactivate(person)}
                                                                 >
-                                                                    Revoke
+                                                                    Deactivate
                                                                 </button>
                                                             )}
+                                                            
+                                                             {person.status === "revoked" && (
+                                                                 <button
+                                                                    className="btn-primary"
+                                                                    onClick={() => reactivate(person)}
+                                                                     >
+                                                                    Reactivate
+                                                                        </button>
+                                                                    )}
+
                                                             <button
                                                                 className="btn-ghost"
                                                                 onClick={() => remove(person)}
