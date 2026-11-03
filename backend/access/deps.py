@@ -1,13 +1,15 @@
 """Server-side access control (FR-08). Use these on every protected route."""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import database
 import models
 
 from .constants import Role, UserStatus
 from .security import decode_access_token
+
+
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -26,7 +28,13 @@ def get_current_user(
     if creds is None:
         raise unauthorised
     user_id = decode_access_token(creds.credentials)
-    user = db.get(models.User, user_id) if user_id else None
+    user = (
+    db.query(models.User)
+    .options(joinedload(models.User.vendor_links))
+    .filter(models.User.user_id == user_id)
+    .first()
+    if user_id else None
+)
     if user is None or user.status != UserStatus.ACTIVE.value or user.locked:
         raise unauthorised
     return user
