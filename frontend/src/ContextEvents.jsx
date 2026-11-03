@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
 import DeleteEventPopup from "./DeleteEventPopup";
 

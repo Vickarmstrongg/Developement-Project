@@ -522,7 +522,7 @@ function Users({
                                         >
                                             Send password reset
                                         </button>
-                                        <button className="btn-ghost" onClick={() => revoke(person)}>
+                                        <button className="btn-ghost" onClick={() => deactivate(person)}>
                                             Deactivate Account
                                         </button>
                                     </div>

@@ -13,12 +13,10 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Minus,
-    RefreshCw,
     AlertCircle,
     Info,
 } from "lucide-react";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
 
 const RESULT_LABELS = {

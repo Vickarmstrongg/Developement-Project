@@ -5,7 +5,6 @@ import {
     Bell,
     LogOut,
     ChevronDown,
-    CalendarDays,
     ArrowLeft,
     ArrowUp,
     ArrowDown,
@@ -24,7 +23,6 @@ import {
 
 import ReportButton from "./ReportButton";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import UsersLink from "./UsersLink";
 
 function formatNumber(value) {
     return Number(value ?? 0).toFixed(2);
@@ -172,10 +170,7 @@ function DemandForecast({
     const [comparisonMetric, setComparisonMetric] = useState("revenue");
     const defaultComparisonDateRequest = useRef(null);
     const [historicalComparison, setHistoricalComparison] = useState(null);
-    const [comparisonLoading, setComparisonLoading] = useState(false);
     const [comparisonError, setComparisonError] = useState("");
-
-    const [comparisonSort, setComparisonSort] = useState("newest");
 
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -1682,16 +1677,11 @@ function DemandForecast({
                                                 </div>
 
 
-                                                {comparisonLoading && (
-                                                    <p>Loading historical activity...</p>
-                                                )}
-
                                                 {comparisonError && (
                                                     <p className="comparison-error">{comparisonError}</p>
                                                 )}
 
-                                                {!comparisonLoading &&
-                                                    !comparisonError &&
+                                                {!comparisonError &&
                                                     historicalComparison && (
                                                         <>
                                                             <div className="comparison-period-cards">

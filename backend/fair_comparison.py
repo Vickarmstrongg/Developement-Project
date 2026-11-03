@@ -21,19 +21,6 @@ def _operational_tier(txn_count: int) -> str:
     return "large"
 
 
-def get_vendor_operational_tier(db: Session, vendor_id: int) -> str:
-    """
-    Derives vendor operational size dynamically from total transaction volume.
-    Matches the tiering logic established in the project.
-    """
-    txn_count = (
-        db.query(func.count(models.Transaction.transaction_id))
-        .filter(models.Transaction.vendor_id == vendor_id)
-        .scalar() or 0
-    )
-    return _operational_tier(txn_count)
-
-
 _result_cache: dict[tuple, tuple[float, dict]] = {}
 RESULT_CACHE_SECONDS = 300
 MAX_CACHED_RESULTS = 200

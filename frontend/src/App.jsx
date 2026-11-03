@@ -19,7 +19,6 @@ import Reports from "./Reports";
 import { apiFetch, clearSession, getStoredUser, getToken, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import Users from "./Users";
-import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
 import ForgotPassword from "./ForgotPassword";
 
@@ -210,7 +209,6 @@ function App() {
   const markerRefs = useRef({});
 
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [recommendationPage, setRecommendationPage] = useState(1);
   const recommendationsPerPage = 15;
 
@@ -359,7 +357,6 @@ function App() {
         radarCache.set(cacheKey, rows);
         if (cancelled) return;
         setVendors(rows);
-        setLastUpdated(new Date());
       })
       .catch((err) =>
         console.error("Error fetching rush hour radar:", err)

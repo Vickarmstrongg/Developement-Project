@@ -1,5 +1,5 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from datetime import date
@@ -36,7 +36,6 @@ from rush_hour import (
     get_vendor_size_tiers,
     get_reference_date,
     parse_gps,
-    get_vendor_status,
     get_weekly_pattern,
 )
 from demand_forecast import calculate_demand_forecast
