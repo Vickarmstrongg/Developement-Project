@@ -66,7 +66,7 @@ class User(Base):
 
     vendor_links = relationship(
         "UserVendorLink", back_populates="user",
-        cascade="all, delete-orphan", lazy="selectin",
+        cascade="all, delete-orphan", lazy="select",
     )
 
     @property

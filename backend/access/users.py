@@ -143,7 +143,34 @@ def revoke_user(user_id: int, db: Session = Depends(database.get_db), admin: mod
     user.token_hash = None
     user.token_expires_at = None
     db.commit()
-    return Message(message=f"Access revoked for {user.email}.")
+    return Message(message=f"Account deactivated for {user.email}.")
+
+
+@router.post("/{user_id}/reactivate", response_model=Message)
+def reactivate_user(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    admin: models.User = AdminUser,
+):
+    user = _get_target(db, user_id)
+
+    if user.status != UserStatus.REVOKED.value:
+        raise HTTPException(400, "Only deactivated accounts can be reactivated")
+
+    if user.password_hash:
+        user.status = UserStatus.ACTIVE.value
+    else:
+        user.status = UserStatus.INVITED.value
+
+    user.failed_login_attempts = 0
+    user.locked = False
+    user.token_hash = None
+    user.token_expires_at = None
+
+    db.commit()
+
+    return Message(message=f"Account reactivated for {user.email}.")
+
 
 
 @router.post("/{user_id}/reset-password", response_model=Message)

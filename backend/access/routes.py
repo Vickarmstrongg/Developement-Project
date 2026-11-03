@@ -57,7 +57,7 @@ def login(body: LoginRequest, db: Session = Depends(database.get_db)):
         raise HTTPException(401, "Incorrect email or password")
 
     if user.status == UserStatus.REVOKED.value:
-        raise HTTPException(403, "Your access has been revoked. Please contact your administrator.")
+        raise HTTPException(403, "Your account has been deactivated. Please contact your administrator.")
     if user.locked:
         raise HTTPException(403, "Your account is locked. Please contact your administrator.")
 

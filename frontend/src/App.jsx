@@ -145,6 +145,7 @@ function ResetMapButton() {
     </button>
   );
 }
+
 function StatSkeleton() {
   return (
     <span
@@ -162,6 +163,33 @@ function radarCacheKey(day, hour, typeId) {
   return `${getStoredUser()?.email || ""}|${day}|${hour}|${typeId || "all"}|${today}`;
 }
 
+
+function FocusVendorOnMap({ selectedVendor, markerRefs }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedVendor) return;
+
+    const marker = markerRefs.current[selectedVendor.vendor_id];
+
+    if (!marker) return;
+
+    const position = marker.getLatLng();
+
+    map.flyTo(position, Math.max(map.getZoom(), 15), {
+      animate: true,
+      duration: 0.5,
+    });
+
+    map.once("moveend", () => {
+      marker.openPopup();
+    });
+  }, [selectedVendor, map, markerRefs]);
+
+  return null;
+}
+
+
 function App() {
   const [sessionUser, setSessionUser] = useState(() =>
     getToken() ? getStoredUser() : null
@@ -178,6 +206,9 @@ function App() {
   const VENDOR_TYPES = [ALL_VENDOR_TYPES_OPTION, ...vendorTypeOptions];
 
   const [vendors, setVendors] = useState([]);
+  const [selectedMapVendor, setSelectedMapVendor] = useState(null);
+  const markerRefs = useRef({});
+
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [recommendationPage, setRecommendationPage] = useState(1);
@@ -845,6 +876,11 @@ function App() {
                 <TrackpadMapPan />
                 <ResetMapButton />
 
+                <FocusVendorOnMap
+                selectedVendor={selectedMapVendor}
+                markerRefs={markerRefs}
+                />
+
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -855,6 +891,13 @@ function App() {
                   .map((v) => (
                     <CircleMarker
                       key={`${v.vendor_id}-${v.mine}`}
+                        ref={(marker) => {
+                      if (marker) {
+                        markerRefs.current[v.vendor_id] = marker;
+                    } else {
+                    delete markerRefs.current[v.vendor_id];
+                     }
+                       }}
                       interactive={v.mine !== false}
                       center={[
                         v.lat,
@@ -997,7 +1040,33 @@ function App() {
                     <div
                       className="pulse-item"
                       key={v.vendor_id}
+                      role="button"
+                      tabIndex={v.lat && v.lon ? 0 : -1}
+                      onClick={() => {
+                        if (v.lat && v.lon) {
+                          setSelectedMapVendor({
+                            ...v,
+                            selectionId: Date.now(),
+                          });
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          (event.key === "Enter" || event.key === " ") &&
+                          v.lat && v.lon
+                        ) {
+                          event.preventDefault();
+                          setSelectedMapVendor({
+                            ...v,
+                            selectionId: Date.now(),
+                          });
+                        }
+                      }}
+                      style={{
+                        cursor: v.lat && v.lon ? "pointer" : "default",
+                      }}
                     >
+                    
                       <div>
                         <div className="pulse-name">
                           {v.name}
