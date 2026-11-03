@@ -16,6 +16,7 @@ import { apiFetch, getStoredUser, goToNotificationHistory } from "./api";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import UsersLink from "./UsersLink";
 import ReportButton from "./ReportButton";
+import DeleteEventPopup from "./DeleteEventPopup";
 
 const API = "/context-events";
 const OTHER_TYPE = "__other__";
@@ -70,7 +71,7 @@ function formatEventType(value) {
     .toLowerCase();
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
-// Remembers each user's events per year and type so the Calendar opens instantly.
+
 const eventsCache = new Map();
 
 function eventsCacheKey(year, filterType) {
@@ -149,714 +150,737 @@ function ContextEvents({
   onNavigate,
   onLogout,
 }) {
-const [events, setEvents] = useState([]);
-const [types, setTypes] = useState([]);
-const [year, setYear] = useState(null);
-const displayYear = year ?? new Date().getFullYear();
-const [filterType, setFilterType] = useState("");
-const [loading, setLoading] = useState(true);
-const [saving, setSaving] = useState(false);
-const [error, setError] = useState("");
-const [editingId, setEditingId] = useState(null);
-const [profileOpen, setProfileOpen] = useState(false);
-const [displayMode, setDisplayMode] = useState("list");
-const [calendarMode, setCalendarMode] = useState("month");
-const [calendarDate, setCalendarDate] = useState(() => new Date());
-const [selectedEvent, setSelectedEvent] = useState(null);
-const profileRef = useRef(null);
-const user = currentUser || { name: "User Name", role: "Manager" };
+  const [events, setEvents] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [year, setYear] = useState(null);
+  const displayYear = year ?? new Date().getFullYear();
+  const [filterType, setFilterType] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState("list");
+  const [calendarMode, setCalendarMode] = useState("month");
+  const [calendarDate, setCalendarDate] = useState(() => new Date());
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const profileRef = useRef(null);
+  const user = currentUser || { name: "User Name", role: "Manager" };
 
-const emptyForm = {
-name: "",
-event_type: "",
-start_date: "",
-end_date: "",
-};
-
-const [form, setForm] = useState(emptyForm);
-const [customType, setCustomType] = useState("");
-
-useEffect(() => {
-  function handleClickOutside(event) {
-    if (profileRef.current && !profileRef.current.contains(event.target)) {
-      setProfileOpen(false);
-    }
-  }
-
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
-
-const loadEvents = useCallback(async (signal) => {
-  const cacheKey = eventsCacheKey(year, filterType);
-  const cached = eventsCache.get(cacheKey);
-
-  function applyEvents(loadedEvents) {
-    setEvents(loadedEvents);
-    if (!year) {
-      const latestEvent = loadedEvents.reduce((latest, event) => {
-        if (!latest || event.start_date > latest.start_date) return event;
-        return latest;
-      }, null);
-      const latestEventYear = latestEvent ? Number(latestEvent.start_date.slice(0, 4)) : 0;
-      if (latestEvent) setCalendarDate(parseDateKey(latestEvent.start_date));
-      setYear(latestEventYear || new Date().getFullYear());
-    }
-  }
-
-  setError("");
-  if (cached) {
-    applyEvents(cached);
-    setLoading(false);
-  } else {
-    setLoading(true);
-  }
-
-  try {
-    const params = new URLSearchParams();
-    if (year) params.set("year", String(year));
-    if (filterType) params.set("event_type", filterType);
-
-    const query = params.toString();
-    const url = query ? `${API}?${query}` : API;
-    const response = await apiFetch(url, signal ? { signal } : {});
-
-    if (!response.ok) {
-      throw new Error(`Could not load events (${response.status}).`);
-    }
-
-    const data = await response.json();
-    const loadedEvents = data.events || [];
-    eventsCache.set(cacheKey, loadedEvents);
-
-    if (signal?.aborted) return;
-    // On a quiet refresh, only swap the list; don't move the calendar again.
-    if (cached) setEvents(loadedEvents);
-    else applyEvents(loadedEvents);
-  } catch (err) {
-    // Keep showing remembered events if the quiet refresh fails
-    if (err.name !== "AbortError" && !cached) {
-      setError(`${err.message} Check that the backend is running.`);
-    }
-  } finally {
-    if (!signal?.aborted) setLoading(false);
-  }
-}, [year, filterType]);
-
-const loadTypes = useCallback(async () => {
-try {
-const response = await apiFetch(`${API}/types`);
-
-  if (!response.ok) {
-    throw new Error("Could not load event types.");
-  }
-
-  const data = await response.json();
-  const availableTypes = Array.isArray(data)
-    ? data
-    : data.types || [];
-
-  setTypes(availableTypes);
-
-  if (availableTypes.length > 0) {
-    setForm((previous) => ({
-      ...previous,
-      event_type: previous.event_type || availableTypes[0],
-    }));
-  }
-} catch (err) {
-  setError(err.message);
-}
-
-}, []);
-
-useEffect(() => {
-  const timer = window.setTimeout(() => void loadTypes(), 0);
-  return () => window.clearTimeout(timer);
-}, [loadTypes]);
-
-useEffect(() => {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => void loadEvents(controller.signal), 0);
-  return () => {
-    window.clearTimeout(timer);
-    controller.abort();
+  const emptyForm = {
+    name: "",
+    event_type: "",
+    start_date: "",
+    end_date: "",
   };
-}, [loadEvents]);
 
-const monthStart = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1, 12);
-const calendarDays = calendarMode === "month"
-  ? Array.from({ length: 42 }, (_, index) =>
+  const [form, setForm] = useState(emptyForm);
+  const [customType, setCustomType] = useState("");
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const loadEvents = useCallback(async (signal) => {
+    const cacheKey = eventsCacheKey(year, filterType);
+    const cached = eventsCache.get(cacheKey);
+
+    function applyEvents(loadedEvents) {
+      setEvents(loadedEvents);
+      if (!year) {
+        const latestEvent = loadedEvents.reduce((latest, event) => {
+          if (!latest || event.start_date > latest.start_date) return event;
+          return latest;
+        }, null);
+        const latestEventYear = latestEvent ? Number(latestEvent.start_date.slice(0, 4)) : 0;
+        if (latestEvent) setCalendarDate(parseDateKey(latestEvent.start_date));
+        setYear(latestEventYear || new Date().getFullYear());
+      }
+    }
+
+    setError("");
+    if (cached) {
+      applyEvents(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const params = new URLSearchParams();
+      if (year) params.set("year", String(year));
+      if (filterType) params.set("event_type", filterType);
+
+      const query = params.toString();
+      const url = query ? `${API}?${query}` : API;
+      const response = await apiFetch(url, signal ? { signal } : {});
+
+      if (!response.ok) {
+        throw new Error(`Could not load events (${response.status}).`);
+      }
+
+      const data = await response.json();
+      const loadedEvents = data.events || [];
+      eventsCache.set(cacheKey, loadedEvents);
+
+      if (signal?.aborted) return;
+      if (cached) setEvents(loadedEvents);
+      else applyEvents(loadedEvents);
+    } catch (err) {
+      if (err.name !== "AbortError" && !cached) {
+        setError(`${err.message} Check that the backend is running.`);
+      }
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, [year, filterType]);
+
+  const loadTypes = useCallback(async () => {
+    try {
+      const response = await apiFetch(`${API}/types`);
+
+      if (!response.ok) {
+        throw new Error("Could not load event types.");
+      }
+
+      const data = await response.json();
+      const availableTypes = Array.isArray(data)
+        ? data
+        : data.types || [];
+
+      setTypes(availableTypes);
+
+      if (availableTypes.length > 0) {
+        setForm((previous) => ({
+          ...previous,
+          event_type: previous.event_type || availableTypes[0],
+        }));
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadTypes(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadTypes]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => void loadEvents(controller.signal), 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [loadEvents]);
+
+  const monthStart = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1, 12);
+  const calendarDays = calendarMode === "month"
+    ? Array.from({ length: 42 }, (_, index) =>
       addDays(startOfWeek(monthStart), index)
     )
-  : calendarMode === "week"
-    ? Array.from({ length: 7 }, (_, index) =>
+    : calendarMode === "week"
+      ? Array.from({ length: 7 }, (_, index) =>
         addDays(startOfWeek(calendarDate), index)
       )
-    : [new Date(calendarDate)];
+      : [new Date(calendarDate)];
 
-function navigateCalendar(direction) {
-  const nextDate = new Date(calendarDate);
-  if (calendarMode === "month") {
-    nextDate.setDate(1);
-    nextDate.setMonth(nextDate.getMonth() + direction);
-  } else {
-    nextDate.setDate(nextDate.getDate() + direction * (calendarMode === "week" ? 7 : 1));
-  }
-  nextDate.setHours(12, 0, 0, 0);
-  setCalendarDate(nextDate);
-  setYear(nextDate.getFullYear());
-}
-
-function goToToday() {
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  setCalendarDate(today);
-  setYear(today.getFullYear());
-}
-
-function selectYear(nextYear) {
-  const numericYear = Number(nextYear);
-  setYear(numericYear);
-  setCalendarDate((current) => {
-    const day = current.getDate();
-    const next = new Date(numericYear, current.getMonth(), 1, 12);
-    next.setDate(Math.min(day, new Date(numericYear, current.getMonth() + 1, 0).getDate()));
-    return next;
-  });
-}
-
-function startEditing(event) {
-setEditingId(event.event_id);
-setForm({
-name: event.name,
-event_type: event.event_type,
-start_date: event.start_date,
-end_date: event.end_date,
-});
-}
-
-function resetForm() {
-  setCustomType("");
-  setEditingId(null);
-  setForm({
-    ...emptyForm,
-    event_type: types[0] || "",
-  });
-}
-
-async function saveEvent(event) {
-event.preventDefault();
-setSaving(true);
-setError("");
-
-try {
-  const url = editingId ? `${API}/${editingId}` : API;
-
-  const response = await apiFetch(url, {
-    method: editingId ? "PUT" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  ...form,
-  event_type:
-    form.event_type === OTHER_TYPE
-      ? customType.trim().toLowerCase().replace(/\s+/g, "_")
-      : form.event_type,
-}),
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(
-      data.detail || `Could not save event (${response.status}).`
-    );
+  function navigateCalendar(direction) {
+    const nextDate = new Date(calendarDate);
+    if (calendarMode === "month") {
+      nextDate.setDate(1);
+      nextDate.setMonth(nextDate.getMonth() + direction);
+    } else {
+      nextDate.setDate(nextDate.getDate() + direction * (calendarMode === "week" ? 7 : 1));
+    }
+    nextDate.setHours(12, 0, 0, 0);
+    setCalendarDate(nextDate);
+    setYear(nextDate.getFullYear());
   }
 
-  resetForm();
-  clearEventsCache();
-  await loadEvents();
-  await loadTypes();
-} catch (err) {
-  setError(err.message);
-} finally {
-  setSaving(false);
-}
-
-}
-
-async function deleteEvent(eventId) {
-if (!window.confirm("Delete this event?")) return;
-
-setError("");
-
-try {
-  const response = await apiFetch(`${API}/${eventId}`, {
-    method: "DELETE",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Could not delete event (${response.status}).`);
+  function goToToday() {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    setCalendarDate(today);
+    setYear(today.getFullYear());
   }
 
-  if (editingId === eventId) resetForm();
-  clearEventsCache();
-  await loadEvents();
-} catch (err) {
-  setError(err.message);
-}
+  function selectYear(nextYear) {
+    const numericYear = Number(nextYear);
+    setYear(numericYear);
+    setCalendarDate((current) => {
+      const day = current.getDate();
+      const next = new Date(numericYear, current.getMonth(), 1, 12);
+      next.setDate(Math.min(day, new Date(numericYear, current.getMonth() + 1, 0).getDate()));
+      return next;
+    });
+  }
 
-}
+  function startEditing(event) {
+    setEditingId(event.event_id);
+    setForm({
+      name: event.name,
+      event_type: event.event_type,
+      start_date: event.start_date,
+      end_date: event.end_date,
+    });
+  }
 
-return (
-<div className="app-layout">
-  <WorkspaceSidebar activeView="context" onNavigate={onNavigate} />
+  function resetForm() {
+    setCustomType("");
+    setEditingId(null);
+    setForm({
+      ...emptyForm,
+      event_type: types[0] || "",
+    });
+  }
 
-  <main className="main-content">
-    <header className="topbar">
-      <div className="breadcrumb">
-        Workspace / <strong>Calendar / Context Events</strong>
-      </div>
+  async function saveEvent(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
 
-      <div className="topbar-right">
-        <button
-          className="notification-button"
-          onClick={goToNotificationHistory}
-          aria-label="Notifications"
-          title="Notifications"
-        >
-          <Bell size={18} />
-        </button>
+    try {
+      const url = editingId ? `${API}/${editingId}` : API;
 
-        <div className="profile-container" ref={profileRef}>
-          <button
-            className="user-profile"
-            onClick={() => setProfileOpen((open) => !open)}
-            aria-label="Open user menu"
-            aria-expanded={profileOpen}
-          >
-            <div className="user-avatar">{user.name.charAt(0)}</div>
-            <div className="user-details">
-              <strong>{user.name}</strong>
-              <span>{user.role}</span>
-            </div>
-            <ChevronDown size={14} className="profile-chevron" />
-          </button>
+      const response = await apiFetch(url, {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          event_type:
+            form.event_type === OTHER_TYPE
+              ? customType.trim().toLowerCase().replace(/\s+/g, "_")
+              : form.event_type,
+        }),
+      });
 
-          {profileOpen && (
-            <div className="profile-dropdown">
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.detail || `Could not save event (${response.status}).`
+        );
+      }
 
+      resetForm();
+      clearEventsCache();
+      await loadEvents();
+      await loadTypes();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+
+  }
+
+  function deleteEvent(event) {
+    setEventToDelete(event);
+  }
+
+  async function confirmDeleteEvent() {
+    if (!eventToDelete || deleting) return;
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      const response = await apiFetch(`${API}/${eventToDelete.event_id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Could not delete event (${response.status}).`);
+      }
+
+      if (editingId === eventToDelete.event_id) resetForm();
+      if (selectedEvent?.event_id === eventToDelete.event_id) setSelectedEvent(null);
+
+      clearEventsCache();
+      setEventToDelete(null);
+      await loadEvents();
+    } catch (err) {
+      setError(err.message);
+      setEventToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="app-layout">
+      <WorkspaceSidebar activeView="context" onNavigate={onNavigate} />
+
+      <main className="main-content">
+        <header className="topbar">
+          <div className="breadcrumb">
+            Workspace / <strong>Calendar / Context Events</strong>
+          </div>
+
+          <div className="topbar-right">
+            <button
+              className="notification-button"
+              onClick={goToNotificationHistory}
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell size={18} />
+            </button>
+
+            <div className="profile-container" ref={profileRef}>
               <button
-                className="logout-option"
-                onClick={() => {
-                  setProfileOpen(false);
-                  onLogout();
-                }}
+                className="user-profile"
+                onClick={() => setProfileOpen((open) => !open)}
+                aria-label="Open user menu"
+                aria-expanded={profileOpen}
               >
-                <LogOut size={15} />
-                Log Out
+                <div className="user-avatar">{user.name.charAt(0)}</div>
+                <div className="user-details">
+                  <strong>{user.name}</strong>
+                  <span>{user.role}</span>
+                </div>
+                <ChevronDown size={14} className="profile-chevron" />
+              </button>
+
+              {profileOpen && (
+                <div className="profile-dropdown">
+
+                  <button
+                    className="logout-option"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      onLogout();
+                    }}
+                  >
+                    <LogOut size={15} />
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <div className="page-content context-events-page">
+          <div className="demand-page-header report-heading context-events-page-header">
+            <div className="page-heading">
+              <h1>Calendar &amp; Context Events</h1>
+              <p>Manage academic dates and other events that influence student demand.</p>
+            </div>
+
+            {!loading && events.length > 0 && (
+              <ReportButton
+                title="Calendar / Context Events"
+                subtitle={`${displayYear} · ${filterType || "All event types"}`}
+                reportType="calendar_events"
+                periodStart={`${displayYear}-01-01`}
+                periodEnd={`${displayYear}-12-31`}
+              />
+            )}
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              style={{
+                padding: "12px",
+                marginBottom: "18px",
+                border: "1px solid #AC3E49",
+                borderRadius: "8px",
+                color: "#AC3E49",
+              }}
+            >
+              {error}
+              <button onClick={() => loadEvents()} style={{ marginLeft: "12px" }}>
+                <RefreshCw size={14} /> Retry
               </button>
             </div>
           )}
-        </div>
-      </div>
-    </header>
 
-    <div className="page-content context-events-page">
-      <div className="demand-page-header report-heading context-events-page-header">
-        <div className="page-heading">
-          <h1>Calendar &amp; Context Events</h1>
-          <p>Manage academic dates and other events that influence student demand.</p>
-        </div>
-
-        {!loading && events.length > 0 && (
-          <ReportButton
-            title="Calendar / Context Events"
-            subtitle={`${displayYear} · ${filterType || "All event types"}`}
-            reportType="calendar_events"
-            periodStart={`${displayYear}-01-01`}
-            periodEnd={`${displayYear}-12-31`}
-          />
-        )}
-      </div>
-
-  {error && (
-    <div
-      role="alert"
-      style={{
-        padding: "12px",
-        marginBottom: "18px",
-        border: "1px solid #AC3E49",
-        borderRadius: "8px",
-        color: "#AC3E49",
-      }}
-    >
-      {error}
-      <button onClick={loadEvents} style={{ marginLeft: "12px" }}>
-        <RefreshCw size={14} /> Retry
-      </button>
-    </div>
-  )}
-
-  <section
-    className="panel no-print context-event-entry-panel"
-  >
-    <h2 className="context-event-section-heading">
-      {editingId ? "Edit event" : "Add a context event"}
-    </h2>
-
-    <form
-      className="context-event-form"
-      onSubmit={saveEvent}
-    >
-      <label className="context-event-form-field">
-        Event name
-        <input
-          required
-          value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-          placeholder="e.g. Exam period"
-        />
-      </label>
-
-      <label className="context-event-form-field">
-        Event type
-        <select
-          required
-          value={form.event_type}
-          onChange={(e) =>
-            setForm({ ...form, event_type: e.target.value })
-          }
-        >
-{types.map((type) => (
-  <option key={type} value={type}>
-    {formatEventType(type)}
-  </option>
-))}
-<option value={OTHER_TYPE}>Other</option>
-</select>
-      </label>
-
-      <label className="context-event-form-field">
-        Start date
-        <input
-          type="date"
-          required
-          value={form.start_date}
-          onChange={(e) =>
-            setForm({ ...form, start_date: e.target.value })
-          }
-        />
-      </label>
-
-      <label className="context-event-form-field">
-        End date
-        <input
-          type="date"
-          required
-          min={form.start_date || undefined}
-          value={form.end_date}
-          onChange={(e) =>
-            setForm({ ...form, end_date: e.target.value })
-          }
-        />
-      </label>
-
-      <div className="context-event-form-actions">
-        <button
-          className="btn-primary"
-          type="submit"
-          disabled={saving}
-        >
-          <Plus size={15} />{" "}
-          {saving
-            ? "Saving..."
-            : editingId
-              ? "Update event"
-              : "Add event"}
-        </button>
-
-        {editingId && (
-          <button
-            className="btn-ghost"
-            type="button"
-            onClick={resetForm}
+          <section
+            className="panel no-print context-event-entry-panel"
           >
-            Cancel
-          </button>
-        )}
-      </div>
+            <h2 className="context-event-section-heading">
+              {editingId ? "Edit event" : "Add a context event"}
+            </h2>
 
-      {form.event_type === OTHER_TYPE && (
-        <label
-          className="context-event-form-field"
-          style={{ gridColumn: "1 / -1" }}
-        >
-          Custom event type
-          <input
-            required
-            value={customType}
-            onChange={(e) => setCustomType(e.target.value)}
-            placeholder="e.g. Sporting Event"
-          />
-        </label>
-      )}
-    </form>
-  </section>
-
-  <section className="panel context-events-panel">
-    <div className="context-events-toolbar">
-      <h2>Events</h2>
-      <div className="context-events-controls">
-        <label>
-          Year
-          <select
-            value={displayYear}
-            onChange={(e) => {
-              setSelectedEvent(null);
-              selectYear(e.target.value);
-            }}
-          >
-            {[displayYear - 1, displayYear, displayYear + 1].map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Event type
-          <select
-            value={filterType}
-            onChange={(e) => {
-              setSelectedEvent(null);
-              setFilterType(e.target.value);
-            }}
-          >
-            <option value="">All event types</option>
-            {types.map((type) => (
-              <option key={type} value={type}>{formatEventType(type)}</option>
-            ))}
-          </select>
-        </label>
-        <div className="context-view-switch" role="group" aria-label="Events view">
-          <button
-            type="button"
-            className={displayMode === "list" ? "selected" : ""}
-            aria-pressed={displayMode === "list"}
-            onClick={() => setDisplayMode("list")}
-          >
-            <List size={16} /> List
-          </button>
-          <button
-            type="button"
-            className={displayMode === "calendar" ? "selected" : ""}
-            aria-pressed={displayMode === "calendar"}
-            onClick={() => setDisplayMode("calendar")}
-          >
-            <CalendarDays size={16} /> Calendar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {displayMode === "calendar" && (
-      <>
-        <div className="context-calendar-toolbar">
-          <div className="context-calendar-navigation">
-            <button type="button" className="btn-ghost" onClick={() => navigateCalendar(-1)} aria-label="Previous period">
-              <ChevronLeft size={17} />
-            </button>
-            <button type="button" className="btn-ghost" onClick={goToToday}>Today</button>
-            <button type="button" className="btn-ghost" onClick={() => navigateCalendar(1)} aria-label="Next period">
-              <ChevronRight size={17} />
-            </button>
-            <h3>
-              {calendarMode === "month"
-                ? formatCalendarDate(calendarDate)
-                : calendarMode === "week"
-                  ? `${formatCalendarDate(calendarDays[0], { day: "numeric", month: "short" })} – ${formatCalendarDate(calendarDays[6], { day: "numeric", month: "short", year: "numeric" })}`
-                  : formatCalendarDate(calendarDate, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-            </h3>
-          </div>
-          <div className="context-calendar-mode" role="group" aria-label="Calendar display period">
-            {CALENDAR_MODES.map((mode) => (
-              <button
-                type="button"
-                key={mode}
-                className={calendarMode === mode ? "selected" : ""}
-                aria-pressed={calendarMode === mode}
-                onClick={() => setCalendarMode(mode)}
-              >
-                {mode[0].toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="context-calendar-legend" aria-label="Event type legend">
-          {types.map((type) => (
-            <span key={type}>
-              <i className={`context-event-dot ${eventTypeColor(type, types)}`} />
-              {formatEventType(type)}
-            </span>
-          ))}
-        </div>
-
-        {loading ? (
-          <div role="status" aria-label="Loading calendar events" aria-busy="true">
-            <div
-              aria-hidden="true"
-              style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}
+            <form
+              className="context-event-form"
+              onSubmit={saveEvent}
             >
-              {Array.from({ length: 35 }, (_, item) => (
-                <div className="skeleton" key={item} style={{ height: 72 }} />
-              ))}
-            </div>
-          </div>
-        ) : error ? null : events.length === 0 ? (
-          <div className="context-events-state" role="status">No events found for these filters.</div>
-        ) : (
-          <div className={`context-calendar context-calendar-${calendarMode}`}>
-            {calendarMode === "month" && (
-              <div className="context-calendar-weekdays" aria-hidden="true">
-                {WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
-              </div>
-            )}
-            <div className="context-calendar-grid">
-              {calendarDays.map((day) => {
-                const key = dateKey(day);
-                const dayEvents = events.filter((event) => isEventOnDate(event, day));
-                const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
-                const isToday = key === dateKey(new Date());
-                return (
-                  <section
-                    key={key}
-                    className={[
-                      "context-calendar-day",
-                      !isCurrentMonth && calendarMode === "month" ? "outside-month" : "",
-                      isToday ? "today" : "",
-                    ].filter(Boolean).join(" ")}
-                    aria-label={formatCalendarDate(day, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              <label className="context-event-form-field">
+                Event name
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm({ ...form, name: e.target.value })
+                  }
+                  placeholder="e.g. Exam period"
+                />
+              </label>
+
+              <label className="context-event-form-field">
+                Event type
+                <select
+                  required
+                  value={form.event_type}
+                  onChange={(e) =>
+                    setForm({ ...form, event_type: e.target.value })
+                  }
+                >
+                  {types.map((type) => (
+                    <option key={type} value={type}>
+                      {formatEventType(type)}
+                    </option>
+                  ))}
+                  <option value={OTHER_TYPE}>Other</option>
+                </select>
+              </label>
+
+              <label className="context-event-form-field">
+                Start date
+                <input
+                  type="date"
+                  required
+                  value={form.start_date}
+                  onChange={(e) =>
+                    setForm({ ...form, start_date: e.target.value })
+                  }
+                />
+              </label>
+
+              <label className="context-event-form-field">
+                End date
+                <input
+                  type="date"
+                  required
+                  min={form.start_date || undefined}
+                  value={form.end_date}
+                  onChange={(e) =>
+                    setForm({ ...form, end_date: e.target.value })
+                  }
+                />
+              </label>
+
+              <div className="context-event-form-actions">
+                <button
+                  className="btn-primary"
+                  type="submit"
+                  disabled={saving}
+                >
+                  <Plus size={15} />{" "}
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                      ? "Update event"
+                      : "Add event"}
+                </button>
+
+                {editingId && (
+                  <button
+                    className="btn-ghost"
+                    type="button"
+                    onClick={resetForm}
                   >
-                    {calendarMode !== "month" && (
-                      <div className="context-calendar-day-heading">
-                        <span>{formatCalendarDate(day, { weekday: "short" })}</span>
-                        <strong>{formatCalendarDate(day, { day: "numeric", month: "short" })}</strong>
-                      </div>
-                    )}
-                    {calendarMode === "month" && (
-                      <span className="context-calendar-day-number">{day.getDate()}</span>
-                    )}
-                    <div className="context-calendar-day-events">
-                      {dayEvents.map((event) => (
-                        <button
-                          type="button"
-                          key={event.event_id}
-                          className={`context-calendar-event ${eventTypeColor(event.event_type, types)}${selectedEvent?.event_id === event.event_id ? " selected" : ""}`}
-                          title={`${event.name} — ${formatEventType(event.event_type)}`}
-                          onClick={() => setSelectedEvent(event)}
-                        >
-                          <strong>{event.name}</strong>
-                          <span>{formatEventType(event.event_type)}</span>
-                        </button>
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              {form.event_type === OTHER_TYPE && (
+                <label
+                  className="context-event-form-field"
+                  style={{ gridColumn: "1 / -1" }}
+                >
+                  Custom event type
+                  <input
+                    required
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    placeholder="e.g. Sporting Event"
+                  />
+                </label>
+              )}
+            </form>
+          </section>
+
+          <section className="panel context-events-panel">
+            <div className="context-events-toolbar">
+              <h2>Events</h2>
+              <div className="context-events-controls">
+                <label>
+                  Year
+                  <select
+                    value={displayYear}
+                    onChange={(e) => {
+                      setSelectedEvent(null);
+                      selectYear(e.target.value);
+                    }}
+                  >
+                    {[displayYear - 1, displayYear, displayYear + 1].map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Event type
+                  <select
+                    value={filterType}
+                    onChange={(e) => {
+                      setSelectedEvent(null);
+                      setFilterType(e.target.value);
+                    }}
+                  >
+                    <option value="">All event types</option>
+                    {types.map((type) => (
+                      <option key={type} value={type}>{formatEventType(type)}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="context-view-switch" role="group" aria-label="Events view">
+                  <button
+                    type="button"
+                    className={displayMode === "list" ? "selected" : ""}
+                    aria-pressed={displayMode === "list"}
+                    onClick={() => setDisplayMode("list")}
+                  >
+                    <List size={16} /> List
+                  </button>
+                  <button
+                    type="button"
+                    className={displayMode === "calendar" ? "selected" : ""}
+                    aria-pressed={displayMode === "calendar"}
+                    onClick={() => setDisplayMode("calendar")}
+                  >
+                    <CalendarDays size={16} /> Calendar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {displayMode === "calendar" && (
+              <>
+                <div className="context-calendar-toolbar">
+                  <div className="context-calendar-navigation">
+                    <button type="button" className="btn-ghost" onClick={() => navigateCalendar(-1)} aria-label="Previous period">
+                      <ChevronLeft size={17} />
+                    </button>
+                    <button type="button" className="btn-ghost" onClick={goToToday}>Today</button>
+                    <button type="button" className="btn-ghost" onClick={() => navigateCalendar(1)} aria-label="Next period">
+                      <ChevronRight size={17} />
+                    </button>
+                    <h3>
+                      {calendarMode === "month"
+                        ? formatCalendarDate(calendarDate)
+                        : calendarMode === "week"
+                          ? `${formatCalendarDate(calendarDays[0], { day: "numeric", month: "short" })} – ${formatCalendarDate(calendarDays[6], { day: "numeric", month: "short", year: "numeric" })}`
+                          : formatCalendarDate(calendarDate, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                    </h3>
+                  </div>
+                  <div className="context-calendar-mode" role="group" aria-label="Calendar display period">
+                    {CALENDAR_MODES.map((mode) => (
+                      <button
+                        type="button"
+                        key={mode}
+                        className={calendarMode === mode ? "selected" : ""}
+                        aria-pressed={calendarMode === mode}
+                        onClick={() => setCalendarMode(mode)}
+                      >
+                        {mode[0].toUpperCase() + mode.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="context-calendar-legend" aria-label="Event type legend">
+                  {types.map((type) => (
+                    <span key={type}>
+                      <i className={`context-event-dot ${eventTypeColor(type, types)}`} />
+                      {formatEventType(type)}
+                    </span>
+                  ))}
+                </div>
+
+                {loading ? (
+                  <div role="status" aria-label="Loading calendar events" aria-busy="true">
+                    <div
+                      aria-hidden="true"
+                      style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}
+                    >
+                      {Array.from({ length: 35 }, (_, item) => (
+                        <div className="skeleton" key={item} style={{ height: 72 }} />
                       ))}
                     </div>
-                  </section>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                  </div>
+                ) : error ? null : events.length === 0 ? (
+                  <div className="context-events-state" role="status">No events found for these filters.</div>
+                ) : (
+                  <div className={`context-calendar context-calendar-${calendarMode}`}>
+                    {calendarMode === "month" && (
+                      <div className="context-calendar-weekdays" aria-hidden="true">
+                        {WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
+                      </div>
+                    )}
+                    <div className="context-calendar-grid">
+                      {calendarDays.map((day) => {
+                        const key = dateKey(day);
+                        const dayEvents = events.filter((event) => isEventOnDate(event, day));
+                        const isCurrentMonth = day.getMonth() === calendarDate.getMonth();
+                        const isToday = key === dateKey(new Date());
+                        return (
+                          <section
+                            key={key}
+                            className={[
+                              "context-calendar-day",
+                              !isCurrentMonth && calendarMode === "month" ? "outside-month" : "",
+                              isToday ? "today" : "",
+                            ].filter(Boolean).join(" ")}
+                            aria-label={formatCalendarDate(day, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                          >
+                            {calendarMode !== "month" && (
+                              <div className="context-calendar-day-heading">
+                                <span>{formatCalendarDate(day, { weekday: "short" })}</span>
+                                <strong>{formatCalendarDate(day, { day: "numeric", month: "short" })}</strong>
+                              </div>
+                            )}
+                            {calendarMode === "month" && (
+                              <span className="context-calendar-day-number">{day.getDate()}</span>
+                            )}
+                            <div className="context-calendar-day-events">
+                              {dayEvents.map((event) => (
+                                <button
+                                  type="button"
+                                  key={event.event_id}
+                                  className={`context-calendar-event ${eventTypeColor(event.event_type, types)}${selectedEvent?.event_id === event.event_id ? " selected" : ""}`}
+                                  title={`${event.name} — ${formatEventType(event.event_type)}`}
+                                  onClick={() => setSelectedEvent(event)}
+                                >
+                                  <strong>{event.name}</strong>
+                                  <span>{formatEventType(event.event_type)}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-        {selectedEvent && (
-          <section className="context-event-details" aria-live="polite">
-            <div className="context-event-details-heading">
-              <div>
-                <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>
-                  {formatEventType(selectedEvent.event_type)}
-                </span>
-                <h3>{selectedEvent.name}</h3>
-              </div>
-              <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}>
-                <X size={17} />
-              </button>
-            </div>
-<dl>
-  <EventDetailRows event={selectedEvent} />
-</dl>
-          </section>
-        )}
-      </>
-    )}
-
-    {displayMode === "list" && (
-      loading ? (
-        <div role="status" aria-label="Loading events" aria-busy="true">
-          <div aria-hidden="true">
-            {[0, 1, 2, 3, 4, 5].map((row) => (
-              <div className="skeleton" key={row} style={{ height: 38, marginBottom: 10 }} />
-            ))}
-          </div>
-        </div>
-      ) : error ? null : events.length === 0 ? (
-        <div className="context-events-state" role="status">No events found for these filters.</div>
-      ) : (
-        <div className="context-events-table-wrap">
-          <table className="context-events-table">
-            <thead>
-              <tr>
-                <th align="left">Event</th>
-                <th align="left">Type</th>
-                <th align="left">Start</th>
-                <th align="left">End</th>
-                <th align="left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((event) => (
-                <tr key={event.event_id}>
-                  <td>
-                    <button type="button" className="context-event-list-name" onClick={() => setSelectedEvent(event)}>{event.name}</button>
-                  </td>
-                  <td>{formatEventType(event.event_type)}</td>
-                  <td>{event.start_date}</td>
-                  <td>{event.end_date}</td>
-                  <td>
-                    <div className="context-event-actions">
-                      <button className="btn-ghost" onClick={() => startEditing(event)}>Edit</button>
-                      <button className="btn-ghost" onClick={() => deleteEvent(event.event_id)} aria-label={`Delete ${event.name}`}>
-                        <Trash2 size={14} />
+                {selectedEvent && (
+                  <section className="context-event-details" aria-live="polite">
+                    <div className="context-event-details-heading">
+                      <div>
+                        <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>
+                          {formatEventType(selectedEvent.event_type)}
+                        </span>
+                        <h3>{selectedEvent.name}</h3>
+                      </div>
+                      <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}>
+                        <X size={17} />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )
-    )}
-  </section>
+                    <dl>
+                      <EventDetailRows event={selectedEvent} />
+                    </dl>
+                  </section>
+                )}
+              </>
+            )}
 
-  {displayMode === "list" && selectedEvent && (
-    <section className="context-event-details" aria-live="polite">
-      <div className="context-event-details-heading">
-        <div>
-          <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>{formatEventType(selectedEvent.event_type)}</span>
-          <h3>{selectedEvent.name}</h3>
-        </div>
-        <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}><X size={17} /></button>
-      </div>
-<dl>
-  <EventDetailRows event={selectedEvent} />
-</dl>
-    </section>
-  )}
-</div>
-</main>
-</div>
+            {displayMode === "list" && (
+              loading ? (
+                <div role="status" aria-label="Loading events" aria-busy="true">
+                  <div aria-hidden="true">
+                    {[0, 1, 2, 3, 4, 5].map((row) => (
+                      <div className="skeleton" key={row} style={{ height: 38, marginBottom: 10 }} />
+                    ))}
+                  </div>
+                </div>
+              ) : error ? null : events.length === 0 ? (
+                <div className="context-events-state" role="status">No events found for these filters.</div>
+              ) : (
+                <div className="context-events-table-wrap">
+                  <table className="context-events-table">
+                    <thead>
+                      <tr>
+                        <th align="left">Event</th>
+                        <th align="left">Type</th>
+                        <th align="left">Start</th>
+                        <th align="left">End</th>
+                        <th align="left">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => (
+                        <tr key={event.event_id}>
+                          <td>
+                            <button type="button" className="context-event-list-name" onClick={() => setSelectedEvent(event)}>{event.name}</button>
+                          </td>
+                          <td>{formatEventType(event.event_type)}</td>
+                          <td>{event.start_date}</td>
+                          <td>{event.end_date}</td>
+                          <td>
+                            <div className="context-event-actions">
+                              <button className="btn-ghost" onClick={() => startEditing(event)}>Edit</button>
+                              <button className="btn-ghost" onClick={() => deleteEvent(event)} aria-label={`Delete ${event.name}`}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+          </section>
 
-);
+          {displayMode === "list" && selectedEvent && (
+            <section className="context-event-details" aria-live="polite">
+              <div className="context-event-details-heading">
+                <div>
+                  <span className={`context-event-type-pill ${eventTypeColor(selectedEvent.event_type, types)}`}>
+                    {formatEventType(selectedEvent.event_type)}
+                  </span>
+                  <h3>{selectedEvent.name}</h3>
+                </div>
+                <button type="button" className="btn-ghost" aria-label="Close event details" onClick={() => setSelectedEvent(null)}>
+                  <X size={17} />
+                </button>
+              </div>
+              <dl>
+                <EventDetailRows event={selectedEvent} />
+              </dl>
+            </section>
+          )}
+        </div>
+      </main>
+
+      <DeleteEventPopup
+        event={eventToDelete}
+        loading={deleting}
+        onConfirm={confirmDeleteEvent}
+        onCancel={() => {
+          if (!deleting) setEventToDelete(null);
+        }}
+      />
+    </div>
+
+  );
 }
 
 export default ContextEvents;
